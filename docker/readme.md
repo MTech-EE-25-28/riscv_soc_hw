@@ -5,11 +5,9 @@ RISC-V Compiler is setup in Docker environment, why to tamper our system depende
 
 Change the compile.sh to change the ISA extension, linker options, and memory addresses of the RISC-V compiler.
 
-### References
-
-Read about RISC-V Compiler over [here 🔗](https://riscv.org/blog/unveiling-the-tasking-risc-v-compiler-a-breakthrough-regarding-the-development-of-fusa-and-cybersecurity-compliant-software/) and compiler options are [here 🔗](https://gcc.gnu.org/onlinedocs/gcc/RISC-V-Options.html)
-
 ### Usage
+
+Assuming you already have docker image in your system, else install it from the docker official documentation.
 
 Build the Docker
 
