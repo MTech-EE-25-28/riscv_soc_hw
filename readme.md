@@ -6,7 +6,10 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 ### Quick Links
 
 - Drive Folder [🔗](https://drive.google.com/drive/folders/1hxN554t5wVxOj4kZc2496kIRQUIQfFwi?usp=drive_link)
+- Proposal Doc [🔗](https://docs.google.com/document/d/1fRPK1PpdDccjNj-pN-l28b1CndTj1wCNxMwHX3wDBww/edit?usp=sharing)
 - Task Planning [🔗](https://docs.google.com/spreadsheets/d/1yrGrQKRs-R2LSBKFLWaHegrmFKYdW5KiHeWRzrjUArc/edit?usp=drive_link)
+
+
 
 ### Requirements
 

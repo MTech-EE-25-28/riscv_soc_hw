@@ -5,14 +5,14 @@ basename="${1##*/}" # remove folder path
 filename="${basename%.*}"
 
 ARCH=rv32im
-ROM=2048
-RAM=64
-STACK=8
+ROM=2048     # Program segment: 2KB (0x000-0x7FF)
+RAM=2048     # Data segment: 2KB (0x800-0xFFF)
+STACK=256
 
 CFLAGS="  -march=$ARCH -mabi=ilp32 --specs=picolibc.specs -Os -g3 -flto -DPICOLIBC_INTEGER_PRINTF_SCANF -Wall"
 LDFLAGS=" -march=$ARCH -mabi=ilp32 --specs=picolibc.specs -Os -g3 -flto -DPICOLIBC_INTEGER_PRINTF_SCANF "
 LDFLAGS+=" -Wl,--gc-sections,--defsym=__flash=0x00000000,--defsym=__flash_size=$ROM --crt0=minimal" #" -nostartfiles"
-LDFLAGS+=" -Wl,--defsym=__ram=0x02000000,--defsym=__ram_size=$RAM,--defsym=__stack_size=$STACK -Tpicolibc.ld"
+LDFLAGS+=" -Wl,--defsym=__ram=0x00000800,--defsym=__ram_size=$RAM,--defsym=__stack_size=$STACK -Tpicolibc.ld"
 
 if riscv64-unknown-elf-gcc $CFLAGS -c $infile -o .temp.file.o && \
    riscv64-unknown-elf-gcc $LDFLAGS -o .temp.file.elf .temp.file.o && \
