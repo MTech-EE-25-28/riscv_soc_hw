@@ -44,6 +44,22 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
         ./simulate.sh tb_pl wave
     ```
 
+## TODOs
+
+- [ ] Von-neuman memory architecture
+    - [ ] Change Data Mem to Xilinx BRAM
+    - [ ] Change Instr Mem to be sequential
+- [ ] Implement Two-bit branch predictor
+- [ ] RV32M Extension
+    - [ ] Implement 32-bit signed multiplier (maybe extend from 16-bit dadda)
+    - [ ] Implement Divider
+    - [ ] Implement Reminder
+- [ ] CSR Extension
+- [ ] AXI-Lite to AXI Full
+- [ ] UART, SPI Integeration with AXI
+- [ ] GPIO Peripheral
+- [ ] Systolic Matrix Multiplier
+
 ### References
 
 - Digital Design and Computer Architecture book
