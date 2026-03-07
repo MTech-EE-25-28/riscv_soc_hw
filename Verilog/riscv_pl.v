@@ -6,6 +6,7 @@ module riscv_pl (
     input  [31:0] Instr,
     output        MemWriteM,
     output [31:0] Mem_WrAddr, Mem_WrData,
+    output  [3:0] wea,
     input  [31:0] ReadData,
     output [31:0] Result,
     output  [2:0] funct3,
@@ -23,6 +24,6 @@ controller  c   (InstrD[6:0], InstrD[14:12], InstrD[30],
 
 datapath    dp  (clk, reset, ResultSrc,
                 ALUSrc, RegWrite, ImmSrc, ALUControl, Jalr,
-                PC, Instr, Mem_WrAddr, Mem_WrData, ReadData, Result, InstrD, MemWrite, Jump, Branch, MemWriteM, funct3, PCW, ALUResultW, WriteDataW, ReadDataW);
+                PC, Instr, Mem_WrAddr, Mem_WrData, wea, ReadData, Result, InstrD, MemWrite, Jump, Branch, MemWriteM, funct3, PCW, ALUResultW, WriteDataW, ReadDataW);
 
 endmodule

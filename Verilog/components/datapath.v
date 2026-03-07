@@ -11,6 +11,7 @@ module datapath (
     output [31:0] PCF,
     input  [31:0] Instr,
     output [31:0] Mem_WrAddr, Mem_WrData,
+    output  [3:0] wea,
     input  [31:0] ReadData,
     output [31:0] ResultW, InstrD,
     input         MemWriteD, JumpD, BranchD,
@@ -60,8 +61,20 @@ mux2 #(32) jalrmux (PCNext, ALUResultE, JalrE, PCJalr);
 reset_ff   pcreg (clk, reset, StallF, PCJalr, PCF);
 bk_adder   pcadd4 (PCF, 32'd4, 1'b0, PCPlus4F, unused[0]);
 
-// Decode Pipeline register
-pl_reg_d pld (clk, StallD, FlushD, Instr, PCF, PCPlus4F,
+// Shadow PC registers - capture PC at fetch time for sequential IMEM alignment
+reg [31:0] PCF_shadow, PCPlus4F_shadow;
+always @(posedge clk) begin
+    if (!reset) begin
+        PCF_shadow <= 0;
+        PCPlus4F_shadow <= 4;
+    end else if (!StallF) begin
+        PCF_shadow <= PCF;
+        PCPlus4F_shadow <= PCPlus4F;
+    end
+end
+
+// Decode Pipeline register - receives instruction and its captured PC together
+pl_reg_d pld (clk, StallD, FlushD, Instr, PCF_shadow, PCPlus4F_shadow,
               InstrD, PCD, PCPlus4D);
 
 // register file logic
@@ -97,8 +110,13 @@ pl_reg_w plw (
     ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W
 );
 
+// Store masker for store operations - generates byte enables and aligns data
+wire [31:0] AlignedWriteDataM;
+wire  [3:0] weaM;
+store_masker store_mask (funct3M, ALUResultM[1:0], WriteDataM, AlignedWriteDataM, weaM);
+
 // Memory masker for load operations - operates in Writeback stage for sequential BRAM
-load_masker masker (funct3W, ALUResultW[1:0], ReadDataW, MaskedReadDataW);
+load_masker load_mask (funct3W, ALUResultW[1:0], ReadData, MaskedReadDataW);
 
 // Result Source
 mux4 #(32) resultmux (ALUResultW, MaskedReadDataW, PCPlus4W, lAuiPCW, ResultSrcW, ResultW);
@@ -108,7 +126,8 @@ hazard_unit hz (
     StallF, StallD, FlushD, FlushE, ForwardAE, ForwardBE
 );
 
-assign Mem_WrData = WriteDataM;
+assign Mem_WrData = AlignedWriteDataM;
 assign Mem_WrAddr = ALUResultM;
+assign wea = MemWriteM ? weaM : 4'b0000;
 
 endmodule
