@@ -77,7 +77,7 @@ localparam JAL      =   32'h138;
 
 // generate clock to sequence tests
 always begin
-    clk <= 0; # 5; clk <= 1; # 5;
+    clk <= 0; # 6; clk <= 1; # 6;
 end
 
 // check results of simple RISC-V CPU (from asm_programs/rv32i_test.s) r32i_test.hex
@@ -86,7 +86,7 @@ initial begin
     $dumpfile("./Verilog/dumps/tb_pl.vcd");
     $dumpvars(0, tb_pl);
     reset = 0;  // Active-low reset
-    Ext_MemWrite = 0; Ext_DataAdr = 32'b0; Ext_WriteData = 32'b0; #10;
+    Ext_MemWrite = 0; Ext_DataAdr = 32'b0; Ext_WriteData = 32'b0; #12;
     reset = 1;
 end
 
