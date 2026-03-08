@@ -9,8 +9,6 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 - Proposal Doc [🔗](https://docs.google.com/document/d/1fRPK1PpdDccjNj-pN-l28b1CndTj1wCNxMwHX3wDBww/edit?usp=sharing)
 - Task Planning [🔗](https://docs.google.com/spreadsheets/d/1yrGrQKRs-R2LSBKFLWaHegrmFKYdW5KiHeWRzrjUArc/edit?usp=drive_link)
 
-
-
 ### Requirements
 
 - Vivado
@@ -25,7 +23,7 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 - CSR Support: (zicsr)
 - Communication Protocol: UART, SPI
 - GPIO Peripheral
-- Common Memory: (Program and Data)
+- Memory Mapped Peripherals
 - Matrix Multiplier
 
 ### Usage
@@ -46,10 +44,10 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 
 ## TODOs
 
-- [ ] Von-neuman memory architecture
-    - [ ] Change Data Mem to Xilinx BRAM
-    - [ ] Change Instr Mem to be sequential
-- [ ] Implement Two-bit branch predictor
+- [x] Update memory architecture and test it
+    - [x] Change Data Mem to Xilinx BRAM Interface
+    - [x] Change Instr Mem to be sequential
+- [x] Implement Two-bit branch predictor and test it
 - [ ] RV32M Extension
     - [ ] Implement 32-bit signed multiplier (maybe extend from 16-bit dadda)
     - [ ] Implement Divider
