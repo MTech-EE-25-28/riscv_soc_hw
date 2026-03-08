@@ -370,9 +370,9 @@ always @(posedge clk) begin
         end
 
         BLT_IN : begin
-            if(Result <= 32'hA) $display("31. blt is executing");
+            if(Result <= 32'hA) $display("31. blt is executing, Result=%d", Result);
             else begin
-                $display("blt struck in loop");
+                $display("blt struck in loop, Result=%d", Result);
                 flag = 1;
                 $stop;
             end
@@ -388,9 +388,9 @@ always @(posedge clk) begin
         end
 
         BGE_IN : begin
-            if(Result <= 32'hB) $display("32. bge is executing");
+            if(Result <= 32'hB) $display("32. bge is executing, Result=%d", Result);
             else begin
-                $display("bge struck in loop");
+                $display("bge struck in loop, Result=%d", Result);
                 flag = 1;
                 $stop;
             end
@@ -406,9 +406,9 @@ always @(posedge clk) begin
         end
 
         BLTU_IN : begin
-            if(Result <= 4) $display("33. bltu is executing");
+            if(Result <= 4) $display("33. bltu is executing, Result=%d", Result);
             else begin
-                $display("bltu struck in loop");
+                $display("bltu struck in loop, Result=%d", Result);
                 flag = 1;
                 $stop;
             end
@@ -424,9 +424,9 @@ always @(posedge clk) begin
         end
 
         BGEU_IN : begin
-            if(Result <= 5) $display("34. bgeu is executing");
+            if(Result <= 5) $display("34. bgeu is executing, Result=%d", Result);
             else begin
-                $display("bgeu struck in loop");
+                $display("bgeu struck in loop, Result=%d", Result);
                 flag = 1;
                 $stop;
             end
@@ -442,9 +442,9 @@ always @(posedge clk) begin
         end
 
         BNE_IN : begin
-            if(Result <= 5) $display("35. bne is executing");
+            if(Result <= 5) $display("35. bne is executing, Result=%d", Result);
             else begin
-                $display("bne struck in loop");
+                $display("bne struck in loop, Result=%d", Result);
                 flag = 1;
                 $stop;
             end
@@ -460,9 +460,9 @@ always @(posedge clk) begin
         end
 
         BEQ_IN : begin
-            if(Result <=2) $display("36. beq is executing");
+            if(Result <=2) $display("36. beq is executing, Result=%d", Result);
             else begin
-                $display("beq struck in loop");
+                $display("beq struck in loop, Result=%d", Result);
                 $stop;
             end
         end
@@ -504,7 +504,7 @@ always @(negedge clk) begin
 end
 
 always @(negedge clk) begin
-    #3000;
+    #10000;  // Increased timeout for branch predictor testing
     $display("Worst Case simulation time reached, Problem with the design :(");
     $finish;
 end

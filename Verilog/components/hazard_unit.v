@@ -15,7 +15,7 @@ reg lwStall = 0;
 always @(*) begin
     if (!reset) begin
         StallF = 0; StallD = 0; ForwardAE = 0;
-        FlushD = 0; FlushE = 0; ForwardBE = 0;
+        FlushD = 1; FlushE = 1; ForwardBE = 0;  // Flush pipeline during reset
     end else begin
         if (((Rs1E == RdM) & RegWriteM) && (Rs1E != 0)) ForwardAE = 2'b10;
         else if (((Rs1E == RdW) & RegWriteW) && (Rs1E != 0)) ForwardAE = 2'b01;
