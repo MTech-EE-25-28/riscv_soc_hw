@@ -94,11 +94,14 @@ target_6:   addi    x4,  x4, 1                  # x4 = 2                        
             beq     x16, x17, target_6          # beq t0, t1, target            124
             add     x16, x0, x16                # x16 = 4                       128
 
-
             # J type instruction
             jalr    x31, x0, 308                # x31 = 130                     12C
-            addi    x4 , x0, -1                 # shouldn't execute          130
+            addi    x4 , x0, -1                 # shouldn't execute             130
             add     x31, x0, x31                # x31 = 130                     134
 
+            # Load Stall Demonstration
+            lw      x28, 41(x3)                 # x28 = [44 - 3] = -3           138
+            add     x1, x26, x22                # x1 = 1 + 17 = 18              13C
+
             # I type jump instruction
-target_7:   jal     x4,  target_7               # x4 = 13C                      138
+target_7:   jal     x4,  target_7               # x4 = 144                      140
