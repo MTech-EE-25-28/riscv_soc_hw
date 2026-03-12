@@ -1,6 +1,6 @@
 
 // data_mem.v - word-accessible data memory
-module data_mem #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 32, MEM_SIZE = 64) (
+module data_mem #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 32, MEM_SIZE = 2048) (
     input       clk, reset,
     input [3:0] wea,          // Store operation type
     input       [ADDR_WIDTH-1:0] addr,
@@ -8,7 +8,7 @@ module data_mem #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 32, MEM_SIZE = 64) (
     output reg  [DATA_WIDTH-1:0] rd_data
 );
 
-// array of 64 32-bit words
+// array of 1024 32-bit words
 reg [DATA_WIDTH-1:0] data_ram [0:MEM_SIZE-1];
 
 // word-aligned address

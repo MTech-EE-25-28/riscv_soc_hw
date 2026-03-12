@@ -73,7 +73,7 @@ localparam BEQ_IN   =   32'h11C;
 localparam BEQ_OUT  =   32'h128;
 
 localparam JALR     =   32'h134;
-localparam JAL      =   32'h138;
+localparam JAL      =   32'h140;
 
 // generate clock to sequence tests
 always begin
@@ -88,6 +88,10 @@ initial begin
     reset = 0;  // Active-low reset
     Ext_MemWrite = 0; Ext_DataAdr = 32'b0; Ext_WriteData = 32'b0; #12;
     reset = 1;
+
+    #10000;  // Increased timeout for branch predictor testing
+    $display("Worst Case simulation time reached, Problem with the design :(");
+    $finish;
 end
 
 always @(posedge clk) begin
@@ -487,9 +491,10 @@ always @(posedge clk) begin
 
         JAL     : begin
             i = i + 1'b1;
-            if (Result === 32'h13C ) $display("38. jal implementation is correct ");
+            if (Result === 32'h144 ) $display("38. jal implementation is correct ");
             else begin
-                $display("38. jal implementation is incorrect");
+                $display("38. jal implementation is incorrect, Result=%h", Result);
+                fault_instrs = fault_instrs + 1'b1;
             end
         end
 
@@ -501,12 +506,6 @@ always @(negedge clk) begin
         $display("Faulty Instructions => %d", fault_instrs);
         $finish;
     end
-end
-
-always @(negedge clk) begin
-    #10000;  // Increased timeout for branch predictor testing
-    $display("Worst Case simulation time reached, Problem with the design :(");
-    $finish;
 end
 
 endmodule

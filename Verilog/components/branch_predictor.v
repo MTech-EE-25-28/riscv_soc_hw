@@ -6,6 +6,7 @@ module branch_predictor #(
 ) (
     input wire clk,
     input wire reset,
+    input wire enable,
     input wire [ADDR_WIDTH-1:0] pc_fetch,
     output reg predict_taken,
     output reg [ADDR_WIDTH-1:0] predicted_target,
@@ -51,15 +52,15 @@ initial begin
 end
 
 always @(*) begin
-    if (!reset) begin
+    if (!reset || !enable) begin
         // During reset, output no prediction
         prediction_valid = 1'b0;
         predict_taken = 1'b0;
         predicted_target = 32'h0;
     end else begin
-        prediction_valid = tag_match;
         predict_taken = tag_match && (counter_val[1] == 1'b0); // Taken if upper bit is 0
         predicted_target = btb_targets[fetch_index];
+        prediction_valid = tag_match;
     end
 end
 
