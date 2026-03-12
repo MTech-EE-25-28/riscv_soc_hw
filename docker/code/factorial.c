@@ -47,25 +47,18 @@
 
 #else  // for the test device
 
-    #define N                   (* (volatile uint8_t * ) 0x02000004)
-    #define OUT                 (* (volatile     int * ) 0x02000008)
-    #define CPU_DONE            (* (volatile uint8_t * ) 0x0200000c)
+    #define N                   (* (volatile uint8_t * ) 0x00000800)
+    #define OUT                 (* (volatile     int * ) 0x00000804)
+    #define CPU_DONE            (* (volatile uint8_t * ) 0x00000808)
     void _put_value(uint8_t val) { }
     void _put_str(char *str) { }
 
 #endif
 
 /* Factorial Function*/
-int64_t factorial(int n) {
-    int64_t result = 1;
+int32_t factorial(int n) {
+    int32_t result = 1;
     int i;
-    // for (i = 2; i <= n; i++) {
-    //     int j, temp = 0;
-    //     for (j = 0; j < i; j++) {
-    //         temp += result;
-    //     }
-    //     result = temp;
-    // }
     for (i = 2; i <= n; i++) {
         result *= i;
     }

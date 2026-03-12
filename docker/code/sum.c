@@ -47,9 +47,9 @@
 
 #else  // for the test device
 
-    #define N                 (* (volatile uint8_t * ) 0x02000000)
-    #define SUM               (* (volatile uint8_t * ) 0x02000004)
-    #define CPU_DONE          (* (volatile uint8_t * ) 0x02000008)
+    #define N                 (* (volatile uint8_t * ) 0x00000800)
+    #define SUM               (* (volatile uint8_t * ) 0x00000804)
+    #define CPU_DONE          (* (volatile uint8_t * ) 0x00000808)
     void _put_value(uint8_t val) { }
     void _put_str(char *str) { }
 
