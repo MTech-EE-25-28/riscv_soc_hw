@@ -12,7 +12,7 @@ module data_mem #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 32, MEM_SIZE = 2048) (
 reg [DATA_WIDTH-1:0] data_ram [0:MEM_SIZE-1];
 
 // word-aligned address
-wire [ADDR_WIDTH-1:0] word_addr = addr[ADDR_WIDTH-1:2] % MEM_SIZE;
+wire [ADDR_WIDTH-1:0] word_addr = addr[ADDR_WIDTH-1:2];
 
 always @(posedge clk) begin
     if (|wea) begin  // write only if any byte enable is active
