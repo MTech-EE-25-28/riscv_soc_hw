@@ -11,21 +11,23 @@ module riscv_cpu (
 
 wire [31:0] Instr, PCF;
 wire [31:0] DataAdr_rv32, WriteData_rv32;
-wire [2:0]  funct3;
-wire        MemWrite_rv32;
 wire [3:0]  mem_wea, wea;
+wire [2:0]  funct3;
+wire        MemWrite_rv32, imem_rst, dmem_rst;
 
 // instantiate processor and memories
 riscv_pl rvpl (
     clk, reset, PCF, Instr, MemWrite_rv32, DataAdr_rv32, WriteData_rv32, wea,
     ReadData, Result, funct3, PC, ALUResultW, WriteDataW, ReadDataW
 );
-instr_mem instrmem (clk, reset, 1'b0, PCF, 32'b0, Instr);
-data_mem  datamem  (clk, reset, mem_wea, DataAdr, WriteData, ReadData);
+instr_mem instrmem (clk, imem_rst, 1'b0, PCF, 32'b0, Instr);
+data_mem  datamem  (clk, dmem_rst, mem_wea, DataAdr, WriteData, ReadData);
 
-assign MemWrite  = (Ext_MemWrite && !reset) ? 1'b1 : MemWrite_rv32;
-assign WriteData = (Ext_MemWrite && !reset) ? Ext_WriteData : WriteData_rv32;
-assign DataAdr   = !reset ? Ext_DataAdr : DataAdr_rv32;
-assign mem_wea   = (Ext_MemWrite && !reset) ? 4'b1111 : wea;
+assign imem_rst  = Ext_MemWrite ? 1'b1 : reset;
+assign dmem_rst  = Ext_MemWrite ? 1'b1 : reset;
+assign MemWrite  = Ext_MemWrite ? 1'b1 : MemWrite_rv32;
+assign WriteData = Ext_MemWrite ? Ext_WriteData : WriteData_rv32;
+assign DataAdr   = Ext_MemWrite ? Ext_DataAdr : DataAdr_rv32;
+assign mem_wea   = Ext_MemWrite ? 4'b1111 : wea;
 
 endmodule

@@ -12,18 +12,19 @@ reg [DATA_WIDTH-1:0] instr_ram [0:MEM_SIZE-1];
 
 initial begin
     // add the path from root of the script
-    $readmemh("./docker/bin/rv32i_test.hex", instr_ram);
-    // $readmemh("./docker/bin/factorial.hex", instr_ram);
+    // $readmemh("./docker/bin/rv32i_test.hex", instr_ram);
+    $readmemh("./docker/bin/factorial.hex", instr_ram);
 end
 
 // Sequential read
 always @(posedge clk) begin
     if (!reset)
         instr <= 32'h0000_0000;
-    else if (wea)
-        instr_ram[instr_addr[31:2]] <= instr_in;
-    else
+    else begin
         instr <= instr_ram[instr_addr[31:2]];
+        if (wea)
+            instr_ram[instr_addr[31:2]] <= instr_in;
+    end
 end
 
 endmodule
