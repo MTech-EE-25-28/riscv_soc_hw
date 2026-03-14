@@ -71,21 +71,31 @@ wire        BranchMispredictE;
 wire [31:0] BranchRecoveryPCE;
 wire [31:0] FetchNextPCCandidate;
 wire [31:0] ExecuteNextPCCandidate;
-wire        FetchPredTakenF = BPPredictTakenF && BPPredictionValidF;
-
-wire PCSrcE = JumpE || JalrE || BranchMispredictE;
 
 branch_predictor bp (
     clk, reset, 1'b1, PCF, BPPredictTakenF, BPPredictedTargetF, BPPredictionValidF,
     BranchE, PCE, PCTargetE, BranchTakenE
 );
 
+// If branch predictor predicts taken, use predicted target, else PC+4
+wire FetchPredTakenF = BPPredictTakenF && BPPredictionValidF;
 assign FetchNextPCCandidate = FetchPredTakenF ? BPPredictedTargetF : PCPlus4F;
-assign BranchTakenE = BranchE && Branch;
+
+// Branch is taken if branch instruction and condition is true, to update the BTB and for recovery if mispredicted
+assign BranchTakenE = BranchE && Branch; // execute: branch taken
+
+// Case 1: Branch direction misprediction: predicted taken/not-taken differs from actual
+// Case 2: Branch target misprediction: predicted target differs from actual, when both predicted and actual are taken
+// Case 3: False branch prediction: predicted taken but not a branch instruction
+// on any of these cases, we need to recover by flushing the incorrect instructions and updating the PC to the correct target
 assign BranchDirectionMissE = BranchE && (PredTakenE != BranchTakenE);
 assign BranchTargetMissE = BranchE && PredTakenE && BranchTakenE && (PredTargetE != PCTargetE);
 assign FalseBranchPredictionE = PredTakenE && !BranchE;
 assign BranchMispredictE = FalseBranchPredictionE || BranchDirectionMissE || BranchTargetMissE;
+wire PCSrcE = JumpE || JalrE || BranchMispredictE; // for flushing
+
+// If branch taken, use branch target, else PC+4
+// If jump, use jump target, else branch recovery PC
 assign BranchRecoveryPCE = BranchTakenE ? PCTargetE : PCPlus4E;
 assign ExecuteNextPCCandidate = JumpE ? PCTargetE : BranchRecoveryPCE;
 

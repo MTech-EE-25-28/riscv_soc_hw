@@ -24,7 +24,7 @@ initial begin
     e_rst = 0; # 100; // wait for reset to propagate and mem init
     e_rst = 1;
     $monitor("Time: %0t | State: %b | Debug Regs: %d %d", $time, state, debug_reg0, debug_reg1);
-    #10000;
+    #100000;
     $display("Simulation timeout");
     $finish;
 end

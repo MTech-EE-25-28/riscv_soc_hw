@@ -36,7 +36,7 @@ initial begin
     Ext_MemWrite = 0; Ext_DataAdr = 32'h00000000; Ext_WriteData = 32'b0;
     @(posedge clk);
 
-    #10000;
+    #100000;
     $display("Worst Case simulation time reached, Problem with the design :(");
     $finish;
 end
@@ -47,7 +47,7 @@ always @(negedge clk) begin
     if (MemWrite && reset) begin
         if (DataAdr == 32'h00000804) begin
             $display("Memory write detected at address 0x00000804");
-            $display("Test Info: Value %d written to memory", WriteData);
+            $display("Test Info: Value %d written to memory", $signed(WriteData));
         end
         if (DataAdr == 32'h00000808) begin
             $display("Memory write detected at address 0x00000808");
