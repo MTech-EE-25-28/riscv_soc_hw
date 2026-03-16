@@ -15,10 +15,10 @@ module riscv_pl (
 
 wire         ALUSrc, RegWrite, Jump, Jalr, Branch, MemWrite;
 wire  [1:0]  ResultSrc, ImmSrc;
-wire  [3:0]  ALUControl;
+wire  [4:0]  ALUControl;
 wire [31:0]  InstrD;
 
-controller  c   (InstrD[6:0], InstrD[14:12], InstrD[30],
+controller  c   (InstrD[6:0], InstrD[14:12], InstrD[30], InstrD[25],
                 ResultSrc, MemWrite, ALUSrc, RegWrite, Jump, Jalr,
                 ImmSrc, ALUControl, Branch);
 

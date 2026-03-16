@@ -9,10 +9,11 @@ reg reset;
 reg Ext_MemWrite;
 reg [31:0] Ext_WriteData, Ext_DataAdr;
 
-// Wire Ouputs from Instantiated Modules
+// Wire Outputs from Instantiated Modules
 wire [31:0] WriteData, DataAdr, ReadData;
 wire MemWrite;
 wire [31:0] PCW, Result, DataAdrW, WriteDataW, ReadDataW;
+
 // Initialize Top Module
 riscv_cpu uut (clk, reset, Ext_MemWrite, Ext_WriteData, Ext_DataAdr, MemWrite, WriteData, DataAdr, ReadData, PCW, Result, DataAdrW, WriteDataW, ReadDataW);
 
@@ -56,453 +57,189 @@ localparam LHU      =   32'h80;
 
 localparam BLT_IN   =   32'h90;
 localparam BLT_OUT  =   32'h9C;
-
 localparam BGE_IN   =   32'hAC;
 localparam BGE_OUT  =   32'hB8;
-
 localparam BLTU_IN  =   32'hC8;
 localparam BLTU_OUT =   32'hD4;
-
 localparam BGEU_IN  =   32'hE4;
 localparam BGEU_OUT =   32'hF0;
-
 localparam BNE_IN   =   32'h100;
 localparam BNE_OUT  =   32'h10C;
-
 localparam BEQ_IN   =   32'h11C;
 localparam BEQ_OUT  =   32'h128;
 
 localparam JALR     =   32'h134;
-localparam JAL      =   32'h140;
+localparam MUL      =   32'h140;
+localparam JAL      =   32'h144;
 
-// generate clock to sequence tests
+// ALU / computation result check
+task check_alu;
+    input integer    num;
+    input [20*8-1:0] name;
+    input [31:0]     expected;
+    begin
+        i = i + 1;
+        if (Result === expected)
+            $display("%0d. %0s passed", num, name);
+        else begin
+            $display("%0d. %0s FAILED | PC=0x%h  Result=%0d  Expected=%0d",
+                     num, name, PCW, $signed(Result), $signed(expected));
+            fault_instrs = fault_instrs + 1;
+        end
+    end
+endtask
+
+// MUL result check: waits 5 posedge cycles for multicycle multiplier to settle
+task check_mul;
+    input integer    num;
+    input [20*8-1:0] name;
+    input [31:0]     expected;
+    begin
+        repeat(6) @(posedge clk); // 5 (ex) + 1 (mem)
+        i = i + 1;
+        if (Result === expected)
+            $display("%0d. %0s passed", num, name);
+        else begin
+            $display("%0d. %0s FAILED | PC=0x%h  Result=%0d  Expected=%0d",
+                     num, name, PCW, $signed(Result), $signed(expected));
+            fault_instrs = fault_instrs + 1;
+        end
+    end
+endtask
+
+// Store check: Result = computed address, WriteDataW = data written
+// guard_mw=1 : also require (MemWrite && reset) to be asserted (SB/SH)
+// guard_mw=0 : skip MemWrite check (SW)
+task check_store;
+    input integer    num;
+    input [20*8-1:0] name;
+    input [31:0]     exp_addr;
+    input [31:0]     exp_data;
+    input            guard_mw;
+    begin
+        i = i + 1;
+        if ((!guard_mw || (MemWrite && reset)) &&
+              Result    === exp_addr &&
+              WriteDataW === exp_data)
+            $display("%0d. %0s passed", num, name);
+        else begin
+            $display("%0d. %0s FAILED | PC=0x%h  Addr=%0d(exp %0d)  WriteData=%0d(exp %0d)  MemWrite=%b",
+                     num, name, PCW,
+                     Result, exp_addr,
+                     $signed(WriteDataW), $signed(exp_data),
+                     MemWrite);
+            fault_instrs = fault_instrs + 1;
+        end
+    end
+endtask
+
+// Load check: DataAdrW = address used, ReadDataW = data read back
+task check_load;
+    input integer    num;
+    input [20*8-1:0] name;
+    input [31:0]     exp_addr;
+    input [31:0]     exp_data;
+    begin
+        i = i + 1;
+        if (DataAdrW === exp_addr && ReadDataW === exp_data)
+            $display("%0d. %0s passed", num, name);
+        else begin
+            $display("%0d. %0s FAILED | PC=0x%h  Addr=%0d(exp %0d)  ReadData=%0d(exp %0d)",
+                     num, name, PCW,
+                     DataAdrW, exp_addr,
+                     $signed(ReadDataW), $signed(exp_data));
+            fault_instrs = fault_instrs + 1;
+        end
+    end
+endtask
+
+// Branch-in-loop watchdog — does NOT increment i.
+// Stops simulation if the loop counter exceeds max_val (runaway guard).
+task check_loop;
+    input integer    num;
+    input [20*8-1:0] name;
+    input [31:0]     max_val;
+    begin
+        if (Result <= max_val)
+            $display("%0d. %0s executing | PC=0x%h  Result=%0d", num, name, PCW, $signed(Result));
+        else begin
+            $display("%0d. %0s stuck in loop! | PC=0x%h  Result=%0d  Expected<=%0d",
+                     num, name, PCW, $signed(Result), max_val);
+            flag = 1;
+            $stop;
+        end
+    end
+endtask
+
+// Clock
 always begin
-    clk <= 0; # 6; clk <= 1; # 6;
+    clk <= 0; #6; clk <= 1; #6;
 end
 
-// check results of simple RISC-V CPU (from asm_programs/rv32i_test.s) r32i_test.hex
-// performing standard instructions
 initial begin
     $dumpfile("./Verilog/dumps/tb_pl.vcd");
     $dumpvars(0, tb_pl);
-    reset = 0;  // Active-low reset
+    reset = 0;
     Ext_MemWrite = 0; Ext_DataAdr = 32'b0; Ext_WriteData = 32'b0; #12;
     reset = 1;
 
-    #10000;  // Increased timeout for branch predictor testing
+    #10000;
     $display("Worst Case simulation time reached, Problem with the design :(");
     $finish;
 end
 
 always @(posedge clk) begin
-    case(PCW)
-        ADDI_x0 : begin
-            i = i + 1'b1;
-            if(Result === -3)  $display("1. addi implementation is correct for x0 ");
-            else begin
-                $display("1. addi implementation for x0 is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        ADDI    : begin
-            i = i + 1'b1;
-            if(Result === 9) $display("2. addi implementation is correct ");
-            else begin
-                $display("2. addi implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        SLLI    : begin
-            i = i + 1'b1;
-            if(Result === 64) $display("3. slli implementation is correct ");
-            else begin
-                $display("3. slli implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        SLTI    : begin
-            i = i + 1'b1;
-            if(Result === 0) $display("4. slti implementation is correct ");
-            else begin
-                $display("4. slti implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        SLTIU    : begin
-            i = i + 1'b1;
-            if(Result === 1) $display("5. sltiu implementation is correct ");
-            else begin
-                $display("5. sltiu implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        XORI    : begin
-            i = i + 1'b1;
-            if(Result === 2) $display("6. xori implementation is correct ");
-            else begin
-                $display("6. xori implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        SRLI    : begin
-            i = i + 1'b1;
-            if(Result === 536870911) $display("7. srli implementation is correct ");
-            else begin
-                $display("7. srli implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        SRAI    : begin
-            i = i + 1'b1;
-            if(Result === -1) $display("8. srai implementation is correct ");
-            else begin
-                $display("8. srai implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        ORI    : begin
-            i = i + 1'b1;
-            if(Result === -1) $display("9. ori implementation is correct ");
-            else begin
-                $display("9. ori implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        ANDI    : begin
-            i = i + 1'b1;
-            if(Result === 1) $display("10. andi implementation is correct");
-            else begin
-                $display("10. andi implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        ADD    : begin
-            i = i + 1'b1;
-            if(Result === 17) $display("11. add implementation is correct ");
-            else begin
-                $display("11. add implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        SUB    : begin
-            i = i + 1'b1;
-            if(Result === 15) $display("12. sub implementation is correct ");
-            else begin
-                $display("12. sub implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-
-        SLL    : begin
-            i = i + 1'b1;
-            if(Result === 32) $display("13. sll implementation is correct ");
-            else begin
-                $display("13. sll implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        SLT    : begin
-            i = i + 1'b1;
-            if(Result === 0) $display("14. slt implementation is correct ");
-            else begin
-                $display("14. slt implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        SLTU    : begin
-            i = i + 1'b1;
-            if(Result === 1) $display("15. sltu implementation is correct ");
-            else begin
-                $display("15. sltu implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        XOR    : begin
-            i = i + 1'b1;
-            if(Result === 17) $display("16. xor implementation is correct ");
-            else begin
-                $display("16. xor implementation is incorrect");
-            end
-        end
-
-        SRL    : begin
-            i = i + 1'b1;
-            if(Result === 8) $display("17. srl implementation is correct ");
-            else begin
-                $display("17. srl implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        SRA    : begin
-            i = i + 1'b1;
-            if(Result === 8) $display("18. sra implementation is correct ");
-            else begin
-                $display("18. sra implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        OR    : begin
-            i = i + 1'b1;
-            if(Result === 17) $display("19. or implementation is correct ");
-            else begin
-                $display("19. or implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        AND    : begin
-            i = i + 1'b1;
-            if(Result === 0) $display("20. and implementation is correct ");
-            else begin
-                $display("20. and implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        LUI    : begin
-            i = i + 1'b1;
-            if(Result === 32'h02000000) $display("21. lui implementation is correct ");
-            else begin
-                $display("21. lui implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        AUIPC    : begin
-            i = i + 1'b1;
-            if(Result === 32'h02000060) $display("22. auipc implementation is correct ");
-            else begin
-                $display("22. auipc implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-
-        SB      : begin
-            i = i + 1'b1;
-            if(MemWrite && reset) begin  // reset=1 means normal operation (active-low)
-                if(Result === 33 & WriteDataW === 1) $display ("23. sb implementation is correct");
-                else begin
-                    $display("23. sb implementation is incorrect");
-                    fault_instrs = fault_instrs + 1'b1;
-                end
-            end
-        end
-
-
-        SH      : begin
-            i = i + 1'b1;
-            if(MemWrite && reset) begin
-                if(Result === 38 & WriteDataW === -3) $display ("24. sh implementation is correct");
-                else begin
-                    $display("24. sh implementation is incorrect");
-                    fault_instrs = fault_instrs + 1'b1;
-                end
-            end
-        end
-
-
-        SW      : begin
-            i = i + 1'b1;
-            if(Result === 40 & WriteDataW === 16) $display ("25. sw implementation is correct");
-            else begin
-                $display("25. sw implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        LB      : begin
-            i = i + 1'b1;
-            if(DataAdrW === 33 & ReadDataW === 1 ) $display ("26. lb implementation is correct");
-            else begin
-                $display("26. lb implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        LH      : begin
-            i = i + 1'b1;
-            if(DataAdrW === 38 & ReadDataW === -3 ) $display ("27. lh implementation is correct");
-            else begin
-                $display("27. lh implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        LW      : begin
-            i = i + 1'b1;
-            if(DataAdrW === 40 & ReadDataW === 16) $display ("28. lw implementation is correct");
-            else begin
-                $display("28. lw implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        LBU      : begin
-            i = i + 1'b1;
-            if(DataAdrW === 33 & ReadDataW === 1) $display ("29. lbu implementation is correct");
-            else begin
-                $display("29. lbu implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        LHU     : begin
-            i = i + 1'b1;
-            if(DataAdrW === 38 & ReadDataW === 32'h0000FFFD) $display ("30. lhu implementation is correct");
-            else begin
-                $display("30. lhu implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        BLT_IN : begin
-            if(Result <= 32'hA) $display("31. blt is executing, Result=%d", Result);
-            else begin
-                $display("blt struck in loop, Result=%d", Result);
-                flag = 1;
-                $stop;
-            end
-        end
-
-        BLT_OUT : begin
-            i = i + 1'b1;
-            if(Result === 5) $display("31. blt implementation is correct ");
-            else begin
-                $display("31. blt implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        BGE_IN : begin
-            if(Result <= 32'hB) $display("32. bge is executing, Result=%d", Result);
-            else begin
-                $display("bge struck in loop, Result=%d", Result);
-                flag = 1;
-                $stop;
-            end
-        end
-
-        BGE_OUT : begin
-            i = i + 1'b1;
-            if(Result === -6) $display("32. bge implementation is correct");
-            else begin
-                $display("32. bge implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        BLTU_IN : begin
-            if(Result <= 4) $display("33. bltu is executing, Result=%d", Result);
-            else begin
-                $display("bltu struck in loop, Result=%d", Result);
-                flag = 1;
-                $stop;
-            end
-        end
-
-        BLTU_OUT : begin
-            i = i + 1'b1;
-            if(Result === 5) $display("33. bltu implementation is correct ");
-            else begin
-                $display("33. bltu implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        BGEU_IN : begin
-            if(Result <= 5) $display("34. bgeu is executing, Result=%d", Result);
-            else begin
-                $display("bgeu struck in loop, Result=%d", Result);
-                flag = 1;
-                $stop;
-            end
-        end
-
-        BGEU_OUT : begin
-            i = i + 1'b1;
-            if(Result === 0) $display("34. bgeu implementation is correct ");
-            else begin
-                $display("34. bgeu implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        BNE_IN : begin
-            if(Result <= 5) $display("35. bne is executing, Result=%d", Result);
-            else begin
-                $display("bne struck in loop, Result=%d", Result);
-                flag = 1;
-                $stop;
-            end
-        end
-
-        BNE_OUT : begin
-            i = i + 1'b1;
-            if(Result === 5) $display("35. bne implementation is correct ");
-            else begin
-                $display("35. bne implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        BEQ_IN : begin
-            if(Result <=2) $display("36. beq is executing, Result=%d", Result);
-            else begin
-                $display("beq struck in loop, Result=%d", Result);
-                $stop;
-            end
-        end
-
-        BEQ_OUT : begin
-            i = i + 1'b1;
-            if(Result === 4) $display("36. beq implementation is correct ");
-            else begin
-                $display("36. beq implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        JALR     : begin
-            i = i + 1'b1;
-            if (Result === 32'h130) $display("37. jalr implementation is correct ");
-            else begin
-                $display("37. jalr implementation is incorrect");
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
-        JAL     : begin
-            i = i + 1'b1;
-            if (Result === 32'h144 ) $display("38. jal implementation is correct ");
-            else begin
-                $display("38. jal implementation is incorrect, Result=%h", Result);
-                fault_instrs = fault_instrs + 1'b1;
-            end
-        end
-
+    case (PCW)
+        ADDI_x0  : check_alu  ( 1, "addi x0",     -3           );
+        ADDI     : check_alu  ( 2, "addi",          9          );
+        SLLI     : check_alu  ( 3, "slli",         64          );
+        SLTI     : check_alu  ( 4, "slti",          0          );
+        SLTIU    : check_alu  ( 5, "sltiu",         1          );
+        XORI     : check_alu  ( 6, "xori",          2          );
+        SRLI     : check_alu  ( 7, "srli",  536870911          );
+        SRAI     : check_alu  ( 8, "srai",         -1          );
+        ORI      : check_alu  ( 9, "ori",          -1          );
+        ANDI     : check_alu  (10, "andi",          1          );
+        ADD      : check_alu  (11, "add",          17          );
+        SUB      : check_alu  (12, "sub",          15          );
+        SLL      : check_alu  (13, "sll",          32          );
+        SLT      : check_alu  (14, "slt",           0          );
+        SLTU     : check_alu  (15, "sltu",          1          );
+        XOR      : check_alu  (16, "xor",          17          );
+        SRL      : check_alu  (17, "srl",           8          );
+        SRA      : check_alu  (18, "sra",           8          );
+        OR       : check_alu  (19, "or",           17          );
+        AND      : check_alu  (20, "and",           0          );
+        LUI      : check_alu  (21, "lui",   32'h02000000       );
+        AUIPC    : check_alu  (22, "auipc", 32'h02000060       );
+        SB       : check_store(23, "sb",   33,   1,      1'b1  );
+        SH       : check_store(24, "sh",   38,  -3,      1'b1  );
+        SW       : check_store(25, "sw",   40,  16,      1'b0  );
+        LB       : check_load (26, "lb",   33,   1             );
+        LH       : check_load (27, "lh",   38,  -3             );
+        LW       : check_load (28, "lw",   40,  16             );
+        LBU      : check_load (29, "lbu",  33,   1             );
+        LHU      : check_load (30, "lhu",  38, 32'h0000FFFD    );
+        BLT_IN   : check_loop (31, "blt",  32'hA               );
+        BLT_OUT  : check_alu  (31, "blt",   5                  );
+        BGE_IN   : check_loop (32, "bge",  32'hB               );
+        BGE_OUT  : check_alu  (32, "bge",  -6                  );
+        BLTU_IN  : check_loop (33, "bltu",  4                  );
+        BLTU_OUT : check_alu  (33, "bltu",  5                  );
+        BGEU_IN  : check_loop (34, "bgeu",  5                  );
+        BGEU_OUT : check_alu  (34, "bgeu",  0                  );
+        BNE_IN   : check_loop (35, "bne",   5                  );
+        BNE_OUT  : check_alu  (35, "bne",   5                  );
+        BEQ_IN   : check_loop (36, "beq",   2                  );
+        BEQ_OUT  : check_alu  (36, "beq",   4                  );
+        JALR     : check_alu  (37, "jalr", 32'h130             );
+        MUL      : check_mul  (38, "mul",  -108                );
+        JAL      : check_alu  (39, "jal",  32'h148             );
     endcase
 end
 
 always @(negedge clk) begin
-    if (i >= 38 || flag == 1) begin
+    if (i >= 39 || flag == 1) begin
         $display("Faulty Instructions => %d", fault_instrs);
         $finish;
     end

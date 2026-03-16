@@ -100,8 +100,19 @@ target_6:   addi    x4,  x4, 1                  # x4 = 2                        
             add     x31, x0, x31                # x31 = 130                     134
 
             # Load Stall Demonstration
-            lw      x28, 41(x3)                 # x28 = [44 - 3] = -3           138
-            add     x1, x26, x22                # x1 = 1 + 17 = 18              13C
+            lw      x28, 43(x3)                 # x28 = [43 - 3] = 16           138
+            addi     x1, x22,  1                # x1 = 1 + 17 = 18              13C
+
+            # M-Extension
+            # Multiplier Demonstration
+            mul     x10, x9, x1                 # x10= -6 * 18 = -108           140
+            mulh    x11, x9, x24                 # x11= (s(-6)*s(-5))>>32 = -1  144
+            mulhu   x12, x9, x9                 # x12= (u(-6)*u(-6))>>32 = -12  148
+            mulhsu  x13, x9, x17                # x13= (s(-6)*u( 3))>>32 =  -1  14C
+
+            # Division Demonstration
+
+            # Reminder Demonstration
 
             # I type jump instruction
-target_7:   jal     x4,  target_7               # x4 = 144                      140
+target_7:   jal     x4,  target_7               # x4 = 154                      150

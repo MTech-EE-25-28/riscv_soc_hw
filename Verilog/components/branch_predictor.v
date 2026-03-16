@@ -2,7 +2,7 @@
 // Branch Predictor with BTB (Branch Target Buffer)
 module branch_predictor #(
     parameter ADDR_WIDTH = 32,
-    parameter BTB_SIZE = 4
+    parameter BTB_SIZE = 8
 ) (
     input wire clk,
     input wire reset,

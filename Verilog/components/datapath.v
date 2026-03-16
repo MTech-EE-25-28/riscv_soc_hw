@@ -6,7 +6,7 @@ module datapath (
     input         ALUSrcD,
     input         RegWriteD,
     input [1:0]   ImmSrcD,
-    input [3:0]   ALUControlD,
+    input [4:0]   ALUControlD,
     input         JalrD,
     output [31:0] PCF,
     input  [31:0] Instr,
@@ -26,11 +26,11 @@ wire [31:0] SrcA, SrcB, WriteData;
 wire        ALUSrcE, JumpE, JalrE;
 wire [31:0] RD1E, RD2E;
 wire  [4:0] Rs1E, Rs2E;
-wire  [3:0] ALUControlE;
+wire  [4:0] ALUControlE;
 wire  [2:0] funct3E;
 
 wire [31:0] ALUSrcA, ALUSrcB;
-wire StallF, StallD, FlushD, FlushE;
+wire ALUStall, StallF, StallD, FlushD, FlushE;
 wire  [1:0] ForwardAE, ForwardBE;
 wire        BPPredictTakenF, BPPredictionValidF;
 wire [31:0] BPPredictedTargetF;
@@ -71,6 +71,10 @@ wire        BranchMispredictE;
 wire [31:0] BranchRecoveryPCE;
 wire [31:0] FetchNextPCCandidate;
 wire [31:0] ExecuteNextPCCandidate;
+wire        FetchHold, DecodeHold;
+
+assign FetchHold = StallF || ALUStall;
+assign DecodeHold = StallD || ALUStall;
 
 branch_predictor bp (
     clk, reset, 1'b1, PCF, BPPredictTakenF, BPPredictedTargetF, BPPredictionValidF,
@@ -103,7 +107,7 @@ assign ExecuteNextPCCandidate = JumpE ? PCTargetE : BranchRecoveryPCE;
 mux2 #(32) pcmux (FetchNextPCCandidate, ExecuteNextPCCandidate, (JumpE || BranchMispredictE), PCNext);
 mux2 #(32) jalrmux (PCNext, ALUResultE, JalrE, PCJalr);
 
-reset_ff   pcreg (clk, reset, StallF, PCJalr, PCF);
+reset_ff   pcreg (clk, reset, FetchHold, PCJalr, PCF);
 bk_adder   pcadd4 (PCF, 32'd4, 1'b0, PCPlus4F, unused[0]);
 
 // Shadow PC registers - capture PC at fetch time for sequential IMEM alignment
@@ -117,7 +121,7 @@ always @(posedge clk) begin
         PCPlus4F_shadow <= 4;
         FetchPredTakenShadow <= 1'b0;
         FetchPredTargetShadow <= 32'b0;
-    end else if (!StallF) begin
+    end else if (!FetchHold) begin
         PCF_shadow <= PCF;
         PCPlus4F_shadow <= PCPlus4F;
         FetchPredTakenShadow <= FetchPredTakenF;
@@ -126,7 +130,7 @@ always @(posedge clk) begin
 end
 
 fetch_skid_buffer fetch_skid (
-    clk, reset, StallD, FlushD, Instr, PCF_shadow, PCPlus4F_shadow, FetchPredTakenShadow, FetchPredTargetShadow,
+    clk, reset, DecodeHold, FlushD, Instr, PCF_shadow, PCPlus4F_shadow, FetchPredTakenShadow, FetchPredTargetShadow,
     DecodeFlushF, DecodeInstrF, DecodePCF, DecodePCPlus4F, DecodePredTakenF, DecodePredTargetF
 );
 
@@ -134,7 +138,7 @@ always @(posedge clk) begin
     if (!reset || DecodeFlushF) begin
         PredTakenD <= 1'b0;
         PredTargetD <= 32'b0;
-    end else if (!StallD) begin
+    end else if (!DecodeHold) begin
         PredTakenD <= DecodePredTakenF;
         PredTargetD <= DecodePredTargetF;
     end
@@ -151,7 +155,7 @@ always @(posedge clk) begin
 end
 
 // Decode Pipeline register - receives instruction and its captured PC together
-pl_reg_d pld (clk, StallD, DecodeFlushF, DecodeInstrF, DecodePCF, DecodePCPlus4F,
+pl_reg_d pld (clk, DecodeHold, DecodeFlushF, DecodeInstrF, DecodePCF, DecodePCPlus4F,
               InstrD, PCD, PCPlus4D);
 
 // register file logic
@@ -163,7 +167,7 @@ mux2 #(32) lauipcmux (AuiPC, {InstrD[31:12], 12'b0}, InstrD[5], lAuiPCD);
 
 // Execute Pipeline register
 pl_reg_e ple (
-    clk, FlushE, ResultSrcD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD, SrcA, WriteData, PCD, InstrD[19:15], InstrD[24:20], InstrD[11:7], ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12],
+    clk, FlushE, ALUStall, ResultSrcD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD, SrcA, WriteData, PCD, InstrD[19:15], InstrD[24:20], InstrD[11:7], ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12],
     ResultSrcE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, Rs1E, Rs2E, RdE, ImmExtE, PCPlus4E, lAuiPCE, funct3E
 );
 
@@ -173,7 +177,7 @@ mux3 #(32) rd2mux  (RD2E, ResultW, ALUResultM, ForwardBE, ALUSrcB);
 bk_adder   pcaddbranch (PCE, ImmExtE, 1'b0, PCTargetE, unused[2]);
 
 mux2 #(32) srcbmux (ALUSrcB, ImmExtE, ALUSrcE, SrcB);
-alu        alu (ALUSrcA, SrcB, ALUControlE, ALUResultE, Zero);
+alu        alu (clk, ALUSrcA, SrcB, ALUControlE, ALUResultE, Zero, ALUStall);
 
 branching_unit bu (funct3E, Zero, ALUResultE[31], Branch);
 

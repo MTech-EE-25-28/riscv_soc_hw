@@ -1,40 +1,56 @@
 
 // alu.v - ALU module
 module alu #(parameter WIDTH = 32) (
+    input       clk,                    // clock
     input       [WIDTH-1:0] a, b,       // operands
-    input       [3:0] alu_ctrl,         // ALU control
+    input       [4:0] alu_ctrl,         // ALU control
     output reg  [WIDTH-1:0] alu_out,    // ALU output
-    output      zero                    // zero flag
+    output      zero,                   // zero flag
+    output      stall
 );
 
 reg [31:0] mask = 0;
 
-always @(a, b, alu_ctrl) begin
+wire [31:0] r_adder, r_diff;
+wire carry_a, carry_s;
+
+bk_adder #(32) adder (a, b, 1'b0, r_adder, carry_a);
+bk_adder #(32) diff  (a, b, 1'b1,  r_diff, carry_s); // if cin = 1 means sub
+
+wire mul_valid;
+wire [31:0] r_mult;
+dadda_multiplier mult (clk, alu_ctrl[4], a, b, alu_ctrl[2:0], r_mult, mul_valid);
+
+always @(*) begin
     mask = 0;
-    case (alu_ctrl)
-        4'b0000:  alu_out <= a + b;                 // ADD
-        4'b0001:  alu_out <= a + ~b + 1;            // SUB
-        4'b0010:  alu_out <= a << {27'b0,b[4:0]};   // SLL
-        4'b0011:  begin                             // SLT
-            if (a[31] != b[31]) alu_out <= a[31] ? 1 : 0;
-            else alu_out <= a < b ? 1 : 0;
+    casez (alu_ctrl)
+        5'b00000:  alu_out = r_adder;               // ADD
+        5'b00001:  alu_out = r_diff;                // SUB
+        5'b00010:  alu_out = a << {27'b0,b[4:0]};   // SLL
+        5'b00011:  begin                            // SLT
+            if (a[31] != b[31]) alu_out = a[31] ? 1 : 0;
+            else alu_out = a < b ? 1 : 0;
         end
-        4'b0100:  alu_out <= a < b ? 1 : 0;         // SLTU
-        4'b0101:  alu_out <= a ^ b;                 // XOR
-        4'b0110:  alu_out <= a >> {27'b0,b[4:0]};   // SRL
-        4'b0111:  begin //SRA
+        5'b00100:  alu_out = a < b ? 1 : 0;         // SLTU
+        5'b00101:  alu_out = a ^ b;                 // XOR
+        5'b00110:  alu_out = a >> {27'b0,b[4:0]};   // SRL
+        5'b00111:  begin //SRA
             if (a[31]) mask = ~(32'hFFFF_FFFF >> {27'b0,b[4:0]});
             else begin
                 mask = 32'h0000_0000;
             end
             alu_out = (a >> {27'b0,b[4:0]}) | mask;
         end
-        4'b1000:  alu_out <= a | b;                 // OR
-        4'b1001:  alu_out <= a & b;                 // AND
+        5'b01000:  alu_out = a | b;                 // OR
+        5'b01001:  alu_out = a & b;                 // AND
+        5'b100??:  alu_out = r_mult;                // MULxx
+        // 5'b111??:  alu_out = r_div;                 // DIV/REMxx
         default: alu_out = 0;
     endcase
 end
 
-assign zero = (alu_out == 0) ? 1'b1 : 1'b0;
+assign  zero = (alu_out == 0) ? 1'b1 : 1'b0;
+assign stall = (alu_ctrl[4] && !mul_valid) ? 1'b1 : 1'b0;
+// assign stall = 1'b0;
 
 endmodule

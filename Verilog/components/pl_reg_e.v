@@ -1,12 +1,12 @@
 
 // pipeline registers execute stage
 module pl_reg_e (
-    input clk, clr,
+    input clk, clr, stall,
     input   [1:0] ResultSrcD,
     input         MemWriteD,
     input         ALUSrcD,
     input         RegWriteD, JumpD, JalrD,
-    input   [3:0] ALUControlD,
+    input   [4:0] ALUControlD,
     input         BranchD,
     input  [31:0] RD1D, RD2D,
     input  [31:0] PCD,
@@ -17,7 +17,7 @@ module pl_reg_e (
     output reg        MemWriteE,
     output reg        ALUSrcE,
     output reg        RegWriteE, JumpE, JalrE,
-    output reg  [3:0] ALUControlE,
+    output reg  [4:0] ALUControlE,
     output reg        BranchE,
     output reg [31:0] RD1E, RD2E,
     output reg [31:0] PCE,
@@ -32,7 +32,7 @@ always @(posedge clk) begin
         JumpE <= 0; JalrE <= 0; BranchE <= 0; ALUControlE <= 0;
         ALUSrcE <= 0; PCE <= 0; Rs1E <= 0; Rs2E <= 0; RdE <= 0;
         ImmExtE <= 0; PCPlus4E <= 0; lAuiPCE <= 0; funct3E <= 0;
-    end else begin
+    end else if (!stall) begin
         RegWriteE <= RegWriteD; ResultSrcE <= ResultSrcD; MemWriteE <= MemWriteD;
         JumpE <= JumpD; JalrE <= JalrD; BranchE <= BranchD; ALUControlE <= ALUControlD;
         ALUSrcE <= ALUSrcD; RD1E <= RD1D; RD2E <= RD2D; PCE <= PCD; Rs1E <= Rs1D;
