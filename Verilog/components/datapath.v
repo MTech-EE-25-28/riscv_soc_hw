@@ -32,8 +32,6 @@ wire  [2:0] funct3E;
 wire [31:0] ALUSrcA, ALUSrcB;
 wire ALUStall, StallF, StallD, FlushD, FlushE;
 wire  [1:0] ForwardAE, ForwardBE;
-wire        BPPredictTakenF, BPPredictionValidF;
-wire [31:0] BPPredictedTargetF;
 
 wire        RegWriteE, RegWriteM, RegWriteW;
 wire  [1:0] ResultSrcE, ResultSrcM, ResultSrcW;
@@ -53,54 +51,41 @@ wire [31:0] ReadDataW;  // Masked read data in writeback stage
 wire  [2:0] funct3W;
 wire Zero, Branch, BranchE;
 wire unused[2:0];
-wire DecodeFlushF;
-wire [31:0] DecodeInstrF;
-wire [31:0] DecodePCF;
-wire [31:0] DecodePCPlus4F;
-wire        DecodePredTakenF;
-wire [31:0] DecodePredTargetF;
-
-reg         PredTakenD, PredTakenE;
-reg [31:0]  PredTargetD, PredTargetE;
 
 wire        BranchTakenE;
-wire        BranchDirectionMissE;
-wire        BranchTargetMissE;
-wire        FalseBranchPredictionE;
-wire        BranchMispredictE;
-wire [31:0] BranchRecoveryPCE;
-wire [31:0] FetchNextPCCandidate;
-wire [31:0] ExecuteNextPCCandidate;
 wire        FetchHold, DecodeHold;
+
+// Branch predictor wires
+wire        BPPredictTakenF, BPPredictionValidF;
+wire [31:0] BPPredictedTargetF;
+wire        FetchPredTakenF;
+wire [31:0] FetchNextPCCandidate;
+wire        PredTakenD;
+wire [31:0] PredTargetD;
+wire        PredTakenE;
+wire [31:0] PredTargetE;
+wire        BranchDirectionMissE, BranchTargetMissE, FalseBranchPredictionE, BranchMispredictE;
+wire [31:0] BranchRecoveryPCE, ExecuteNextPCCandidate;
 
 assign FetchHold = StallF || ALUStall;
 assign DecodeHold = StallD || ALUStall;
 
 branch_predictor bp (
-    clk, reset, 1'b1, PCF, BPPredictTakenF, BPPredictedTargetF, BPPredictionValidF,
+    clk, reset, 1'b0, PCF, BPPredictTakenF, BPPredictedTargetF, BPPredictionValidF,
     BranchE, PCE, PCTargetE, BranchTakenE
 );
 
-// If branch predictor predicts taken, use predicted target, else PC+4
-wire FetchPredTakenF = BPPredictTakenF && BPPredictionValidF;
+assign FetchPredTakenF  = BPPredictTakenF && BPPredictionValidF;
 assign FetchNextPCCandidate = FetchPredTakenF ? BPPredictedTargetF : PCPlus4F;
 
-// Branch is taken if branch instruction and condition is true, to update the BTB and for recovery if mispredicted
-assign BranchTakenE = BranchE && Branch; // execute: branch taken
-
-// Case 1: Branch direction misprediction: predicted taken/not-taken differs from actual
-// Case 2: Branch target misprediction: predicted target differs from actual, when both predicted and actual are taken
-// Case 3: False branch prediction: predicted taken but not a branch instruction
-// on any of these cases, we need to recover by flushing the incorrect instructions and updating the PC to the correct target
+assign BranchTakenE         = BranchE && Branch;
 assign BranchDirectionMissE = BranchE && (PredTakenE != BranchTakenE);
-assign BranchTargetMissE = BranchE && PredTakenE && BranchTakenE && (PredTargetE != PCTargetE);
+assign BranchTargetMissE    = BranchE && PredTakenE && BranchTakenE && (PredTargetE != PCTargetE);
 assign FalseBranchPredictionE = PredTakenE && !BranchE;
-assign BranchMispredictE = FalseBranchPredictionE || BranchDirectionMissE || BranchTargetMissE;
-wire PCSrcE = JumpE || JalrE || BranchMispredictE; // for flushing
+assign BranchMispredictE    = FalseBranchPredictionE || BranchDirectionMissE || BranchTargetMissE;
+wire PCSrcE = JumpE || JalrE || BranchMispredictE;
 
-// If branch taken, use branch target, else PC+4
-// If jump, use jump target, else branch recovery PC
-assign BranchRecoveryPCE = BranchTakenE ? PCTargetE : PCPlus4E;
+assign BranchRecoveryPCE    = BranchTakenE ? PCTargetE : PCPlus4E;
 assign ExecuteNextPCCandidate = JumpE ? PCTargetE : BranchRecoveryPCE;
 
 // next PC logic
@@ -110,53 +95,9 @@ mux2 #(32) jalrmux (PCNext, ALUResultE, JalrE, PCJalr);
 reset_ff   pcreg (clk, reset, FetchHold, PCJalr, PCF);
 bk_adder   pcadd4 (PCF, 32'd4, 1'b0, PCPlus4F, unused[0]);
 
-// Shadow PC registers - capture PC at fetch time for sequential IMEM alignment
-reg [31:0] PCF_shadow, PCPlus4F_shadow;
-reg        FetchPredTakenShadow;
-reg [31:0] FetchPredTargetShadow;
-
-always @(posedge clk) begin
-    if (!reset) begin
-        PCF_shadow <= 0;
-        PCPlus4F_shadow <= 4;
-        FetchPredTakenShadow <= 1'b0;
-        FetchPredTargetShadow <= 32'b0;
-    end else if (!FetchHold) begin
-        PCF_shadow <= PCF;
-        PCPlus4F_shadow <= PCPlus4F;
-        FetchPredTakenShadow <= FetchPredTakenF;
-        FetchPredTargetShadow <= BPPredictedTargetF;
-    end
-end
-
-fetch_skid_buffer fetch_skid (
-    clk, reset, DecodeHold, FlushD, Instr, PCF_shadow, PCPlus4F_shadow, FetchPredTakenShadow, FetchPredTargetShadow,
-    DecodeFlushF, DecodeInstrF, DecodePCF, DecodePCPlus4F, DecodePredTakenF, DecodePredTargetF
-);
-
-always @(posedge clk) begin
-    if (!reset || DecodeFlushF) begin
-        PredTakenD <= 1'b0;
-        PredTargetD <= 32'b0;
-    end else if (!DecodeHold) begin
-        PredTakenD <= DecodePredTakenF;
-        PredTargetD <= DecodePredTargetF;
-    end
-end
-
-always @(posedge clk) begin
-    if (!reset || FlushE) begin
-        PredTakenE <= 1'b0;
-        PredTargetE <= 32'b0;
-    end else begin
-        PredTakenE <= PredTakenD;
-        PredTargetE <= PredTargetD;
-    end
-end
-
-// Decode Pipeline register - receives instruction and its captured PC together
-pl_reg_d pld (clk, DecodeHold, DecodeFlushF, DecodeInstrF, DecodePCF, DecodePCPlus4F,
-              InstrD, PCD, PCPlus4D);
+// Decode Pipeline register
+pl_reg_d pld (clk, DecodeHold, FlushD, Instr, PCF, PCPlus4F, FetchPredTakenF, BPPredictedTargetF,
+              InstrD, PCD, PCPlus4D, PredTakenD, PredTargetD);
 
 // register file logic
 reg_file   rf (clk, RegWriteW, InstrD[19:15], InstrD[24:20], RdW, ResultW, SrcA, WriteData);
@@ -167,8 +108,8 @@ mux2 #(32) lauipcmux (AuiPC, {InstrD[31:12], 12'b0}, InstrD[5], lAuiPCD);
 
 // Execute Pipeline register
 pl_reg_e ple (
-    clk, FlushE, ALUStall, ResultSrcD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD, SrcA, WriteData, PCD, InstrD[19:15], InstrD[24:20], InstrD[11:7], ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12],
-    ResultSrcE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, Rs1E, Rs2E, RdE, ImmExtE, PCPlus4E, lAuiPCE, funct3E
+    clk, FlushE, ALUStall, ResultSrcD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD, SrcA, WriteData, PCD, InstrD[19:15], InstrD[24:20], InstrD[11:7], ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD,
+    ResultSrcE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, Rs1E, Rs2E, RdE, ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE
 );
 
 // ALU logic

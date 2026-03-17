@@ -4,7 +4,7 @@ module instr_mem #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 32, MEM_SIZE = 2048) 
     input  clk, reset, wea,
     input  [ADDR_WIDTH-1:0] instr_addr,
     input  [DATA_WIDTH-1:0] instr_in,
-    output reg [DATA_WIDTH-1:0] instr
+    output [DATA_WIDTH-1:0] instr
 );
 
 // array of 512 32-bit words or instructions
@@ -16,15 +16,12 @@ initial begin
     $readmemh("./docker/bin/matrix_mul.hex", instr_ram);
 end
 
-// Sequential read
+// Sequential write
 always @(posedge clk) begin
-    if (!reset)
-        instr <= 32'h0000_0000;
-    else begin
-        instr <= instr_ram[instr_addr[31:2]];
-        if (wea)
-            instr_ram[instr_addr[31:2]] <= instr_in;
-    end
+    if (wea)
+        instr_ram[instr_addr[31:2]] <= instr_in;
 end
+
+assign instr = instr_ram[instr_addr[31:2]];
 
 endmodule
