@@ -17,34 +17,17 @@ wire carry_a, carry_s;
 bk_adder #(32) adder (a, b, 1'b0, r_adder, carry_a);
 bk_adder #(32) diff  (a, b, 1'b1,  r_diff, carry_s); // if cin = 1 means sub
 
-wire mul_valid;
-wire [31:0] r_mult;
+wire mul_valid, div_valid;
+wire [31:0] r_mult, r_div;
 
-// Latch multiply inputs on the first execute cycle so they stay stable
-// during stall (forwarding muxes change as M/WB stages advance freely).
+// M-extension control signals
 wire        enable = alu_ctrl[4];
-reg         mul_latched;
-reg [31:0]  a_mul, b_mul;
-reg [2:0]   f_mul;
+wire        mul_enable = enable && !alu_ctrl[3];
+wire        div_enable = enable && alu_ctrl[3];
+wire        md_op_valid = mul_enable ? mul_valid : div_enable ? div_valid : 1'b0;
 
-always @(posedge clk) begin
-    if (!enable) begin
-        mul_latched <= 0;
-    end else if (!mul_latched) begin
-        a_mul       <= a;
-        b_mul       <= b;
-        f_mul       <= alu_ctrl[2:0];
-        mul_latched <= 1;
-    end else if (mul_valid) begin
-        mul_latched <= 0;  // reset when result is consumed
-    end
-end
-
-wire [31:0] mul_a = mul_latched ? a_mul : a;
-wire [31:0] mul_b = mul_latched ? b_mul : b;
-wire [2:0]  mul_f = mul_latched ? f_mul : alu_ctrl[2:0];
-
-dadda_multiplier mult (clk, enable, mul_a, mul_b, mul_f, r_mult, mul_valid);
+dadda_multiplier mult (clk, mul_enable, a, b, alu_ctrl[2:0], r_mult, mul_valid);
+division_top     div  (clk, div_enable, a, b, alu_ctrl[2:0], r_div, div_valid);
 
 always @(*) begin
     mask = 0;
@@ -69,13 +52,12 @@ always @(*) begin
         5'b01000:  alu_out = a | b;                 // OR
         5'b01001:  alu_out = a & b;                 // AND
         5'b100??:  alu_out = r_mult;                // MULxx
-        // 5'b111??:  alu_out = r_div;                 // DIV/REMxx
+        5'b111??:  alu_out = r_div;                 // DIV/REMxx
         default: alu_out = 0;
     endcase
 end
 
 assign  zero = (alu_out == 0) ? 1'b1 : 1'b0;
-assign stall = (alu_ctrl[4] && !mul_valid) ? 1'b1 : 1'b0;
-// assign stall = 1'b0;
+assign stall = enable && !md_op_valid;
 
 endmodule

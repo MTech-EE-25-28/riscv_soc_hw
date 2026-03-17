@@ -49,16 +49,51 @@ reg [2:0] stage=0;
 // zero bypass
 wire zero_case;
 
-initial valid_op = 1'b0;
+// Internal enable gating to prevent restart when valid goes high
+reg enable_hold;
+wire internal_enable = enable && !enable_hold;
 
-// Detection of Zero case only on enable
-assign zero_case = enable ? (~|rs1 || ~|rs2) : 1'b0;
+// Input latching to preserve operands during multi-cycle operation
+reg latched;
+reg [31:0] lat_rs1, lat_rs2;
+reg [2:0] lat_funct3;
+
+initial valid_op = 1'b0;
+initial enable_hold = 1'b0;
+initial latched = 1'b0;
+
+always @(posedge clk) begin
+    if (valid_op)
+        enable_hold <= 1'b1;
+    else
+        enable_hold <= 1'b0;
+end
+
+always @(posedge clk) begin
+    if (!enable) begin
+        latched <= 1'b0;
+    end else if (!latched && !valid_op) begin
+        lat_rs1 <= rs1;
+        lat_rs2 <= rs2;
+        lat_funct3 <= funct3;
+        latched <= 1'b1;
+    end else if (valid_op) begin
+        latched <= 1'b0;
+    end
+end
+
+wire [31:0] rs1_in = latched ? lat_rs1 : rs1;
+wire [31:0] rs2_in = latched ? lat_rs2 : rs2;
+wire [2:0] funct3_in = latched ? lat_funct3 : funct3;
+
+// Detection of Zero case only on internal_enable
+assign zero_case = internal_enable ? (~|rs1_in || ~|rs2_in) : 1'b0;
 
 // ---------------- Decode ----------------
 always @(*) begin
     signA <= 0; signB <= 0; select_high <= 0;
-    if(enable) begin
-        case(funct3)
+    if(internal_enable) begin
+        case(funct3_in)
 
         3'b000: begin // MUL
             signA <= 1;
@@ -84,11 +119,11 @@ always @(*) begin
 end
 
 // ---------------- Sign Handling ----------------
-assign signA_neg = signA & rs1[31];
-assign signB_neg = signB & rs2[31];
+assign signA_neg = signA & rs1_in[31];
+assign signB_neg = signB & rs2_in[31];
 
-assign A = signA_neg ? (~rs1 + 1'b1) : rs1;
-assign B = signB_neg ? (~rs2 + 1'b1) : rs2;
+assign A = signA_neg ? (~rs1_in + 1'b1) : rs1_in;
+assign B = signB_neg ? (~rs2_in + 1'b1) : rs2_in;
 
 assign result_neg = signA_neg ^ signB_neg;
 
@@ -174,7 +209,7 @@ always @(posedge clk) begin
     signA5 <= signA4;
     signB5 <= signB4;
     P <= s4_reg[0] + s4_reg[1];
-    if (valid_op || zero_case || !enable) begin
+    if (valid_op || zero_case || !internal_enable) begin
         reg_valid_op <= 1'b0; stage <= 1'b0;
     end else if (stage < 5) stage <= stage + 1'b1;
     else reg_valid_op <= 1'b1;
@@ -190,7 +225,7 @@ assign product_signed = result_neg5 ? (~product_mag + 1'b1) : product_mag;
 // ---------------- Output Logic ----------------
 always @(posedge clk) begin
     valid_op <= 0;
-    if(enable) begin
+    if(internal_enable) begin
         if(zero_case) begin
             rd <= 32'h0;
             valid_op <= 1;

@@ -19,6 +19,7 @@ riscv_cpu uut (clk, reset, Ext_MemWrite, Ext_WriteData, Ext_DataAdr, MemWrite, W
 
 integer fault_instrs = 0, i = 0, flag = 0;
 reg [4:0] SP = 0, EP = 0;
+reg [31:0] last_pcw = 32'hFFFFFFFF; // guard: only check once per unique PCW
 
 localparam ADDI_x0  =   32'h8;
 localparam ADDI     =   32'h10;
@@ -73,7 +74,11 @@ localparam MUL      =   32'h140;
 localparam MULH     =   32'h144;
 localparam MULHU    =   32'h148;
 localparam MULHSU   =   32'h14C;
-localparam JAL      =   32'h150;
+localparam DIV      =   32'h150;
+localparam DIVU     =   32'h154;
+localparam REM      =   32'h158;
+localparam REMU     =   32'h15C;
+localparam JAL      =   32'h160;
 
 // ALU / computation result check
 task check_alu;
@@ -81,28 +86,10 @@ task check_alu;
     input [20*8-1:0] name;
     input [31:0]     expected;
     begin
-        i = i + 1;
-        if (Result === expected)
+        if (Result === expected) begin
+            i = i + 1;
             $display("%0d. %0s passed", num, name);
-        else begin
-            $display("%0d. %0s FAILED | PC=0x%h  Result=%0d  Expected=%0d",
-                     num, name, PCW, $signed(Result), $signed(expected));
-            fault_instrs = fault_instrs + 1;
-        end
-    end
-endtask
-
-// MUL result check: waits 5 posedge cycles for multicycle multiplier to settle
-task check_mul;
-    input integer    num;
-    input [20*8-1:0] name;
-    input [31:0]     expected;
-    begin
-        repeat(7) @(posedge clk); // 5 (ex) + 1 (mem)
-        i = i + 1;
-        if (Result === expected)
-            $display("%0d. %0s passed", num, name);
-        else begin
+        end else begin
             $display("%0d. %0s FAILED | PC=0x%h  Result=%0d  Expected=%0d",
                      num, name, PCW, $signed(Result), $signed(expected));
             fault_instrs = fault_instrs + 1;
@@ -120,12 +107,12 @@ task check_store;
     input [31:0]     exp_data;
     input            guard_mw;
     begin
-        i = i + 1;
         if ((!guard_mw || (MemWrite && reset)) &&
-              Result    === exp_addr &&
-              WriteDataW === exp_data)
+            Result    === exp_addr &&
+            WriteDataW === exp_data) begin
+            i = i + 1;
             $display("%0d. %0s passed", num, name);
-        else begin
+        end else begin
             $display("%0d. %0s FAILED | PC=0x%h  Addr=%0d(exp %0d)  WriteData=%0d(exp %0d)  MemWrite=%b",
                      num, name, PCW,
                      Result, exp_addr,
@@ -143,10 +130,10 @@ task check_load;
     input [31:0]     exp_addr;
     input [31:0]     exp_data;
     begin
-        i = i + 1;
-        if (DataAdrW === exp_addr && ReadDataW === exp_data)
+        if (DataAdrW === exp_addr && ReadDataW === exp_data) begin
+            i = i + 1;
             $display("%0d. %0s passed", num, name);
-        else begin
+        end else begin
             $display("%0d. %0s FAILED | PC=0x%h  Addr=%0d(exp %0d)  ReadData=%0d(exp %0d)",
                      num, name, PCW,
                      DataAdrW, exp_addr,
@@ -176,7 +163,7 @@ endtask
 
 // Clock
 always begin
-    clk <= 0; #6; clk <= 1; #6;
+    clk <= 0; #8; clk <= 1; #8;
 end
 
 initial begin
@@ -192,7 +179,9 @@ initial begin
 end
 
 always @(posedge clk) begin
-    case (PCW)
+    if (PCW !== last_pcw) begin
+        last_pcw <= PCW;
+        case (PCW)
         ADDI_x0  : check_alu  ( 1, "addi x0",     -3           );
         ADDI     : check_alu  ( 2, "addi",          9          );
         SLLI     : check_alu  ( 3, "slli",         64          );
@@ -236,16 +225,21 @@ always @(posedge clk) begin
         BEQ_IN   : check_loop (36, "beq",   2                  );
         BEQ_OUT  : check_alu  (36, "beq",   4                  );
         JALR     : check_alu  (37, "jalr", 32'h130             );
-        MUL      : check_mul  (38, "mul",    -108              );
-        MULH     : check_mul  (39, "mulh",   -1                );
-        MULHU    : check_mul  (40, "mulhu",  -12               );
-        MULHSU   : check_mul  (41, "mulhsu", -1                );
-        JAL      : check_alu  (42, "jal",  32'h154             );
-    endcase
+        MUL      : check_alu  (38, "mul",    -108              );
+        MULH     : check_alu  (39, "mulh",   -1                );
+        MULHU    : check_alu  (40, "mulhu",  -12               );
+        MULHSU   : check_alu  (41, "mulhsu", -1                );
+        DIV      : check_alu  (42, "div",     0                );
+        DIVU     : check_alu  (43, "divu",    238609293        );
+        REM      : check_alu  (44, "rem",     -6               );
+        REMU     : check_alu  (45, "remu",    16               );
+        JAL      : check_alu  (46, "jal",  32'h164             );
+        endcase
+    end // if (PCW !== last_pcw)
 end
 
 always @(negedge clk) begin
-    if (i >= 42 || flag == 1) begin
+    if (i >= 46 || flag == 1) begin
         $display("Faulty Instructions => %d", fault_instrs);
         $finish;
     end

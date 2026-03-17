@@ -123,7 +123,7 @@ alu        alu (clk, ALUSrcA, SrcB, ALUControlE, ALUResultE, Zero, ALUStall);
 branching_unit bu (funct3E, Zero, ALUResultE[31], Branch);
 
 pl_reg_m plm (
-    clk, reset, ResultSrcE, MemWriteE, RegWriteE, ALUResultE, ALUSrcB, RdE, PCPlus4E, lAuiPCE, funct3E, PCE,
+    clk, reset, ALUStall, ResultSrcE, MemWriteE, RegWriteE, ALUResultE, ALUSrcB, RdE, PCPlus4E, lAuiPCE, funct3E, PCE,
     ResultSrcM, MemWriteM, RegWriteM, ALUResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM
 );
 
