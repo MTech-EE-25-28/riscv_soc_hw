@@ -111,8 +111,12 @@ target_6:   addi    x4,  x4, 1                  # x4 = 2                        
             mulhsu  x13, x9, x17                # x13= (s(-6)*u( 3))>>32 =  -1  14C
 
             # Division Demonstration
+            div     x14, x9, x1                 # x14= -6 / 18 = 0               150
+            divu    x15, x9, x1                 # x15= u(-6) / u(18) = 238609293 154
 
             # Reminder Demonstration
+            rem     x16, x9, x1                 # x16= -6 % 18 = -6              158
+            remu    x17, x9, x1                 # x17= u(-6) % u(18) = 16       15C
 
             # I type jump instruction
-target_7:   jal     x4,  target_7               # x4 = 154                      150
+target_7:   jal     x4,  target_7               # x4 = 164                       160
