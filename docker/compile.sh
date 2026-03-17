@@ -4,7 +4,7 @@
 basename="${1##*/}" # remove folder path
 filename="${basename%.*}"
 
-ARCH=rv32i
+ARCH=rv32im
 ROM=2048     # Program segment: 2KB (0x000-0x7FF)
 RAM=2048     # Data segment: 2KB (0x800-0xFFF)
 STACK=256

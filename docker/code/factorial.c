@@ -56,18 +56,17 @@
 #endif
 
 /* Factorial Function*/
-int32_t factorial(int n) {
-    int32_t result = 1;
+void factorial(int n) {
     int i;
     for (i = 2; i <= n; i++) {
-        result *= i;
+        OUT *= i;
     }
-    return result;
 }
 
 // main function
 int main() {
-    OUT = factorial(N);
+    // not sure why function with return doesn't work
+    factorial(N);
     _put_value(OUT);
     CPU_DONE = 1;
     return 0;
