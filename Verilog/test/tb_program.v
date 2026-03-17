@@ -32,6 +32,13 @@ initial begin
     Ext_MemWrite = 1; Ext_DataAdr = 32'h00000800; Ext_WriteData = 32'h0000000A;
     @(posedge clk); @(posedge clk);
 
+    Ext_MemWrite = 0; Ext_DataAdr = 32'h00000000; Ext_WriteData = 32'b0;
+    @(posedge clk);
+
+    @(negedge clk);
+    Ext_MemWrite = 1; Ext_DataAdr = 32'h00000804; Ext_WriteData = 32'h00000001;
+    @(posedge clk); @(posedge clk);
+
     reset = 1;
     Ext_MemWrite = 0; Ext_DataAdr = 32'h00000000; Ext_WriteData = 32'b0;
     @(posedge clk);
@@ -43,7 +50,7 @@ end
 
 always @(negedge clk) begin
     // debug info
-    // $display("PCF = %h, Instr = %h, WriteData = %h, ReadAdr = %h, Result =  %h", uut.rvpl.dp.PCF_shadow, uut.rvpl.dp.Instr, WriteData, DataAdr, Result);
+    // $display("PCF = %h, Instr = %h, WriteData = %h, ReadAdr = %h, Result =  %h", uut.rvpl.dp.PCF, uut.rvpl.dp.Instr, WriteData, DataAdr, Result);
     if (MemWrite && reset) begin
         if (DataAdr == 32'h00000804) begin
             $display("Memory write detected at address 0x00000804");

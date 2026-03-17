@@ -1,0 +1,871 @@
+$date
+	Tue Mar 17 15:50:28 2026
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module tb_dadda_multiplier $end
+$var wire 1 ! valid_op $end
+$var wire 32 " rd [31:0] $end
+$var reg 1 # clk $end
+$var reg 1 $ enable $end
+$var reg 3 % funct3 [2:0] $end
+$var reg 32 & rs1 [31:0] $end
+$var reg 32 ' rs2 [31:0] $end
+$scope module uut $end
+$var wire 1 # clk $end
+$var wire 1 $ enable $end
+$var wire 3 ( funct3 [2:0] $end
+$var wire 64 ) product_mag [63:0] $end
+$var wire 1 * result_neg $end
+$var wire 32 + rs1 [31:0] $end
+$var wire 32 , rs2 [31:0] $end
+$var wire 1 - signA_neg $end
+$var wire 1 . signB_neg $end
+$var wire 1 / zero_case $end
+$var wire 64 0 product_signed [63:0] $end
+$var wire 32 1 B [31:0] $end
+$var wire 32 2 A [31:0] $end
+$var reg 64 3 P [63:0] $end
+$var reg 32 4 rd [31:0] $end
+$var reg 1 5 reg_valid_op $end
+$var reg 1 6 result_neg1 $end
+$var reg 1 7 result_neg2 $end
+$var reg 1 8 result_neg3 $end
+$var reg 1 9 result_neg4 $end
+$var reg 1 : result_neg5 $end
+$var reg 1 ; select_high $end
+$var reg 1 < select_high1 $end
+$var reg 1 = select_high2 $end
+$var reg 1 > select_high3 $end
+$var reg 1 ? select_high4 $end
+$var reg 1 @ select_high5 $end
+$var reg 1 A signA $end
+$var reg 1 B signA1 $end
+$var reg 1 C signA2 $end
+$var reg 1 D signA3 $end
+$var reg 1 E signA4 $end
+$var reg 1 F signA5 $end
+$var reg 1 G signB $end
+$var reg 1 H signB1 $end
+$var reg 1 I signB2 $end
+$var reg 1 J signB3 $end
+$var reg 1 K signB4 $end
+$var reg 1 L signB5 $end
+$var reg 3 M stage [2:0] $end
+$var reg 1 ! valid_op $end
+$var integer 32 N k [31:0] $end
+$scope begin PP_GEN[0] $end
+$var parameter 2 O i $end
+$upscope $end
+$scope begin PP_GEN[1] $end
+$var parameter 2 P i $end
+$upscope $end
+$scope begin PP_GEN[2] $end
+$var parameter 3 Q i $end
+$upscope $end
+$scope begin PP_GEN[3] $end
+$var parameter 3 R i $end
+$upscope $end
+$scope begin PP_GEN[4] $end
+$var parameter 4 S i $end
+$upscope $end
+$scope begin PP_GEN[5] $end
+$var parameter 4 T i $end
+$upscope $end
+$scope begin PP_GEN[6] $end
+$var parameter 4 U i $end
+$upscope $end
+$scope begin PP_GEN[7] $end
+$var parameter 4 V i $end
+$upscope $end
+$scope begin PP_GEN[8] $end
+$var parameter 5 W i $end
+$upscope $end
+$scope begin PP_GEN[9] $end
+$var parameter 5 X i $end
+$upscope $end
+$scope begin PP_GEN[10] $end
+$var parameter 5 Y i $end
+$upscope $end
+$scope begin PP_GEN[11] $end
+$var parameter 5 Z i $end
+$upscope $end
+$scope begin PP_GEN[12] $end
+$var parameter 5 [ i $end
+$upscope $end
+$scope begin PP_GEN[13] $end
+$var parameter 5 \ i $end
+$upscope $end
+$scope begin PP_GEN[14] $end
+$var parameter 5 ] i $end
+$upscope $end
+$scope begin PP_GEN[15] $end
+$var parameter 5 ^ i $end
+$upscope $end
+$scope begin PP_GEN[16] $end
+$var parameter 6 _ i $end
+$upscope $end
+$scope begin PP_GEN[17] $end
+$var parameter 6 ` i $end
+$upscope $end
+$scope begin PP_GEN[18] $end
+$var parameter 6 a i $end
+$upscope $end
+$scope begin PP_GEN[19] $end
+$var parameter 6 b i $end
+$upscope $end
+$scope begin PP_GEN[20] $end
+$var parameter 6 c i $end
+$upscope $end
+$scope begin PP_GEN[21] $end
+$var parameter 6 d i $end
+$upscope $end
+$scope begin PP_GEN[22] $end
+$var parameter 6 e i $end
+$upscope $end
+$scope begin PP_GEN[23] $end
+$var parameter 6 f i $end
+$upscope $end
+$scope begin PP_GEN[24] $end
+$var parameter 6 g i $end
+$upscope $end
+$scope begin PP_GEN[25] $end
+$var parameter 6 h i $end
+$upscope $end
+$scope begin PP_GEN[26] $end
+$var parameter 6 i i $end
+$upscope $end
+$scope begin PP_GEN[27] $end
+$var parameter 6 j i $end
+$upscope $end
+$scope begin PP_GEN[28] $end
+$var parameter 6 k i $end
+$upscope $end
+$scope begin PP_GEN[29] $end
+$var parameter 6 l i $end
+$upscope $end
+$scope begin PP_GEN[30] $end
+$var parameter 6 m i $end
+$upscope $end
+$scope begin PP_GEN[31] $end
+$var parameter 6 n i $end
+$upscope $end
+$scope begin Stage_1[0] $end
+$var parameter 2 o j $end
+$upscope $end
+$scope begin Stage_1[1] $end
+$var parameter 2 p j $end
+$upscope $end
+$scope begin Stage_1[2] $end
+$var parameter 3 q j $end
+$upscope $end
+$scope begin Stage_1[3] $end
+$var parameter 3 r j $end
+$upscope $end
+$scope begin Stage_1[4] $end
+$var parameter 4 s j $end
+$upscope $end
+$scope begin Stage_1[5] $end
+$var parameter 4 t j $end
+$upscope $end
+$scope begin Stage_1[6] $end
+$var parameter 4 u j $end
+$upscope $end
+$scope begin Stage_1[7] $end
+$var parameter 4 v j $end
+$upscope $end
+$scope begin Stage_1[8] $end
+$var parameter 5 w j $end
+$upscope $end
+$scope begin Stage_1[9] $end
+$var parameter 5 x j $end
+$upscope $end
+$scope begin Stage_1[10] $end
+$var parameter 5 y j $end
+$upscope $end
+$scope begin Stage_1[11] $end
+$var parameter 5 z j $end
+$upscope $end
+$scope begin Stage_1[12] $end
+$var parameter 5 { j $end
+$upscope $end
+$scope begin Stage_1[13] $end
+$var parameter 5 | j $end
+$upscope $end
+$scope begin Stage_1[14] $end
+$var parameter 5 } j $end
+$upscope $end
+$scope begin Stage_1[15] $end
+$var parameter 5 ~ j $end
+$upscope $end
+$scope begin Stage_3[0] $end
+$var parameter 2 !" j $end
+$upscope $end
+$scope begin Stage_3[1] $end
+$var parameter 2 "" j $end
+$upscope $end
+$scope begin Stage_3[2] $end
+$var parameter 3 #" j $end
+$upscope $end
+$scope begin Stage_3[3] $end
+$var parameter 3 $" j $end
+$upscope $end
+$scope begin Stage_4[0] $end
+$var parameter 2 %" j $end
+$upscope $end
+$scope begin Stage_4[1] $end
+$var parameter 2 &" j $end
+$upscope $end
+$scope begin genblk3[0] $end
+$var parameter 2 '" j $end
+$upscope $end
+$scope begin genblk3[1] $end
+$var parameter 2 (" j $end
+$upscope $end
+$scope begin genblk3[2] $end
+$var parameter 3 )" j $end
+$upscope $end
+$scope begin genblk3[3] $end
+$var parameter 3 *" j $end
+$upscope $end
+$scope begin genblk3[4] $end
+$var parameter 4 +" j $end
+$upscope $end
+$scope begin genblk3[5] $end
+$var parameter 4 ," j $end
+$upscope $end
+$scope begin genblk3[6] $end
+$var parameter 4 -" j $end
+$upscope $end
+$scope begin genblk3[7] $end
+$var parameter 4 ." j $end
+$upscope $end
+$scope begin Stage_2 $end
+$upscope $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+b111 ."
+b110 -"
+b101 ,"
+b100 +"
+b11 *"
+b10 )"
+b1 ("
+b0 '"
+b1 &"
+b0 %"
+b11 $"
+b10 #"
+b1 ""
+b0 !"
+b1111 ~
+b1110 }
+b1101 |
+b1100 {
+b1011 z
+b1010 y
+b1001 x
+b1000 w
+b111 v
+b110 u
+b101 t
+b100 s
+b11 r
+b10 q
+b1 p
+b0 o
+b11111 n
+b11110 m
+b11101 l
+b11100 k
+b11011 j
+b11010 i
+b11001 h
+b11000 g
+b10111 f
+b10110 e
+b10101 d
+b10100 c
+b10011 b
+b10010 a
+b10001 `
+b10000 _
+b1111 ^
+b1110 ]
+b1101 \
+b1100 [
+b1011 Z
+b1010 Y
+b1001 X
+b1000 W
+b111 V
+b110 U
+b101 T
+b100 S
+b11 R
+b10 Q
+b1 P
+b0 O
+$end
+#0
+$dumpvars
+bx N
+b0 M
+xL
+xK
+xJ
+xI
+xH
+0G
+xF
+xE
+xD
+xC
+xB
+0A
+x@
+x?
+x>
+x=
+x<
+0;
+x:
+x9
+x8
+x7
+x6
+x5
+bx 4
+bx 3
+b0 2
+b0 1
+bx 0
+0/
+0.
+0-
+b0 ,
+b0 +
+0*
+bx )
+b0 (
+b0 '
+b0 &
+b0 %
+0$
+0#
+bx "
+0!
+$end
+#10000
+0H
+0B
+06
+0<
+05
+b1000 N
+1#
+#20000
+0#
+#30000
+1G
+1A
+0I
+0C
+07
+0=
+b1 M
+b101 1
+b1010 2
+0/
+b1000 N
+b101 '
+b101 ,
+b1010 &
+b1010 +
+1$
+1#
+#40000
+0#
+#50000
+1H
+1B
+0J
+0D
+08
+0>
+b10 M
+b1000 N
+1#
+#60000
+0#
+#70000
+1I
+1C
+b11 M
+0K
+0E
+09
+0?
+b1000 N
+1#
+#80000
+0#
+#90000
+b0 0
+1J
+1D
+b100 M
+b0 )
+b0 3
+0L
+0F
+0:
+0@
+b1000 N
+1#
+#100000
+0#
+#110000
+b101 M
+1K
+1E
+b1000 N
+1#
+#120000
+0#
+#130000
+b110010 0
+15
+b110010 )
+b110010 3
+1L
+1F
+b1000 N
+1#
+#140000
+0#
+#150000
+1!
+b110010 "
+b110010 4
+b1000 N
+1#
+#160000
+0#
+#170000
+b0 M
+05
+0!
+b1000 N
+1#
+#180000
+0#
+#190000
+1;
+1G
+1A
+b1 M
+1*
+1-
+b11 1
+b10100 2
+b1 %
+b1 (
+b11 '
+b11 ,
+b11111111111111111111111111101100 &
+b11111111111111111111111111101100 +
+b1000 N
+1#
+#200000
+0#
+#210000
+16
+1<
+b10 M
+b1000 N
+1#
+#220000
+0#
+#230000
+17
+1=
+b11 M
+b1000 N
+1#
+#240000
+0#
+#250000
+18
+1>
+b100 M
+b1000 N
+1#
+#260000
+0#
+#270000
+b101 M
+19
+1?
+b1000 N
+1#
+#280000
+0#
+#290000
+b1111111111111111111111111111111111111111111111111111111111000100 0
+15
+b111100 )
+b111100 3
+1:
+1@
+b1000 N
+1#
+#300000
+0#
+#310000
+1!
+b11111111111111111111111111111111 "
+b11111111111111111111111111111111 4
+b1000 N
+1#
+#320000
+0#
+#330000
+b0 M
+05
+0!
+b1000 N
+1#
+#340000
+0#
+#350000
+0;
+1G
+1A
+b1 M
+b0 %
+b0 (
+b1000 N
+1#
+#360000
+0#
+#370000
+0<
+b10 M
+b1000 N
+1#
+#380000
+0#
+#390000
+0=
+b11 M
+b1000 N
+1#
+#400000
+0#
+#410000
+0>
+b100 M
+b1000 N
+1#
+#420000
+0#
+#430000
+b101 M
+0?
+b1000 N
+1#
+#440000
+0#
+#450000
+15
+0@
+b1000 N
+1#
+#460000
+0#
+#470000
+1!
+b11111111111111111111111111000100 "
+b11111111111111111111111111000100 4
+b1000 N
+1#
+#480000
+0#
+#490000
+b0 M
+05
+0!
+b1000 N
+1#
+#500000
+0#
+#510000
+1;
+0G
+1A
+b1 M
+b100 1
+b10 %
+b10 (
+b100 '
+b100 ,
+b1000 N
+1#
+#520000
+0#
+#530000
+0H
+1<
+b10 M
+b1000 N
+1#
+#540000
+0#
+#550000
+0I
+1=
+b11 M
+b1000 N
+1#
+#560000
+0#
+#570000
+0J
+1>
+b100 M
+b1000 N
+1#
+#580000
+0#
+#590000
+b101 M
+0K
+1?
+b1000 N
+1#
+#600000
+0#
+#610000
+b1111111111111111111111111111111111111111111111111111111110110000 0
+15
+b1010000 )
+b1010000 3
+0L
+1@
+b1000 N
+1#
+#620000
+0#
+#630000
+1!
+b11111111111111111111111111111111 "
+b11111111111111111111111111111111 4
+b1000 N
+1#
+#640000
+0#
+#650000
+b0 M
+05
+0!
+b1000 N
+1#
+#660000
+0#
+#670000
+0*
+0-
+1;
+0A
+b1 M
+b11111111111111111111111111111111 2
+b11 1
+b11 %
+b11 (
+b11 '
+b11 ,
+b11111111111111111111111111111111 &
+b11111111111111111111111111111111 +
+b1000 N
+1#
+#680000
+0#
+#690000
+0B
+06
+b10 M
+b1000 N
+1#
+#700000
+0#
+#710000
+0C
+07
+b11 M
+b1000 N
+1#
+#720000
+0#
+#730000
+0D
+08
+b100 M
+b1000 N
+1#
+#740000
+0#
+#750000
+b101 M
+0E
+09
+b1000 N
+1#
+#760000
+0#
+#770000
+b1011111111111111111111111111111101 0
+15
+b1011111111111111111111111111111101 )
+b1011111111111111111111111111111101 3
+0F
+0:
+b1000 N
+1#
+#780000
+0#
+#790000
+1!
+b10 "
+b10 4
+b1000 N
+1#
+#800000
+0#
+#810000
+b0 M
+05
+0!
+b1000 N
+1#
+#820000
+0#
+#830000
+b1 M
+b1000 N
+1#
+#840000
+0#
+#850000
+b10 M
+b1000 N
+1#
+#860000
+0#
+#870000
+b11 M
+b1000 N
+1#
+#880000
+0#
+#890000
+b100 M
+b1000 N
+1#
+#900000
+0#
+#910000
+b101 M
+b1000 N
+1#
+#920000
+0#
+#930000
+15
+b1000 N
+1#
+#940000
+0#
+#950000
+1!
+b1000 N
+1#
+#960000
+0#
+#970000
+b0 M
+05
+0!
+b1000 N
+1#
+#980000
+0#
+#990000
+0;
+b1 M
+0$
+b1000 N
+1#
+#1000000
+0#
+#1010000
+0<
+b0 M
+b1000 N
+1#
+#1020000
+0#
+#1030000
+0=
+b1000 N
+1#
+#1040000
+0#
+#1050000
+0>
+b1000 N
+1#
+#1060000
+0#
+#1070000
+0?
+b1000 N
+1#
+#1080000
+0#
+#1090000
+0@
+b1000 N
+1#
+#1100000
+0#
+#1110000
+b1000 N
+1#
+#1120000
+0#
+#1130000
+b1000 N
+1#
+#1140000
+0#
+#1150000
+b1000 N
+1#
+#1160000
+0#
+#1170000
+b1000 N
+1#
+#1180000
+0#
+#1190000
+b1000 N
+1#

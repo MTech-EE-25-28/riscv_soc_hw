@@ -70,7 +70,10 @@ localparam BEQ_OUT  =   32'h128;
 
 localparam JALR     =   32'h134;
 localparam MUL      =   32'h140;
-localparam JAL      =   32'h144;
+localparam MULH     =   32'h144;
+localparam MULHU    =   32'h148;
+localparam MULHSU   =   32'h14C;
+localparam JAL      =   32'h150;
 
 // ALU / computation result check
 task check_alu;
@@ -95,7 +98,7 @@ task check_mul;
     input [20*8-1:0] name;
     input [31:0]     expected;
     begin
-        repeat(6) @(posedge clk); // 5 (ex) + 1 (mem)
+        repeat(7) @(posedge clk); // 5 (ex) + 1 (mem)
         i = i + 1;
         if (Result === expected)
             $display("%0d. %0s passed", num, name);
@@ -233,13 +236,16 @@ always @(posedge clk) begin
         BEQ_IN   : check_loop (36, "beq",   2                  );
         BEQ_OUT  : check_alu  (36, "beq",   4                  );
         JALR     : check_alu  (37, "jalr", 32'h130             );
-        MUL      : check_mul  (38, "mul",  -108                );
-        JAL      : check_alu  (39, "jal",  32'h148             );
+        MUL      : check_mul  (38, "mul",    -108              );
+        MULH     : check_mul  (39, "mulh",   -1                );
+        MULHU    : check_mul  (40, "mulhu",  -12               );
+        MULHSU   : check_mul  (41, "mulhsu", -1                );
+        JAL      : check_alu  (42, "jal",  32'h154             );
     endcase
 end
 
 always @(negedge clk) begin
-    if (i >= 39 || flag == 1) begin
+    if (i >= 42 || flag == 1) begin
         $display("Faulty Instructions => %d", fault_instrs);
         $finish;
     end
