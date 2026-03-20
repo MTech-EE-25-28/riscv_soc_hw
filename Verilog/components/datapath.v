@@ -7,7 +7,7 @@ module datapath (
     input         RegWriteD,
     input [1:0]   ImmSrcD,
     input [4:0]   ALUControlD,
-    input         JalrD,
+    input         JalrD, csrSelD,
     output [31:0] PCF,
     input  [31:0] Instr,
     output [31:0] Mem_WrAddr, Mem_WrData,
@@ -24,8 +24,7 @@ wire [31:0] PCNext, PCJalr, PCTargetE, AuiPC;
 wire [31:0] SrcA, SrcB, WriteData;
 
 wire        ALUSrcE, JumpE, JalrE;
-wire [31:0] RD1E, RD2E;
-wire  [4:0] Rs1E, Rs2E;
+wire [31:0] rs1, RD1E, RD2E;
 wire  [4:0] ALUControlE;
 wire  [2:0] funct3E;
 
@@ -40,9 +39,9 @@ wire        MemWriteE;
 wire [31:0]  ALUResultE, ALUResultM;
 
 wire [31:0] PCD, PCE, PCM;
-wire [31:0] WriteDataM;
+wire [31:0] InstrE, WriteDataM;
 
-wire  [4:0] RdE, RdM, RdW;
+wire  [4:0] RdM, RdW;
 wire [31:0] ImmExtD, ImmExtE;
 wire [31:0] lAuiPCD, lAuiPCE, lAuiPCM, lAuiPCW;
 wire [31:0] PCPlus4F, PCPlus4D, PCPlus4E, PCPlus4M, PCPlus4W;
@@ -51,6 +50,7 @@ wire [31:0] ReadDataW;  // Masked read data in writeback stage
 wire  [2:0] funct3W;
 wire Zero, Branch, BranchE;
 wire unused[2:0];
+wire ivalid;
 
 wire        BranchTakenE;
 wire        FetchHold, DecodeHold;
@@ -66,12 +66,13 @@ wire        PredTakenE;
 wire [31:0] PredTargetE;
 wire        BranchDirectionMissE, BranchTargetMissE, FalseBranchPredictionE, BranchMispredictE;
 wire [31:0] BranchRecoveryPCE, ExecuteNextPCCandidate;
+wire        JumpMispredictE, PCSrcE;
 
-assign FetchHold = StallF || ALUStall;
+assign FetchHold = (StallF || ALUStall) && !PCSrcE; // PCSrcE overrides stall: flush must always redirect PC
 assign DecodeHold = StallD || ALUStall;
 
 branch_predictor bp (
-    clk, reset, 1'b0, PCF, BPPredictTakenF, BPPredictedTargetF, BPPredictionValidF,
+    clk, reset, 1'b1, PCF, BPPredictTakenF, BPPredictedTargetF, BPPredictionValidF,
     BranchE, PCE, PCTargetE, BranchTakenE
 );
 
@@ -79,17 +80,26 @@ assign FetchPredTakenF  = BPPredictTakenF && BPPredictionValidF;
 assign FetchNextPCCandidate = FetchPredTakenF ? BPPredictedTargetF : PCPlus4F;
 
 assign BranchTakenE         = BranchE && Branch;
+
+// Case 1: Branch direction misprediction: predicted taken/not-taken differs from actual
+// Case 2: Branch target misprediction: predicted target differs from actual, when both predicted and actual are taken
+// Case 3: False branch prediction: predicted taken but not a branch instruction
+// on any of these cases, we need to recover by flushing the incorrect instructions and updating the PC to the correct target
 assign BranchDirectionMissE = BranchE && (PredTakenE != BranchTakenE);
 assign BranchTargetMissE    = BranchE && PredTakenE && BranchTakenE && (PredTargetE != PCTargetE);
-assign FalseBranchPredictionE = PredTakenE && !BranchE;
+assign FalseBranchPredictionE = PredTakenE && !BranchE && !JumpE; // JAL is not a false prediction
 assign BranchMispredictE    = FalseBranchPredictionE || BranchDirectionMissE || BranchTargetMissE;
-wire PCSrcE = JumpE || JalrE || BranchMispredictE;
+// For JAL, only flush if BTB did not already redirect fetch to the correct target
+assign JumpMispredictE = JumpE && !(PredTakenE && (PredTargetE == PCTargetE));
+assign PCSrcE = JumpMispredictE || JalrE || BranchMispredictE;
 
+// If branch taken, use branch target, else PC+4
+// If jump, use jump target, else branch recovery PC
 assign BranchRecoveryPCE    = BranchTakenE ? PCTargetE : PCPlus4E;
 assign ExecuteNextPCCandidate = JumpE ? PCTargetE : BranchRecoveryPCE;
 
 // next PC logic
-mux2 #(32) pcmux (FetchNextPCCandidate, ExecuteNextPCCandidate, (JumpE || BranchMispredictE), PCNext);
+mux2 #(32) pcmux (FetchNextPCCandidate, ExecuteNextPCCandidate, (JumpMispredictE || BranchMispredictE), PCNext);
 mux2 #(32) jalrmux (PCNext, ALUResultE, JalrE, PCJalr);
 
 reset_ff   pcreg (clk, reset, FetchHold, PCJalr, PCF);
@@ -100,16 +110,17 @@ pl_reg_d pld (clk, DecodeHold, FlushD, Instr, PCF, PCPlus4F, FetchPredTakenF, BP
               InstrD, PCD, PCPlus4D, PredTakenD, PredTargetD);
 
 // register file logic
-reg_file   rf (clk, RegWriteW, InstrD[19:15], InstrD[24:20], RdW, ResultW, SrcA, WriteData);
+reg_file   rf (clk, RegWriteW, InstrD[19:15], InstrD[24:20], RdW, ResultW, rs1, WriteData);
 imm_extend ext (InstrD[31:7], ImmSrcD, ImmExtD);
+assign SrcA = (csrSelD && InstrD[14]) ? {{27{1'b0}}, InstrD[19:15]} : rs1;
 
 bk_adder   auipcadder ({InstrD[31:12], 12'b0}, PCD, 1'b0, AuiPC, unused[1]);
 mux2 #(32) lauipcmux (AuiPC, {InstrD[31:12], 12'b0}, InstrD[5], lAuiPCD);
 
 // Execute Pipeline register
 pl_reg_e ple (
-    clk, FlushE, ALUStall, ResultSrcD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD, SrcA, WriteData, PCD, InstrD[19:15], InstrD[24:20], InstrD[11:7], ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD,
-    ResultSrcE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, Rs1E, Rs2E, RdE, ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE
+    clk, FlushE, ALUStall, ResultSrcD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD, SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD,
+    ResultSrcE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, InstrE, ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE
 );
 
 // ALU logic
@@ -119,11 +130,13 @@ bk_adder   pcaddbranch (PCE, ImmExtE, 1'b0, PCTargetE, unused[2]);
 
 mux2 #(32) srcbmux (ALUSrcB, ImmExtE, ALUSrcE, SrcB);
 alu        alu (clk, ALUSrcA, SrcB, ALUControlE, ALUResultE, Zero, ALUStall);
+wire [31:0] placeholder; // Placeholder for CSR read data, to be connected to actual CSR handler output
+csr_handler csr (clk, reset, !FlushE && InstrE, 1'b0, InstrD[31:20], SrcA, placeholder);
 
 branching_unit bu (funct3E, Zero, ALUResultE[31], Branch);
 
 pl_reg_m plm (
-    clk, reset, ALUStall, ResultSrcE, MemWriteE, RegWriteE, ALUResultE, ALUSrcB, RdE, PCPlus4E, lAuiPCE, funct3E, PCE,
+    clk, reset, ALUStall, ResultSrcE, MemWriteE, RegWriteE, ALUResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE,
     ResultSrcM, MemWriteM, RegWriteM, ALUResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM
 );
 
@@ -144,7 +157,7 @@ load_masker load_mask (funct3W, ALUResultW[1:0], ReadData, MaskedReadDataW);
 mux4 #(32) resultmux (ALUResultW, MaskedReadDataW, PCPlus4W, lAuiPCW, ResultSrcW, ResultW);
 
 hazard_unit hz (
-    clk, reset, InstrD[19:15], InstrD[24:20], Rs1E, Rs2E, RdE, RdM, RdW, ResultSrcE[0], RegWriteM, RegWriteW, PCSrcE,
+    clk, reset, InstrD[19:15], InstrD[24:20], InstrE[19:15], InstrE[24:20], InstrE[11:7], RdM, RdW, ResultSrcE[0], RegWriteM, RegWriteW, PCSrcE,
     StallF, StallD, FlushD, FlushE, ForwardAE, ForwardBE
 );
 

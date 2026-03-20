@@ -13,17 +13,17 @@ module riscv_pl (
     output [31:0] PCW, ALUResultW, WriteDataW, ReadDataW
 );
 
-wire         ALUSrc, RegWrite, Jump, Jalr, Branch, MemWrite;
+wire         ALUSrc, RegWrite, Jump, Jalr, csrSel, Branch, MemWrite;
 wire  [1:0]  ResultSrc, ImmSrc;
 wire  [4:0]  ALUControl;
 wire [31:0]  InstrD;
 
 controller  c   (InstrD[6:0], InstrD[14:12], InstrD[30], InstrD[25],
-                ResultSrc, MemWrite, ALUSrc, RegWrite, Jump, Jalr,
+                ResultSrc, MemWrite, ALUSrc, RegWrite, Jump, Jalr, csrSel,
                 ImmSrc, ALUControl, Branch);
 
 datapath    dp  (clk, reset, ResultSrc,
-                ALUSrc, RegWrite, ImmSrc, ALUControl, Jalr,
+                ALUSrc, RegWrite, ImmSrc, ALUControl, Jalr, csrSel,
                 PC, Instr, Mem_WrAddr, Mem_WrData, wea, ReadData, Result, InstrD, MemWrite, Jump, Branch, MemWriteM, funct3, PCW, ALUResultW, WriteDataW, ReadDataW);
 
 endmodule
