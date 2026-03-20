@@ -2,231 +2,124 @@
 .temp.file.elf:     file format elf32-littleriscv
 
 SYMBOL TABLE:
-00000000 l    d  .init	00000000 .init
-0000005c l    d  .text	00000000 .text
-00000800 l    d  .data	00000000 .data
-00000800 l    d  .tbss_space	00000000 .tbss_space
-00000800 l    d  .bss	00000000 .bss
-00000800 l    d  .stack	00000000 .stack
-00000000 l    d  .comment	00000000 .comment
+00000000 l    d  .text	00000000 .text
+00001000 l    d  .stack	00000000 .stack
 00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
-00000000 l    d  .debug_aranges	00000000 .debug_aranges
+00000000 l    d  .comment	00000000 .comment
+00000000 l    d  .debug_line	00000000 .debug_line
+00000000 l    d  .debug_line_str	00000000 .debug_line_str
 00000000 l    d  .debug_info	00000000 .debug_info
 00000000 l    d  .debug_abbrev	00000000 .debug_abbrev
-00000000 l    d  .debug_line	00000000 .debug_line
-00000000 l    d  .debug_frame	00000000 .debug_frame
+00000000 l    d  .debug_aranges	00000000 .debug_aranges
 00000000 l    d  .debug_str	00000000 .debug_str
-00000000 l    d  .debug_line_str	00000000 .debug_line_str
 00000000 l    d  .debug_loclists	00000000 .debug_loclists
-00000000 l    d  .debug_macro	00000000 .debug_macro
 00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
-00000000 l    df *ABS*	00000000 crt0.c
-00000014 l     F .init	00000048 _cstart
-00000000 l    df *ABS*	00000000 save-restore.o
-00000000 l    df *ABS*	00000000 memcpy-asm.S.o
-00000000 l    df *ABS*	00000000 memset.S.o
-00000000 l    df *ABS*	00000000 tls.c
-00000000 g       *ABS*	00000000 __data_size
-00001000 g       .data	00000000 __global_pointer$
-000000d0 g     F .text	0000004c .hidden __riscv_save_8
-00000800 g       .tbss_space	00000000 __tls_base
-00000800 g       *ABS*	00000000 __flash_size
-00000164 g     F .text	00000018 .hidden __riscv_restore_3
-0000013c g     F .text	00000040 .hidden __riscv_restore_10
-000000d0 g     F .text	0000004c .hidden __riscv_save_11
+00000000 l    d  .debug_macro	00000000 .debug_macro
+00000000 l    d  .debug_frame	00000000 .debug_frame
+00000000 l    df *ABS*	00000000 .temp.start.o
+00000000 l    df *ABS*	00000000 gcd.c
+00001000 g       *ABS*	00000000 __flash_size
 00000100 g       *ABS*	00000000 __stack_size
-00000164 g     F .text	00000018 .hidden __riscv_restore_2
-00000000 g       *ABS*	00000000 __bss_size
-0000017c g     F .text	00000024 memcpy
-000000c0 g     F .text	0000005c .hidden __riscv_save_12
-00000000 g       *ABS*	00000000 __data_source_size
-0000013c g     F .text	00000040 .hidden __riscv_restore_11
-0000011c g     F .text	00000018 .hidden __riscv_save_1
-00000164 g     F .text	00000018 .hidden __riscv_restore_0
-000000ec g     F .text	00000030 .hidden __riscv_save_7
-00000150 g     F .text	0000002c .hidden __riscv_restore_5
-00000800 g       .bss	00000000 __bss_end
-00000150 g     F .text	0000002c .hidden __riscv_restore_6
-000000d0 g     F .text	0000004c .hidden __riscv_save_9
-000001bc g     F .text	00000008 _set_tls
-000000ec g     F .text	00000030 .hidden __riscv_save_4
-00000288  w      .debug_info	00000000 .hidden gcd.c.bcb866bf
-000001c8 g       *ABS*	00000000 __data_source_end
-0000011c g     F .text	00000018 .hidden __riscv_save_3
-00000000 g     F .init	00000014 _start
-00000800 g       *ABS*	00000000 __ram
-00000800 g       .tbss_space	00000000 __data_end
-000001c8 g       *ABS*	00000000 __tdata_source_end
-000001c4 g       .text	00000000 __text_end
-000000d0 g     F .text	0000004c .hidden __riscv_save_10
-00000150 g     F .text	0000002c .hidden __riscv_restore_4
-0000013c g     F .text	00000040 .hidden __riscv_restore_8
-000000ec g     F .text	00000030 .hidden __riscv_save_6
-00000800 g       .tbss_space	00000000 __bss_start
-000001a0 g     F .text	0000001c memset
-0000013c g     F .text	00000040 .hidden __riscv_restore_9
-00000150 g     F .text	0000002c .hidden __riscv_restore_7
-0000005c g     F .text	00000064 main
+00001000 g       .text	00000000 __bss_end
+00002000 g       .stack	00000000 _stack_top
+00000000 g       .text	00000000 _start
+00001000 g       *ABS*	00000000 __ram
+00001000 g       .text	00000000 __bss_start
+00000030 g     F .text	00000064 main
 00000800 g       *ABS*	00000000 __ram_size
-0000011c g     F .text	00000018 .hidden __riscv_save_2
-00001000 g       .init	00000000 __stack
-000000ec g     F .text	00000030 .hidden __riscv_save_5
-00000000 g     F *ABS*	00000000 vfscanf
-000001c8 g       *ABS*	00000000 __data_source
-00000134 g     F .text	00000048 .hidden __riscv_restore_12
-0000011c g     F .text	00000018 .hidden __riscv_save_0
 00000000 g       *ABS*	00000000 __flash
-00000800 g       .data	00000000 __data_start
-00000164 g     F .text	00000018 .hidden __riscv_restore_1
-00000000 g     F *ABS*	00000000 vfprintf
 
 
-
-Disassembly of section .init:
-
-00000000 <_start>:
-   0:	00001117          	auipc	x2,0x1
-   4:	00010113          	addi	x2,x2,0 # 1000 <__stack>
-   8:	00001197          	auipc	x3,0x1
-   c:	ff818193          	addi	x3,x3,-8 # 1000 <__stack>
-  10:	0040006f          	jal	x0,14 <_cstart>
-
-00000014 <_cstart>:
-  14:	    108002ef          	jal	x5,11c <__riscv_save_0>
-  18:	    00001537          	lui	x10,0x1
-  1c:	    00000613          	addi	x12,x0,0
-  20:	    1c800593          	addi	x11,x0,456
-  24:	    80050513          	addi	x10,x10,-2048 # 800 <__bss_end>
-  28:	    154000ef          	jal	x1,17c <memcpy>
-  2c:	    00001537          	lui	x10,0x1
-  30:	    00000593          	addi	x11,x0,0
-  34:	    00000613          	addi	x12,x0,0
-  38:	    80050513          	addi	x10,x10,-2048 # 800 <__bss_end>
-  3c:	    164000ef          	jal	x1,1a0 <memset>
-  40:	    00001537          	lui	x10,0x1
-  44:	    80050513          	addi	x10,x10,-2048 # 800 <__bss_end>
-  48:	    174000ef          	jal	x1,1bc <_set_tls>
-  4c:	    00000593          	addi	x11,x0,0
-  50:	    00000513          	addi	x10,x0,0
-  54:	    008000ef          	jal	x1,5c <main>
-  58:	/-- 0000006f          	jal	x0,58 <_cstart+0x44>
 
 Disassembly of section .text:
 
-0000005c <main>:
-  5c:	    000017b7          	lui	x15,0x1
-  60:	    80078223          	sb	x0,-2044(x15) # 804 <__bss_end+0x4>
-  64:	    00100713          	addi	x14,x0,1
-  68:	    80e78223          	sb	x14,-2044(x15)
-  6c:	    00200713          	addi	x14,x0,2
-  70:	    80e78223          	sb	x14,-2044(x15)
-  74:	    00500713          	addi	x14,x0,5
-  78:	    80e78223          	sb	x14,-2044(x15)
-  7c:	    01200713          	addi	x14,x0,18
-  80:	    03000793          	addi	x15,x0,48
-  84:	/-> 00070693          	addi	x13,x14,0
-  88:	|   02e7f733          	remu	x14,x15,x14
-  8c:	|   00068793          	addi	x15,x13,0
-  90:	\-- fe071ae3          	bne	x14,x0,84 <main+0x28>
-  94:	    00001737          	lui	x14,0x1
-  98:	    0ff6f793          	andi	x15,x13,255
-  9c:	    03000693          	addi	x13,x0,48
-  a0:	    80d70223          	sb	x13,-2044(x14) # 804 <__bss_end+0x4>
-  a4:	    01200693          	addi	x13,x0,18
-  a8:	    80d70223          	sb	x13,-2044(x14)
-  ac:	    80f70223          	sb	x15,-2044(x14)
-  b0:	    00100793          	addi	x15,x0,1
-  b4:	    80f70423          	sb	x15,-2040(x14)
-  b8:	    00000513          	addi	x10,x0,0
-  bc:	    00008067          	jalr	x0,0(x1)
+00000000 <_start>:
+     ### .section .init
+     ### .globl _start
+     ### 
+     ### _start:
+     ###     la sp, _stack_top
+   0:	       00002117          	auipc	x2,0x2
+   4:	       00010113          	addi	x2,x2,0 # 2000 <_stack_top>
+     ### 
+     ###     # zero .bss
+     ###     la t0, __bss_start
+   8:	       00001297          	auipc	x5,0x1
+   c:	       ff828293          	addi	x5,x5,-8 # 1000 <__bss_end>
+     ###     la t1, __bss_end
+  10:	       00001317          	auipc	x6,0x1
+  14:	       ff030313          	addi	x6,x6,-16 # 1000 <__bss_end>
+     ### 
+     ### 1:
+     ###     bge t0, t1, 2f
+  18:	/--/-X 0062d863          	bge	x5,x6,28 <_start+0x28>
+     ###     sw zero, 0(t0)
+  1c:	|  |   0002a023          	sw	x0,0(x5)
+     ###     addi t0, t0, 4
+  20:	|  |   00428293          	addi	x5,x5,4
+     ###     j 1b
+  24:	|  \-- ff5ff06f          	jal	x0,18 <_start+0x18>
+     ### 
+     ### 2:
+     ###     call main
+  28:	\----> 008000ef          	jal	x1,30 <main>
+     ### 
+  2c:	   /-- 0000006f          	jal	x0,2c <_start+0x2c>
 
-000000c0 <__riscv_save_12>:
-  c0:	fc010113          	addi	x2,x2,-64
-  c4:	00000313          	addi	x6,x0,0
-  c8:	01b12623          	sw	x27,12(x2)
-  cc:	00c0006f          	jal	x0,d8 <__riscv_save_10+0x8>
-
-000000d0 <__riscv_save_10>:
-  d0:	fc010113          	addi	x2,x2,-64
-  d4:	ff000313          	addi	x6,x0,-16
-  d8:	01a12823          	sw	x26,16(x2)
-  dc:	01912a23          	sw	x25,20(x2)
-  e0:	01812c23          	sw	x24,24(x2)
-  e4:	01712e23          	sw	x23,28(x2)
-  e8:	00c0006f          	jal	x0,f4 <__riscv_save_4+0x8>
-
-000000ec <__riscv_save_4>:
-  ec:	fc010113          	addi	x2,x2,-64
-  f0:	fe000313          	addi	x6,x0,-32
-  f4:	03612023          	sw	x22,32(x2)
-  f8:	03512223          	sw	x21,36(x2)
-  fc:	03412423          	sw	x20,40(x2)
- 100:	03312623          	sw	x19,44(x2)
- 104:	03212823          	sw	x18,48(x2)
- 108:	02912a23          	sw	x9,52(x2)
- 10c:	02812c23          	sw	x8,56(x2)
- 110:	02112e23          	sw	x1,60(x2)
- 114:	40610133          	sub	x2,x2,x6
- 118:	00028067          	jalr	x0,0(x5)
-
-0000011c <__riscv_save_0>:
- 11c:	ff010113          	addi	x2,x2,-16
- 120:	01212023          	sw	x18,0(x2)
- 124:	00912223          	sw	x9,4(x2)
- 128:	00812423          	sw	x8,8(x2)
- 12c:	00112623          	sw	x1,12(x2)
- 130:	00028067          	jalr	x0,0(x5)
-
-00000134 <__riscv_restore_12>:
- 134:	00c12d83          	lw	x27,12(x2)
- 138:	01010113          	addi	x2,x2,16
-
-0000013c <__riscv_restore_10>:
- 13c:	00012d03          	lw	x26,0(x2)
- 140:	00412c83          	lw	x25,4(x2)
- 144:	00812c03          	lw	x24,8(x2)
- 148:	00c12b83          	lw	x23,12(x2)
- 14c:	01010113          	addi	x2,x2,16
-
-00000150 <__riscv_restore_4>:
- 150:	00012b03          	lw	x22,0(x2)
- 154:	00412a83          	lw	x21,4(x2)
- 158:	00812a03          	lw	x20,8(x2)
- 15c:	00c12983          	lw	x19,12(x2)
- 160:	01010113          	addi	x2,x2,16
-
-00000164 <__riscv_restore_0>:
- 164:	00012903          	lw	x18,0(x2)
- 168:	00412483          	lw	x9,4(x2)
- 16c:	00812403          	lw	x8,8(x2)
- 170:	00c12083          	lw	x1,12(x2)
- 174:	01010113          	addi	x2,x2,16
- 178:	00008067          	jalr	x0,0(x1)
-
-0000017c <memcpy>:
- 17c:	       00050313          	addi	x6,x10,0
- 180:	/----- 00060e63          	beq	x12,x0,19c <memcpy+0x20>
- 184:	|  /-> 00058383          	lb	x7,0(x11)
- 188:	|  |   00730023          	sb	x7,0(x6)
- 18c:	|  |   fff60613          	addi	x12,x12,-1
- 190:	|  |   00130313          	addi	x6,x6,1
- 194:	|  |   00158593          	addi	x11,x11,1
- 198:	|  \-- fe0616e3          	bne	x12,x0,184 <memcpy+0x8>
- 19c:	\----> 00008067          	jalr	x0,0(x1)
-
-000001a0 <memset>:
- 1a0:	       00050313          	addi	x6,x10,0
- 1a4:	/----- 00060a63          	beq	x12,x0,1b8 <memset+0x18>
- 1a8:	|  /-> 00b30023          	sb	x11,0(x6)
- 1ac:	|  |   fff60613          	addi	x12,x12,-1
- 1b0:	|  |   00130313          	addi	x6,x6,1
- 1b4:	|  \-- fe061ae3          	bne	x12,x0,1a8 <memset+0x8>
- 1b8:	\----> 00008067          	jalr	x0,0(x1)
-
-000001bc <_set_tls>:
- 1bc:	00050213          	addi	x4,x10,0
- 1c0:	00008067          	jalr	x0,0(x1)
-
-000001c4 <__text_end>:
- 1c4:	0000                	.2byte	0x0
-	...
+00000030 <main>:
+     ### 
+     ### #endif
+     ### 
+     ### // main function
+     ### int main() {
+     ###     OUT = 0;
+  30:	    000017b7          	lui	x15,0x1
+  34:	    00078223          	sb	x0,4(x15) # 1004 <__bss_end+0x4>
+     ###     _put_str(":");
+     ###     _put_value(minutes);
+     ###     _put_str(":");
+     ###     _put_value(seconds);
+     ###     _put_str("\n");
+     ###     OUT = hours; OUT = minutes; OUT = seconds;
+  38:	    00100713          	addi	x14,x0,1
+  3c:	    00e78223          	sb	x14,4(x15)
+  40:	    00200713          	addi	x14,x0,2
+  44:	    00e78223          	sb	x14,4(x15)
+  48:	    00500713          	addi	x14,x0,5
+  4c:	    00e78223          	sb	x14,4(x15)
+     ### 
+     ###     // Find GCD using Euclidean algorithm (iterative)
+     ###     uint32_t a = 48, b = 18;
+  50:	    01200713          	addi	x14,x0,18
+  54:	    03000793          	addi	x15,x0,48
+     ###     uint32_t orig_a = a, orig_b = b;
+     ###     while (b != 0) {
+     ###         uint32_t temp = b;
+     ###         b = a % b;
+  58:	/-> 00070693          	addi	x13,x14,0
+  5c:	|   02e7f733          	remu	x14,x15,x14
+     ###     while (b != 0) {
+  60:	|   00068793          	addi	x15,x13,0
+  64:	\-- fe071ae3          	bne	x14,x0,58 <main+0x28>
+     ###     _put_str(" and ");
+     ###     _put_value(orig_b);
+     ###     _put_str(" = ");
+     ###     _put_value(a);
+     ###     _put_str("\n");
+     ###     OUT = orig_a; OUT = orig_b; OUT = a;
+  68:	    00001737          	lui	x14,0x1
+     ###     _put_value(a);
+  6c:	    0ff6f793          	andi	x15,x13,255
+     ###     OUT = orig_a; OUT = orig_b; OUT = a;
+  70:	    03000693          	addi	x13,x0,48
+  74:	    00d70223          	sb	x13,4(x14) # 1004 <__bss_end+0x4>
+  78:	    01200693          	addi	x13,x0,18
+  7c:	    00d70223          	sb	x13,4(x14)
+  80:	    00f70223          	sb	x15,4(x14)
+     ### 
+     ###     CPU_DONE = 1;
+  84:	    00100793          	addi	x15,x0,1
+  88:	    00f70423          	sb	x15,8(x14)
+     ###     return 0;
+  8c:	    00000513          	addi	x10,x0,0
+  90:	    00008067          	jalr	x0,0(x1)

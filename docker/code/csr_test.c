@@ -1,46 +1,29 @@
 
-#include <stdlib.h>
-#include <stdbool.h>
 #include <stdint.h>
 
-// Read CPU cycle counter (64-bit)
-uint64_t get_cycles() {
-    uint32_t lo, hi;
-    asm volatile (
-        "rdcycle %0\n"
-        "rdcycleh %1\n"
-        : "=r"(lo), "=r"(hi)
-    );
-    return ((uint64_t)hi << 32) | lo;
-}
-
-// Read retired instruction counter (64-bit)
-uint64_t get_instret() {
-    uint32_t lo, hi;
-    asm volatile (
-        "rdinstret %0\n"
-        "rdinstreth %1\n"
-        : "=r"(lo), "=r"(hi)
-    );
-    return ((uint64_t)hi << 32) | lo;
-}
-
-// Read real-time clock (if implemented)
-uint64_t get_time() {
-    uint32_t lo, hi;
-    asm volatile (
-        "rdtime %0\n"
-        "rdtimeh %1\n"
-        : "=r"(lo), "=r"(hi)
-    );
-    return ((uint64_t)hi << 32) | lo;
-}
-
 int main() {
-    get_cycles();
-    get_time();
-    get_instret();
+    uint32_t r1 = 1, r2 = 2;
+    uint32_t out1 = 0, out2 = 0;
 
+    // ---------- SAME rd and rs1 ----------
+    asm volatile ("csrrw %0, mcycle, %0" : "+r"(r1));
+    asm volatile ("csrrs %0, mcycle, %0" : "+r"(r1));
+    asm volatile ("csrrc %0, mcycle, %0" : "+r"(r1));
+
+    asm volatile ("csrrwi %0, mcycle, 1" : "=r"(out1));
+    asm volatile ("csrrsi %0, mcycle, 1" : "=r"(out1));
+    asm volatile ("csrrci %0, mcycle, 1" : "=r"(out1));
+
+    // ---------- DIFFERENT rd and rs1 ----------
+    asm volatile ("csrrw %0, mcycle, %1" : "=r"(out1) : "r"(r2));
+    asm volatile ("csrrs %0, mcycle, %1" : "=r"(out1) : "r"(r2));
+    asm volatile ("csrrc %0, mcycle, %1" : "=r"(out1) : "r"(r2));
+
+    asm volatile ("csrrwi %0, mcycle, 2" : "=r"(out2));
+    asm volatile ("csrrsi %0, mcycle, 2" : "=r"(out2));
+    asm volatile ("csrrci %0, mcycle, 2" : "=r"(out2));
+
+    // Trap instructions (optional for debug)
     asm volatile ("ecall");
     asm volatile ("ebreak");
 

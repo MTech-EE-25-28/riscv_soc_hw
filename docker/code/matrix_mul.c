@@ -1,6 +1,4 @@
 
-#include <stdlib.h>
-#include <stdbool.h>
 #include <stdint.h>
 
 #if defined(__linux__) || defined(__APPLE__) || defined(__unix__) // for host pc
@@ -47,13 +45,21 @@
 
 #else  // for the test device
 
-    #define N                   (* (volatile uint8_t * ) 0x00000800)
-    #define OUT                 (* (volatile     int * ) 0x00000804)
-    #define CPU_DONE            (* (volatile uint8_t * ) 0x00000808)
+    #define N                   (* (volatile uint8_t * ) 0x00001000)
+    #define OUT                 (* (volatile     int * ) 0x00001004)
+    #define CPU_DONE            (* (volatile uint8_t * ) 0x00001008)
     void _put_value(int32_t val) { }
     void _put_str(char *str) { }
 
 #endif
+
+void *memset(void *dst, int val, unsigned int n) {
+    unsigned char *p = (unsigned char *)dst;
+    for (unsigned int i = 0; i < n; i++) {
+        p[i] = (unsigned char)val;
+    }
+    return dst;
+}
 
 int main () {
     int A[3][3], B[3][3], C[3][3] = {0};
