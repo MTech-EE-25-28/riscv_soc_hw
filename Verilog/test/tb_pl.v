@@ -18,7 +18,6 @@ wire [31:0] PCW, Result, DataAdrW, WriteDataW, ReadDataW;
 riscv_cpu uut (clk, reset, Ext_MemWrite, Ext_WriteData, Ext_DataAdr, MemWrite, WriteData, DataAdr, ReadData, PCW, Result, DataAdrW, WriteDataW, ReadDataW);
 
 integer fault_instrs = 0, i = 0, flag = 0;
-reg [4:0] SP = 0, EP = 0;
 reg [31:0] last_pcw = 32'hFFFFFFFF; // guard: only check once per unique PCW
 
 localparam ADDI_x0  =   32'h8;

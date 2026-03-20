@@ -42,14 +42,6 @@ wire tag_match = btb_valid[fetch_index] && (btb_tags[fetch_index] == fetch_tag);
 wire [1:0] counter_val = btb_counters[fetch_index];
 
 integer i; // simulation purpose only
-initial begin
-    for (i = 0; i < BTB_SIZE; i = i + 1) begin
-        btb_valid[i] <= 1'b0;
-        btb_counters[i] <= WK_TAKEN;
-        btb_targets[i] <= 0;
-        btb_tags[i] <= 0;
-    end
-end
 
 always @(*) begin
     if (!reset || !enable) begin
@@ -59,20 +51,19 @@ always @(*) begin
         predicted_target = 32'h0;
     end else begin
         predict_taken = tag_match && (counter_val[1] == 1'b0); // Taken if upper bit is 0
-        predicted_target = btb_targets[fetch_index];
+        predicted_target = tag_match ? btb_targets[fetch_index] : 32'h0;
         prediction_valid = tag_match;
     end
 end
 
 always @(posedge clk) begin
     if (!reset) begin
-        // Initialize all entries as invalid with weakly taken
-        // for (i = 0; i < BTB_SIZE; i = i + 1) begin
-        //     btb_valid[i] <= 1'b0;
-        //     btb_counters[i] <= WK_TAKEN;
-        //     btb_targets[i] <= 0;
-        //     btb_tags[i] <= 0;
-        // end
+        for (i = 0; i < BTB_SIZE; i = i + 1) begin
+            btb_valid[i]    <= 1'b0;
+            btb_counters[i] <= WK_TAKEN;
+            btb_targets[i]  <= 0;
+            btb_tags[i]     <= 0;
+        end
     end else if (update_en) begin
         // Update the BTB entry
         btb_valid[update_index] <= 1'b1;

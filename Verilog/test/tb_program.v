@@ -29,14 +29,14 @@ initial begin
     # 100; // wait for reset to propagate and mem init
 
     @(negedge clk);
-    Ext_MemWrite = 1; Ext_DataAdr = 32'h00000800; Ext_WriteData = 32'h0000000A;
+    Ext_MemWrite = 1; Ext_DataAdr = 32'h00001000; Ext_WriteData = 32'h0000000A;
     @(posedge clk); @(posedge clk);
 
     Ext_MemWrite = 0; Ext_DataAdr = 32'h00000000; Ext_WriteData = 32'b0;
     @(posedge clk);
 
     @(negedge clk);
-    Ext_MemWrite = 1; Ext_DataAdr = 32'h00000804; Ext_WriteData = 32'h00000001;
+    Ext_MemWrite = 1; Ext_DataAdr = 32'h00001004; Ext_WriteData = 32'h00000001;
     @(posedge clk); @(posedge clk);
 
     reset = 1;
@@ -52,12 +52,12 @@ always @(negedge clk) begin
     // debug info
     // $display("PCF = %h, Instr = %h, WriteData = %h, ReadAdr = %h, Result =  %h", uut.rvpl.dp.PCF, uut.rvpl.dp.Instr, WriteData, DataAdr, Result);
     if (MemWrite && reset) begin
-        if (DataAdr == 32'h00000804) begin
-            $display("Memory write detected at address 0x00000804");
+        if (DataAdr == 32'h00001004) begin
+            $display("Memory write detected at address 0x00001004");
             $display("Test Info: Value %d written to memory", $signed(WriteData));
         end
-        if (DataAdr == 32'h00000808) begin
-            $display("Memory write detected at address 0x00000808");
+        if (DataAdr == 32'h00001008) begin
+            $display("Memory write detected at address 0x00001008");
             if (WriteData == 32'd1) begin
                 $display("Test passed: Program halted successfully");
             end else begin
