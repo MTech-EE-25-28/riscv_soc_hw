@@ -46,7 +46,7 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 
 - [x] Update memory architecture and test it
     - [x] Change Data Mem to Xilinx BRAM Interface
-    - [x] Change Instr Mem to be sequential
+    - [x] Change Instr Mem to be sequential (switched back to combinational)
 - [x] Implement Two-bit branch predictor and test it
 - [x] RV32M Extension
     - [x] Implement 32-bit signed multiplier (maybe extend from 16-bit dadda)

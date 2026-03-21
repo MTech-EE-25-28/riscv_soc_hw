@@ -53,6 +53,8 @@ wire unused[2:0];
 wire ivalid;
 
 wire        BranchTakenE;
+wire        BranchM, BranchTakenM;
+wire [31:0] PCTargetM;
 wire        FetchHold, DecodeHold;
 
 // Branch predictor wires
@@ -73,7 +75,7 @@ assign DecodeHold = StallD || ALUStall;
 
 branch_predictor bp (
     clk, reset, 1'b1, PCF, BPPredictTakenF, BPPredictedTargetF, BPPredictionValidF,
-    BranchE, PCE, PCTargetE, BranchTakenE
+    BranchM, PCM, PCTargetM, BranchTakenM
 );
 
 assign FetchPredTakenF  = BPPredictTakenF && BPPredictionValidF;
@@ -137,7 +139,9 @@ branching_unit bu (funct3E, Zero, ALUResultE[31], Branch);
 
 pl_reg_m plm (
     clk, reset, ALUStall, ResultSrcE, MemWriteE, RegWriteE, ALUResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE,
-    ResultSrcM, MemWriteM, RegWriteM, ALUResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM
+    BranchE, BranchTakenE, PCTargetE,
+    ResultSrcM, MemWriteM, RegWriteM, ALUResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM,
+    BranchM, BranchTakenM, PCTargetM
 );
 
 pl_reg_w plw (

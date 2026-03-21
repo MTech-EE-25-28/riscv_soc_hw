@@ -43,16 +43,16 @@ wire [1:0] counter_val = btb_counters[fetch_index];
 
 integer i; // simulation purpose only
 
-always @(*) begin
+always @(posedge clk) begin
     if (!reset || !enable) begin
         // During reset, output no prediction
-        prediction_valid = 1'b0;
-        predict_taken = 1'b0;
-        predicted_target = 32'h0;
+        prediction_valid <= 1'b0;
+        predict_taken    <= 1'b0;
+        predicted_target <= 32'h0;
     end else begin
-        predict_taken = tag_match && (counter_val[1] == 1'b0); // Taken if upper bit is 0
-        predicted_target = tag_match ? btb_targets[fetch_index] : 32'h0;
-        prediction_valid = tag_match;
+        predict_taken    <= tag_match && (counter_val[1] == 1'b0); // Taken if upper bit is 0
+        predicted_target <= tag_match ? btb_targets[fetch_index] : 32'h0;
+        prediction_valid <= tag_match;
     end
 end
 
