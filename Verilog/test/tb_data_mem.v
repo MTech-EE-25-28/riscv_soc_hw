@@ -11,7 +11,7 @@ wire [31:0] rd_data;
 
 // Instantiate DUT
 data_mem uut (
-    .clk(clk), .reset(reset), .wea(wea), .addr(addr),
+    .clk(clk), .wea(wea), .addr(addr),
     .wr_data(wr_data), .rd_data(rd_data)
 );
 
@@ -51,7 +51,8 @@ end
 endtask
 
 initial begin
-
+    $dumpfile("./Verilog/dumps/tb_data_mem.vcd");
+    $dumpvars(0, tb_data_mem);
     // Initialize
     clk = 0; reset = 0; wea = 0; addr = 0; wr_data = 0;
 

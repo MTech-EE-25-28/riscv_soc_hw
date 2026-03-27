@@ -36,7 +36,7 @@ wire        RegWriteE, RegWriteM, RegWriteW;
 wire  [1:0] ResultSrcE, ResultSrcM, ResultSrcW;
 wire        MemWriteE;
 
-wire [31:0]  ALUResultE, ALUResultM;
+wire [31:0]  ALUResultE, ResultE, ResultM;
 
 wire [31:0] PCD, PCE, PCM;
 wire [31:0] InstrE, WriteDataM;
@@ -48,7 +48,7 @@ wire [31:0] PCPlus4F, PCPlus4D, PCPlus4E, PCPlus4M, PCPlus4W;
 
 wire [31:0] ReadDataW;  // Masked read data in writeback stage
 wire  [2:0] funct3W;
-wire Zero, Branch, BranchE;
+wire Zero, Branch, BranchE, csrSelE;
 wire unused[2:0];
 wire ivalid;
 
@@ -121,38 +121,38 @@ mux2 #(32) lauipcmux (AuiPC, {InstrD[31:12], 12'b0}, InstrD[5], lAuiPCD);
 
 // Execute Pipeline register
 pl_reg_e ple (
-    clk, FlushE, ALUStall, ResultSrcD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD, SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD,
-    ResultSrcE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, InstrE, ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE
+    clk, FlushE, ALUStall, ResultSrcD, MemWriteD, csrSelD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD, SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD,
+    ResultSrcE, MemWriteE, csrSelE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, InstrE, ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE
 );
 
 // ALU logic
-mux3 #(32) srcamux (RD1E, ResultW, ALUResultM, ForwardAE, ALUSrcA);
-mux3 #(32) rd2mux  (RD2E, ResultW, ALUResultM, ForwardBE, ALUSrcB);
+mux3 #(32) srcamux (RD1E, ResultW, ResultM, ForwardAE, ALUSrcA);
+mux3 #(32) rd2mux  (RD2E, ResultW, ResultM, ForwardBE, ALUSrcB);
 bk_adder   pcaddbranch (PCE, ImmExtE, 1'b0, PCTargetE, unused[2]);
 
 mux2 #(32) srcbmux (ALUSrcB, ImmExtE, ALUSrcE, SrcB);
 alu        alu (clk, ALUSrcA, SrcB, ALUControlE, ALUResultE, Zero, ALUStall);
-wire [31:0] placeholder; // Placeholder for CSR read data, to be connected to actual CSR handler output
-csr_handler csr (clk, reset, !FlushE && InstrE, 1'b0, InstrD[31:20], SrcA, placeholder);
-
+wire [31:0] CSRResultE;
+csr_handler csr (clk, reset, !FlushE && InstrE, 1'b1, InstrD[13:12], InstrD[31:20], SrcA, CSRResultE);
 branching_unit bu (funct3E, Zero, ALUResultE[31], Branch);
+mux2 #(32) csrmux (ALUResultE, CSRResultE, csrSelE, ResultE);
 
 pl_reg_m plm (
-    clk, reset, ALUStall, ResultSrcE, MemWriteE, RegWriteE, ALUResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE,
+    clk, reset, ALUStall, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE,
     BranchE, BranchTakenE, PCTargetE,
-    ResultSrcM, MemWriteM, RegWriteM, ALUResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM,
+    ResultSrcM, MemWriteM, RegWriteM, ResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM,
     BranchM, BranchTakenM, PCTargetM
 );
 
 pl_reg_w plw (
-    clk, reset, ResultSrcM, RegWriteM, ALUResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M,
+    clk, reset, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M,
     ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W
 );
 
 // Store masker for store operations - generates byte enables and aligns data
 wire [31:0] AlignedWriteDataM;
 wire  [3:0] weaM;
-store_masker store_mask (funct3M, ALUResultM[1:0], WriteDataM, AlignedWriteDataM, weaM);
+store_masker store_mask (funct3M, ResultM[1:0], WriteDataM, AlignedWriteDataM, weaM);
 
 // Memory masker for load operations - operates in Writeback stage for sequential BRAM
 load_masker load_mask (funct3W, ALUResultW[1:0], ReadData, MaskedReadDataW);
@@ -166,7 +166,7 @@ hazard_unit hz (
 );
 
 assign Mem_WrData = AlignedWriteDataM;
-assign Mem_WrAddr = ALUResultM;
+assign Mem_WrAddr = ResultM;
 assign wea = MemWriteM ? weaM : 4'b0000;
 
 endmodule
