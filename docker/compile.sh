@@ -18,9 +18,9 @@ STARTUP="$CFG_DIR/start.s"
 ARCH=rv32im_zicsr
 
 # Memory config
-ROM=4096
-RAM=2048
-STACK=256
+ROM=2048    # 2K
+RAM=2048    # 2K
+STACK=256   # 0.25K
 
 # Toolchain
 CC=riscv64-unknown-elf-gcc
@@ -36,7 +36,7 @@ CFLAGS+=" -Wa,-march=$ARCH"
 LDFLAGS="-march=$ARCH -mabi=ilp32 -nostdlib -nostartfiles"
 LDFLAGS+=" -Wl,--gc-sections"
 LDFLAGS+=" -Wl,--defsym=__flash=0x00000000,--defsym=__flash_size=$ROM"
-LDFLAGS+=" -Wl,--defsym=__ram=0x00001000,--defsym=__ram_size=$RAM"
+LDFLAGS+=" -Wl,--defsym=__ram=0x00002000,--defsym=__ram_size=$RAM"
 LDFLAGS+=" -Wl,--defsym=__stack_size=$STACK"
 LDFLAGS+=" -T $LINKER"
 

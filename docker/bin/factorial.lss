@@ -2,8 +2,8 @@
 .temp.file.elf:     file format elf32-littleriscv
 
 SYMBOL TABLE:
-00000000 l    d  .text	00000000 .text
-00001000 l    d  .stack	00000000 .stack
+00000a00 l    d  .init	00000000 .init
+00000a30 l    d  .text	00000000 .text
 00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
 00000000 l    d  .comment	00000000 .comment
 00000000 l    d  .debug_line	00000000 .debug_line
@@ -18,96 +18,120 @@ SYMBOL TABLE:
 00000000 l    d  .debug_frame	00000000 .debug_frame
 00000000 l    df *ABS*	00000000 .temp.start.o
 00000000 l    df *ABS*	00000000 factorial.c
-00001000 g       *ABS*	00000000 __flash_size
+00000800 g       *ABS*	00000000 __flash_size
 00000100 g       *ABS*	00000000 __stack_size
-00000018 g     F .text	00000020 factorial
-00002000 g       .stack	00000000 _stack_top
-00000000 g       .text	00000000 _start
-00001000 g       *ABS*	00000000 __ram
-00000038 g     F .text	0000003c main
+00001000 g       .text	00000000 __bss_end
+00000a38 g     F .text	00000020 factorial
+00001700 g       .text	00000000 _stack_top
+00000a00 g       .init	00000000 _start
+00002000 g       *ABS*	00000000 __ram
+00001000 g       .text	00000000 __bss_start
+00000a58 g     F .text	0000003c main
 00000800 g       *ABS*	00000000 __ram_size
-00000014 g     F .text	00000004 _put_str
+00000a34 g     F .text	00000004 _put_str
 00000000 g       *ABS*	00000000 __flash
-00000010 g     F .text	00000004 _put_value
+00000a30 g     F .text	00000004 _put_value
 
 
 
-Disassembly of section .text:
+Disassembly of section .init:
 
-00000000 <_start>:
+00000a00 <_start>:
      ### .section .init
      ### .globl _start
      ### 
      ### _start:
-     ###     la sp, _stack_top   # setup stack
-   0:	    00002117          	auipc	x2,0x2
-   4:	    00010113          	addi	x2,x2,0 # 2000 <_stack_top>
+     ###     la sp, _stack_top
+ a00:	       00001117          	auipc	x2,0x1
+ a04:	       d0010113          	addi	x2,x2,-768 # 1700 <_stack_top>
      ### 
-     ###     call main           # call main
-   8:	    030000ef          	jal	x1,38 <main>
+     ###     # zero .bss
+     ###     la t0, __bss_start
+ a08:	       00000297          	auipc	x5,0x0
+ a0c:	       5f828293          	addi	x5,x5,1528 # 1000 <__bss_end>
+     ###     la t1, __bss_end
+ a10:	       00000317          	auipc	x6,0x0
+ a14:	       5f030313          	addi	x6,x6,1520 # 1000 <__bss_end>
      ### 
-   c:	/-- 0000006f          	jal	x0,c <_start+0xc>
+     ### 1:
+     ###     bge t0, t1, 2f
+ a18:	/--/-X 0062d863          	bge	x5,x6,a28 <_start+0x28>
+     ###     sw zero, 0(t0)
+ a1c:	|  |   0002a023          	sw	x0,0(x5)
+     ###     addi t0, t0, 4
+ a20:	|  |   00428293          	addi	x5,x5,4
+     ###     j 1b
+ a24:	|  \-- ff5ff06f          	jal	x0,a18 <_start+0x18>
+     ### 
+     ### 2:
+     ###     call main
+ a28:	\----> 030000ef          	jal	x1,a58 <main>
+     ### 
+     ### 3:  j 3b
+ a2c:	   /-- 0000006f          	jal	x0,a2c <_start+0x2c>
 
-00000010 <_put_value>:
+Disassembly of section .text:
+
+00000a30 <_put_value>:
      ### #else  // for the test device
      ### 
      ###     #define N                   (* (volatile uint8_t * ) 0x00001000)
      ###     #define OUT                 (* (volatile     int * ) 0x00001004)
      ###     #define CPU_DONE            (* (volatile uint8_t * ) 0x00001008)
      ###     void _put_value(uint8_t val) { }
-  10:	00008067          	jalr	x0,0(x1)
+ a30:	00008067          	jalr	x0,0(x1)
 
-00000014 <_put_str>:
+00000a34 <_put_str>:
      ###     void _put_str(char *str) { }
-  14:	00008067          	jalr	x0,0(x1)
+ a34:	00008067          	jalr	x0,0(x1)
 
-00000018 <factorial>:
+00000a38 <factorial>:
      ### 
      ### #endif
      ### 
      ### /* Factorial Function*/
      ### int factorial(int n) {
-  18:	       00050713          	addi	x14,x10,0
+ a38:	       00050713          	addi	x14,x10,0
      ###     int i, result = 1;
      ###     for (i = 2; i <= n; i++) {
-  1c:	       00200793          	addi	x15,x0,2
+ a3c:	       00200793          	addi	x15,x0,2
      ###     int i, result = 1;
-  20:	       00100513          	addi	x10,x0,1
+ a40:	       00100513          	addi	x10,x0,1
      ###     for (i = 2; i <= n; i++) {
-  24:	/--/-X 00f75463          	bge	x14,x15,2c <factorial+0x14>
+ a44:	/--/-X 00f75463          	bge	x14,x15,a4c <factorial+0x14>
      ###         result *= i;
      ###     }
      ###     return result;
      ### }
-  28:	|  |   00008067          	jalr	x0,0(x1)
+ a48:	|  |   00008067          	jalr	x0,0(x1)
      ###         result *= i;
-  2c:	|  \-> 02f50533          	mul	x10,x10,x15
+ a4c:	|  \-> 02f50533          	mul	x10,x10,x15
      ###     for (i = 2; i <= n; i++) {
-  30:	|      00178793          	addi	x15,x15,1
-  34:	\----- ff1ff06f          	jal	x0,24 <factorial+0xc>
+ a50:	|      00178793          	addi	x15,x15,1
+ a54:	\----- ff1ff06f          	jal	x0,a44 <factorial+0xc>
 
-00000038 <main>:
+00000a58 <main>:
      ### 
      ### // main function
      ### int main() {
-  38:	ff010113          	addi	x2,x2,-16
-  3c:	00812423          	sw	x8,8(x2)
-  40:	00112623          	sw	x1,12(x2)
+ a58:	ff010113          	addi	x2,x2,-16
+ a5c:	00812423          	sw	x8,8(x2)
+ a60:	00112623          	sw	x1,12(x2)
      ###     // not sure why function with return doesn't work
      ###     OUT = factorial(N);
-  44:	00001437          	lui	x8,0x1
-  48:	00044503          	lbu	x10,0(x8) # 1000 <__flash_size>
-  4c:	fcdff0ef          	jal	x1,18 <factorial>
-  50:	00a42223          	sw	x10,4(x8)
+ a64:	00001437          	lui	x8,0x1
+ a68:	00044503          	lbu	x10,0(x8) # 1000 <__bss_end>
+ a6c:	fcdff0ef          	jal	x1,a38 <factorial>
+ a70:	00a42223          	sw	x10,4(x8)
      ###     _put_value(OUT);
-  54:	00442783          	lw	x15,4(x8)
+ a74:	00442783          	lw	x15,4(x8)
      ###     CPU_DONE = 1;
      ###     return 0;
-  58:	00000513          	addi	x10,x0,0
+ a78:	00000513          	addi	x10,x0,0
      ###     CPU_DONE = 1;
-  5c:	00100793          	addi	x15,x0,1
-  60:	00f40423          	sb	x15,8(x8)
-  64:	00c12083          	lw	x1,12(x2)
-  68:	00812403          	lw	x8,8(x2)
-  6c:	01010113          	addi	x2,x2,16
-  70:	00008067          	jalr	x0,0(x1)
+ a7c:	00100793          	addi	x15,x0,1
+ a80:	00f40423          	sb	x15,8(x8)
+ a84:	00c12083          	lw	x1,12(x2)
+ a88:	00812403          	lw	x8,8(x2)
+ a8c:	01010113          	addi	x2,x2,16
+ a90:	00008067          	jalr	x0,0(x1)

@@ -2,8 +2,8 @@
 .temp.file.elf:     file format elf32-littleriscv
 
 SYMBOL TABLE:
-00000000 l    d  .text	00000000 .text
-00001000 l    d  .stack	00000000 .stack
+00000a00 l    d  .init	00000000 .init
+00000a30 l    d  .text	00000000 .text
 00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
 00000000 l    d  .comment	00000000 .comment
 00000000 l    d  .debug_line	00000000 .debug_line
@@ -18,108 +18,111 @@ SYMBOL TABLE:
 00000000 l    d  .debug_frame	00000000 .debug_frame
 00000000 l    df *ABS*	00000000 .temp.start.o
 00000000 l    df *ABS*	00000000 gcd.c
-00001000 g       *ABS*	00000000 __flash_size
+00000800 g       *ABS*	00000000 __flash_size
 00000100 g       *ABS*	00000000 __stack_size
 00001000 g       .text	00000000 __bss_end
-00002000 g       .stack	00000000 _stack_top
-00000000 g       .text	00000000 _start
-00001000 g       *ABS*	00000000 __ram
+00001700 g       .text	00000000 _stack_top
+00000a00 g       .init	00000000 _start
+00002000 g       *ABS*	00000000 __ram
 00001000 g       .text	00000000 __bss_start
-00000030 g     F .text	00000064 main
+00000a30 g     F .text	00000064 main
 00000800 g       *ABS*	00000000 __ram_size
 00000000 g       *ABS*	00000000 __flash
 
 
 
-Disassembly of section .text:
+Disassembly of section .init:
 
-00000000 <_start>:
+00000a00 <_start>:
      ### .section .init
      ### .globl _start
      ### 
      ### _start:
      ###     la sp, _stack_top
-   0:	       00002117          	auipc	x2,0x2
-   4:	       00010113          	addi	x2,x2,0 # 2000 <_stack_top>
+ a00:	       00001117          	auipc	x2,0x1
+ a04:	       d0010113          	addi	x2,x2,-768 # 1700 <_stack_top>
      ### 
      ###     # zero .bss
      ###     la t0, __bss_start
-   8:	       00001297          	auipc	x5,0x1
-   c:	       ff828293          	addi	x5,x5,-8 # 1000 <__bss_end>
+ a08:	       00000297          	auipc	x5,0x0
+ a0c:	       5f828293          	addi	x5,x5,1528 # 1000 <__bss_end>
      ###     la t1, __bss_end
-  10:	       00001317          	auipc	x6,0x1
-  14:	       ff030313          	addi	x6,x6,-16 # 1000 <__bss_end>
+ a10:	       00000317          	auipc	x6,0x0
+ a14:	       5f030313          	addi	x6,x6,1520 # 1000 <__bss_end>
      ### 
      ### 1:
      ###     bge t0, t1, 2f
-  18:	/--/-X 0062d863          	bge	x5,x6,28 <_start+0x28>
+ a18:	/--/-X 0062d863          	bge	x5,x6,a28 <_start+0x28>
      ###     sw zero, 0(t0)
-  1c:	|  |   0002a023          	sw	x0,0(x5)
+ a1c:	|  |   0002a023          	sw	x0,0(x5)
      ###     addi t0, t0, 4
-  20:	|  |   00428293          	addi	x5,x5,4
+ a20:	|  |   00428293          	addi	x5,x5,4
      ###     j 1b
-  24:	|  \-- ff5ff06f          	jal	x0,18 <_start+0x18>
+ a24:	|  \-- ff5ff06f          	jal	x0,a18 <_start+0x18>
      ### 
      ### 2:
      ###     call main
-  28:	\----> 008000ef          	jal	x1,30 <main>
+ a28:	\----> 008000ef          	jal	x1,a30 <main>
      ### 
-  2c:	   /-- 0000006f          	jal	x0,2c <_start+0x2c>
+     ### 3:  j 3b
+ a2c:	   /-- 0000006f          	jal	x0,a2c <_start+0x2c>
 
-00000030 <main>:
+Disassembly of section .text:
+
+00000a30 <main>:
      ### 
      ### #endif
      ### 
      ### // main function
      ### int main() {
      ###     OUT = 0;
-  30:	    000017b7          	lui	x15,0x1
-  34:	    00078223          	sb	x0,4(x15) # 1004 <__bss_end+0x4>
+ a30:	    000017b7          	lui	x15,0x1
+ a34:	    00078223          	sb	x0,4(x15) # 1004 <__bss_end+0x4>
      ###     _put_str(":");
      ###     _put_value(minutes);
      ###     _put_str(":");
      ###     _put_value(seconds);
      ###     _put_str("\n");
      ###     OUT = hours; OUT = minutes; OUT = seconds;
-  38:	    00100713          	addi	x14,x0,1
-  3c:	    00e78223          	sb	x14,4(x15)
-  40:	    00200713          	addi	x14,x0,2
-  44:	    00e78223          	sb	x14,4(x15)
-  48:	    00500713          	addi	x14,x0,5
-  4c:	    00e78223          	sb	x14,4(x15)
+ a38:	    00100713          	addi	x14,x0,1
+ a3c:	    00e78223          	sb	x14,4(x15)
+ a40:	    00200713          	addi	x14,x0,2
+ a44:	    00e78223          	sb	x14,4(x15)
+ a48:	    00500713          	addi	x14,x0,5
+ a4c:	    00e78223          	sb	x14,4(x15)
      ### 
      ###     // Find GCD using Euclidean algorithm (iterative)
      ###     uint32_t a = 48, b = 18;
-  50:	    01200713          	addi	x14,x0,18
-  54:	    03000793          	addi	x15,x0,48
+ a50:	    01200713          	addi	x14,x0,18
+ a54:	    03000793          	addi	x15,x0,48
      ###     uint32_t orig_a = a, orig_b = b;
      ###     while (b != 0) {
      ###         uint32_t temp = b;
      ###         b = a % b;
-  58:	/-> 00070693          	addi	x13,x14,0
-  5c:	|   02e7f733          	remu	x14,x15,x14
+ a58:	/-> 00070693          	addi	x13,x14,0
+ a5c:	|   02e7f733          	remu	x14,x15,x14
      ###     while (b != 0) {
-  60:	|   00068793          	addi	x15,x13,0
-  64:	\-- fe071ae3          	bne	x14,x0,58 <main+0x28>
+ a60:	|   00068793          	addi	x15,x13,0
+ a64:	\-- fe071ae3          	bne	x14,x0,a58 <main+0x28>
      ###     _put_str(" and ");
      ###     _put_value(orig_b);
      ###     _put_str(" = ");
      ###     _put_value(a);
      ###     _put_str("\n");
      ###     OUT = orig_a; OUT = orig_b; OUT = a;
-  68:	    00001737          	lui	x14,0x1
+ a68:	    00001737          	lui	x14,0x1
      ###     _put_value(a);
-  6c:	    0ff6f793          	andi	x15,x13,255
+ a6c:	    0ff6f793          	andi	x15,x13,255
      ###     OUT = orig_a; OUT = orig_b; OUT = a;
-  70:	    03000693          	addi	x13,x0,48
-  74:	    00d70223          	sb	x13,4(x14) # 1004 <__bss_end+0x4>
-  78:	    01200693          	addi	x13,x0,18
-  7c:	    00d70223          	sb	x13,4(x14)
-  80:	    00f70223          	sb	x15,4(x14)
+ a70:	    03000693          	addi	x13,x0,48
+ a74:	    00d70223          	sb	x13,4(x14) # 1004 <__bss_end+0x4>
+ a78:	    01200693          	addi	x13,x0,18
+ a7c:	    00d70223          	sb	x13,4(x14)
+ a80:	    00f70223          	sb	x15,4(x14)
      ### 
      ###     CPU_DONE = 1;
-  84:	    00100793          	addi	x15,x0,1
-  88:	    00f70423          	sb	x15,8(x14)
+ a84:	    00100793          	addi	x15,x0,1
+ a88:	    00f70423          	sb	x15,8(x14)
      ###     return 0;
-  8c:	    00000513          	addi	x10,x0,0
-  90:	    00008067          	jalr	x0,0(x1)
+ a8c:	    00000513          	addi	x10,x0,0
+ a90:	    00008067          	jalr	x0,0(x1)

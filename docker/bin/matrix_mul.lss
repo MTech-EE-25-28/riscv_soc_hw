@@ -2,8 +2,8 @@
 .temp.file.elf:     file format elf32-littleriscv
 
 SYMBOL TABLE:
-00000000 l    d  .text	00000000 .text
-00001000 l    d  .stack	00000000 .stack
+00000a00 l    d  .init	00000000 .init
+00000a30 l    d  .text	00000000 .text
 00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
 00000000 l    d  .comment	00000000 .comment
 00000000 l    d  .debug_line	00000000 .debug_line
@@ -18,227 +18,230 @@ SYMBOL TABLE:
 00000000 l    d  .debug_frame	00000000 .debug_frame
 00000000 l    df *ABS*	00000000 .temp.start.o
 00000000 l    df *ABS*	00000000 matrix_mul.c
-00001000 g       *ABS*	00000000 __flash_size
+00000800 g       *ABS*	00000000 __flash_size
 00000100 g       *ABS*	00000000 __stack_size
 00001000 g       .text	00000000 __bss_end
-00002000 g       .stack	00000000 _stack_top
-00000000 g       .text	00000000 _start
-00001000 g       *ABS*	00000000 __ram
+00001700 g       .text	00000000 _stack_top
+00000a00 g       .init	00000000 _start
+00002000 g       *ABS*	00000000 __ram
 00001000 g       .text	00000000 __bss_start
-00000038 g     F .text	0000001c memset
-00000054 g     F .text	0000015c main
+00000a38 g     F .text	0000001c memset
+00000a54 g     F .text	0000015c main
 00000800 g       *ABS*	00000000 __ram_size
-00000034 g     F .text	00000004 _put_str
+00000a34 g     F .text	00000004 _put_str
 00000000 g       *ABS*	00000000 __flash
-00000030 g     F .text	00000004 _put_value
+00000a30 g     F .text	00000004 _put_value
 
 
 
-Disassembly of section .text:
+Disassembly of section .init:
 
-00000000 <_start>:
+00000a00 <_start>:
      ### .section .init
      ### .globl _start
      ### 
      ### _start:
      ###     la sp, _stack_top
-   0:	       00002117          	auipc	x2,0x2
-   4:	       00010113          	addi	x2,x2,0 # 2000 <_stack_top>
+ a00:	       00001117          	auipc	x2,0x1
+ a04:	       d0010113          	addi	x2,x2,-768 # 1700 <_stack_top>
      ### 
      ###     # zero .bss
      ###     la t0, __bss_start
-   8:	       00001297          	auipc	x5,0x1
-   c:	       ff828293          	addi	x5,x5,-8 # 1000 <__bss_end>
+ a08:	       00000297          	auipc	x5,0x0
+ a0c:	       5f828293          	addi	x5,x5,1528 # 1000 <__bss_end>
      ###     la t1, __bss_end
-  10:	       00001317          	auipc	x6,0x1
-  14:	       ff030313          	addi	x6,x6,-16 # 1000 <__bss_end>
+ a10:	       00000317          	auipc	x6,0x0
+ a14:	       5f030313          	addi	x6,x6,1520 # 1000 <__bss_end>
      ### 
      ### 1:
      ###     bge t0, t1, 2f
-  18:	/--/-X 0062d863          	bge	x5,x6,28 <_start+0x28>
+ a18:	/--/-X 0062d863          	bge	x5,x6,a28 <_start+0x28>
      ###     sw zero, 0(t0)
-  1c:	|  |   0002a023          	sw	x0,0(x5)
+ a1c:	|  |   0002a023          	sw	x0,0(x5)
      ###     addi t0, t0, 4
-  20:	|  |   00428293          	addi	x5,x5,4
+ a20:	|  |   00428293          	addi	x5,x5,4
      ###     j 1b
-  24:	|  \-- ff5ff06f          	jal	x0,18 <_start+0x18>
+ a24:	|  \-- ff5ff06f          	jal	x0,a18 <_start+0x18>
      ### 
      ### 2:
      ###     call main
-  28:	\----> 02c000ef          	jal	x1,54 <main>
+ a28:	\----> 02c000ef          	jal	x1,a54 <main>
      ### 
-  2c:	   /-- 0000006f          	jal	x0,2c <_start+0x2c>
+     ### 3:  j 3b
+ a2c:	   /-- 0000006f          	jal	x0,a2c <_start+0x2c>
 
-00000030 <_put_value>:
+Disassembly of section .text:
+
+00000a30 <_put_value>:
      ### #else  // for the test device
      ### 
      ###     #define N                   (* (volatile uint8_t * ) 0x00001000)
      ###     #define OUT                 (* (volatile     int * ) 0x00001004)
      ###     #define CPU_DONE            (* (volatile uint8_t * ) 0x00001008)
      ###     void _put_value(int32_t val) { }
-  30:	00008067          	jalr	x0,0(x1)
+ a30:	00008067          	jalr	x0,0(x1)
 
-00000034 <_put_str>:
+00000a34 <_put_str>:
      ###     void _put_str(char *str) { }
-  34:	00008067          	jalr	x0,0(x1)
+ a34:	00008067          	jalr	x0,0(x1)
 
-00000038 <memset>:
+00000a38 <memset>:
      ### 
      ### #endif
      ### 
      ### void *memset(void *dst, int val, unsigned int n) {
      ###     unsigned char *p = (unsigned char *)dst;
      ###     for (unsigned int i = 0; i < n; i++) {
-  38:	       00000793          	addi	x15,x0,0
-  3c:	/--/-X 00c79463          	bne	x15,x12,44 <memset+0xc>
+ a38:	       00000793          	addi	x15,x0,0
+ a3c:	/--/-X 00c79463          	bne	x15,x12,a44 <memset+0xc>
      ###         p[i] = (unsigned char)val;
      ###     }
      ###     return dst;
      ### }
-  40:	|  |   00008067          	jalr	x0,0(x1)
+ a40:	|  |   00008067          	jalr	x0,0(x1)
      ###         p[i] = (unsigned char)val;
-  44:	|  \-> 00f50733          	add	x14,x10,x15
-  48:	|      00b70023          	sb	x11,0(x14)
+ a44:	|  \-> 00f50733          	add	x14,x10,x15
+ a48:	|      00b70023          	sb	x11,0(x14)
      ###     for (unsigned int i = 0; i < n; i++) {
-  4c:	|      00178793          	addi	x15,x15,1
-  50:	\----- fedff06f          	jal	x0,3c <memset+0x4>
+ a4c:	|      00178793          	addi	x15,x15,1
+ a50:	\----- fedff06f          	jal	x0,a3c <memset+0x4>
 
-00000054 <main>:
+00000a54 <main>:
      ### 
      ### int main () {
-  54:	       f8010113          	addi	x2,x2,-128
+ a54:	       f8010113          	addi	x2,x2,-128
      ###     int A[3][3], B[3][3], C[3][3] = {0};
-  58:	       02400613          	addi	x12,x0,36
-  5c:	       00000593          	addi	x11,x0,0
-  60:	       04c10513          	addi	x10,x2,76
+ a58:	       02400613          	addi	x12,x0,36
+ a5c:	       00000593          	addi	x11,x0,0
+ a60:	       04c10513          	addi	x10,x2,76
      ### int main () {
-  64:	       06112e23          	sw	x1,124(x2)
+ a64:	       06112e23          	sw	x1,124(x2)
      ###     int A[3][3], B[3][3], C[3][3] = {0};
-  68:	       fd1ff0ef          	jal	x1,38 <memset>
+ a68:	       fd1ff0ef          	jal	x1,a38 <memset>
      ###     int i, j, k;
      ### 
      ###     A[0][0] =  1; A[0][1] = 2; A[0][2] = 3;
-  6c:	       00200713          	addi	x14,x0,2
-  70:	       00e12423          	sw	x14,8(x2)
-  74:	       00300713          	addi	x14,x0,3
-  78:	       00e12623          	sw	x14,12(x2)
+ a6c:	       00200713          	addi	x14,x0,2
+ a70:	       00e12423          	sw	x14,8(x2)
+ a74:	       00300713          	addi	x14,x0,3
+ a78:	       00e12623          	sw	x14,12(x2)
      ###     A[1][0] = -1; A[1][1] = -10; A[1][2] = 11;
-  7c:	       fff00713          	addi	x14,x0,-1
-  80:	       00e12823          	sw	x14,16(x2)
-  84:	       ff600713          	addi	x14,x0,-10
-  88:	       00e12a23          	sw	x14,20(x2)
-  8c:	       00b00713          	addi	x14,x0,11
-  90:	       00e12c23          	sw	x14,24(x2)
+ a7c:	       fff00713          	addi	x14,x0,-1
+ a80:	       00e12823          	sw	x14,16(x2)
+ a84:	       ff600713          	addi	x14,x0,-10
+ a88:	       00e12a23          	sw	x14,20(x2)
+ a8c:	       00b00713          	addi	x14,x0,11
+ a90:	       00e12c23          	sw	x14,24(x2)
      ###     A[2][0] = -232; A[2][1] = 42; A[2][2] = 32;
-  94:	       f1800713          	addi	x14,x0,-232
-  98:	       00e12e23          	sw	x14,28(x2)
-  9c:	       02a00713          	addi	x14,x0,42
-  a0:	       02e12023          	sw	x14,32(x2)
-  a4:	       02000713          	addi	x14,x0,32
-  a8:	       02e12223          	sw	x14,36(x2)
+ a94:	       f1800713          	addi	x14,x0,-232
+ a98:	       00e12e23          	sw	x14,28(x2)
+ a9c:	       02a00713          	addi	x14,x0,42
+ aa0:	       02e12023          	sw	x14,32(x2)
+ aa4:	       02000713          	addi	x14,x0,32
+ aa8:	       02e12223          	sw	x14,36(x2)
      ### 
      ###     B[0][0] = -19; B[0][1] = 51; B[0][2] = 1151;
-  ac:	       fed00713          	addi	x14,x0,-19
-  b0:	       02e12423          	sw	x14,40(x2)
-  b4:	       03300713          	addi	x14,x0,51
-  b8:	       02e12623          	sw	x14,44(x2)
-  bc:	       47f00713          	addi	x14,x0,1151
-  c0:	       02e12823          	sw	x14,48(x2)
+ aac:	       fed00713          	addi	x14,x0,-19
+ ab0:	       02e12423          	sw	x14,40(x2)
+ ab4:	       03300713          	addi	x14,x0,51
+ ab8:	       02e12623          	sw	x14,44(x2)
+ abc:	       47f00713          	addi	x14,x0,1151
+ ac0:	       02e12823          	sw	x14,48(x2)
      ###     B[1][0] = 4; B[1][1] = 5; B[1][2] = 6;
-  c4:	       00400713          	addi	x14,x0,4
-  c8:	       02e12a23          	sw	x14,52(x2)
-  cc:	       00500713          	addi	x14,x0,5
+ ac4:	       00400713          	addi	x14,x0,4
+ ac8:	       02e12a23          	sw	x14,52(x2)
+ acc:	       00500713          	addi	x14,x0,5
      ###     A[0][0] =  1; A[0][1] = 2; A[0][2] = 3;
-  d0:	       00100793          	addi	x15,x0,1
+ ad0:	       00100793          	addi	x15,x0,1
      ###     B[1][0] = 4; B[1][1] = 5; B[1][2] = 6;
-  d4:	       02e12c23          	sw	x14,56(x2)
-  d8:	       00600713          	addi	x14,x0,6
+ ad4:	       02e12c23          	sw	x14,56(x2)
+ ad8:	       00600713          	addi	x14,x0,6
      ###     A[0][0] =  1; A[0][1] = 2; A[0][2] = 3;
-  dc:	       00f12223          	sw	x15,4(x2)
+ adc:	       00f12223          	sw	x15,4(x2)
      ###     B[1][0] = 4; B[1][1] = 5; B[1][2] = 6;
-  e0:	       02e12e23          	sw	x14,60(x2)
+ ae0:	       02e12e23          	sw	x14,60(x2)
      ###     B[2][0] = 99; B[2][1] = 1; B[2][2] = -12;
-  e4:	       04f12223          	sw	x15,68(x2)
-  e8:	       06300713          	addi	x14,x0,99
-  ec:	       ff400793          	addi	x15,x0,-12
-  f0:	       04e12023          	sw	x14,64(x2)
-  f4:	       04f12423          	sw	x15,72(x2)
+ ae4:	       04f12223          	sw	x15,68(x2)
+ ae8:	       06300713          	addi	x14,x0,99
+ aec:	       ff400793          	addi	x15,x0,-12
+ af0:	       04e12023          	sw	x14,64(x2)
+ af4:	       04f12423          	sw	x15,72(x2)
      ### 
      ###     for (i=0; i<3; i++) {
-  f8:	       00410613          	addi	x12,x2,4
+ af8:	       00410613          	addi	x12,x2,4
      ###     B[2][0] = 99; B[2][1] = 1; B[2][2] = -12;
-  fc:	       00000513          	addi	x10,x0,0
- 100:	       03410e93          	addi	x29,x2,52
+ afc:	       00000513          	addi	x10,x0,0
+ b00:	       03410e93          	addi	x29,x2,52
      ###     for (i=0; i<3; i++) {
- 104:	       02400f13          	addi	x30,x0,36
+ b04:	       02400f13          	addi	x30,x0,36
      ###         for (j=0; j<3; j++) {
      ###             for (k=0; k<3; k++) {
      ###                 C[i][j] += A[i][k] * B[k][j];
- 108:	/----> 00062e03          	lw	x28,0(x12)
- 10c:	|      00462303          	lw	x6,4(x12)
- 110:	|      00862883          	lw	x17,8(x12)
- 114:	|      04c10713          	addi	x14,x2,76
- 118:	|      00a705b3          	add	x11,x14,x10
- 11c:	|      02810693          	addi	x13,x2,40
- 120:	|  /-> 0006a783          	lw	x15,0(x13)
- 124:	|  |   0005a803          	lw	x16,0(x11)
+ b08:	/----> 00062e03          	lw	x28,0(x12)
+ b0c:	|      00462303          	lw	x6,4(x12)
+ b10:	|      00862883          	lw	x17,8(x12)
+ b14:	|      04c10713          	addi	x14,x2,76
+ b18:	|      00a705b3          	add	x11,x14,x10
+ b1c:	|      02810693          	addi	x13,x2,40
+ b20:	|  /-> 0006a783          	lw	x15,0(x13)
+ b24:	|  |   0005a803          	lw	x16,0(x11)
      ###         for (j=0; j<3; j++) {
- 128:	|  |   00468693          	addi	x13,x13,4
+ b28:	|  |   00468693          	addi	x13,x13,4
      ###                 C[i][j] += A[i][k] * B[k][j];
- 12c:	|  |   02fe07b3          	mul	x15,x28,x15
+ b2c:	|  |   02fe07b3          	mul	x15,x28,x15
      ###         for (j=0; j<3; j++) {
- 130:	|  |   00458593          	addi	x11,x11,4
+ b30:	|  |   00458593          	addi	x11,x11,4
      ###                 C[i][j] += A[i][k] * B[k][j];
- 134:	|  |   010787b3          	add	x15,x15,x16
- 138:	|  |   0086a803          	lw	x16,8(x13)
- 13c:	|  |   03030833          	mul	x16,x6,x16
- 140:	|  |   010787b3          	add	x15,x15,x16
- 144:	|  |   0146a803          	lw	x16,20(x13)
- 148:	|  |   03088833          	mul	x16,x17,x16
- 14c:	|  |   010787b3          	add	x15,x15,x16
- 150:	|  |   fef5ae23          	sw	x15,-4(x11)
+ b34:	|  |   010787b3          	add	x15,x15,x16
+ b38:	|  |   0086a803          	lw	x16,8(x13)
+ b3c:	|  |   03030833          	mul	x16,x6,x16
+ b40:	|  |   010787b3          	add	x15,x15,x16
+ b44:	|  |   0146a803          	lw	x16,20(x13)
+ b48:	|  |   03088833          	mul	x16,x17,x16
+ b4c:	|  |   010787b3          	add	x15,x15,x16
+ b50:	|  |   fef5ae23          	sw	x15,-4(x11)
      ###         for (j=0; j<3; j++) {
- 154:	|  \-- fdd696e3          	bne	x13,x29,120 <__stack_size+0x20>
+ b54:	|  \-- fdd696e3          	bne	x13,x29,b20 <main+0xcc>
      ###     for (i=0; i<3; i++) {
- 158:	|      00c50513          	addi	x10,x10,12
- 15c:	|      00c60613          	addi	x12,x12,12
- 160:	\----- fbe514e3          	bne	x10,x30,108 <__stack_size+0x8>
- 164:	       07010693          	addi	x13,x2,112
+ b58:	|      00c50513          	addi	x10,x10,12
+ b5c:	|      00c60613          	addi	x12,x12,12
+ b60:	\----- fbe514e3          	bne	x10,x30,b08 <main+0xb4>
+ b64:	       07010693          	addi	x13,x2,112
      ###         }
      ###     }
      ### 
      ###     for (i=0; i<3; i++) {
      ###         for (j=0; j<3; j++) {
      ###             OUT = C[i][j];
- 168:	       000017b7          	lui	x15,0x1
- 16c:	   /-> 00072603          	lw	x12,0(x14)
+ b68:	       000017b7          	lui	x15,0x1
+ b6c:	   /-> 00072603          	lw	x12,0(x14)
      ###     for (i=0; i<3; i++) {
- 170:	   |   00c70713          	addi	x14,x14,12
+ b70:	   |   00c70713          	addi	x14,x14,12
      ###             OUT = C[i][j];
- 174:	   |   00c7a223          	sw	x12,4(x15) # 1004 <__bss_end+0x4>
+ b74:	   |   00c7a223          	sw	x12,4(x15) # 1004 <__bss_end+0x4>
      ###             _put_value(OUT);
- 178:	   |   0047a603          	lw	x12,4(x15)
+ b78:	   |   0047a603          	lw	x12,4(x15)
      ###             OUT = C[i][j];
- 17c:	   |   ff872603          	lw	x12,-8(x14)
- 180:	   |   00c7a223          	sw	x12,4(x15)
+ b7c:	   |   ff872603          	lw	x12,-8(x14)
+ b80:	   |   00c7a223          	sw	x12,4(x15)
      ###             _put_value(OUT);
- 184:	   |   0047a603          	lw	x12,4(x15)
+ b84:	   |   0047a603          	lw	x12,4(x15)
      ###             OUT = C[i][j];
- 188:	   |   ffc72603          	lw	x12,-4(x14)
- 18c:	   |   00c7a223          	sw	x12,4(x15)
+ b88:	   |   ffc72603          	lw	x12,-4(x14)
+ b8c:	   |   00c7a223          	sw	x12,4(x15)
      ###             _put_value(OUT);
- 190:	   |   0047a603          	lw	x12,4(x15)
+ b90:	   |   0047a603          	lw	x12,4(x15)
      ###     for (i=0; i<3; i++) {
- 194:	   \-- fce69ce3          	bne	x13,x14,16c <__stack_size+0x6c>
+ b94:	   \-- fce69ce3          	bne	x13,x14,b6c <main+0x118>
      ###         }
      ###     }
      ### 
      ###     CPU_DONE = 1;
- 198:	       00100713          	addi	x14,x0,1
- 19c:	       00e78423          	sb	x14,8(x15)
+ b98:	       00100713          	addi	x14,x0,1
+ b9c:	       00e78423          	sb	x14,8(x15)
      ###     // volatile asm ("ebreak");
      ###     return 0;
- 1a0:	       07c12083          	lw	x1,124(x2)
- 1a4:	       00000513          	addi	x10,x0,0
- 1a8:	       08010113          	addi	x2,x2,128
- 1ac:	       00008067          	jalr	x0,0(x1)
+ ba0:	       07c12083          	lw	x1,124(x2)
+ ba4:	       00000513          	addi	x10,x0,0
+ ba8:	       08010113          	addi	x2,x2,128
+ bac:	       00008067          	jalr	x0,0(x1)
