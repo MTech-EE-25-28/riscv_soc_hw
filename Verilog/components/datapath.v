@@ -2,6 +2,7 @@
 // datapath.v
 module datapath (
     input         clk, reset,
+    input [4:0]   interruptA,
     input [1:0]   ResultSrcD,
     input         ALUSrcD,
     input         RegWriteD,
@@ -223,13 +224,12 @@ pl_reg_w plw (
     ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W, excDecW, tretW, memMisAlignLoadW, memMisAlignStoreW
 );
 
-// Priority in error_handler: [0] > [1] > [2] > [3] > [4] > [5]
-// [6]=store-misalign [5]=load-misalign [4]=ebreak [3]=ecall [2]=fetch-misalign [1]=illegal
+// exceptionW encoding: [5]=store-misalign [4]=load-misalign [3]=ebreak [2]=ecall [1]=fetch-misalign [0]=illegal
 assign exceptionW = {memMisAlignStoreW, memMisAlignLoadW, excDecW[3], excDecW[2], excDecW[1], excDecW[0]};
 
-// Error handler — sits entirely in Writeback, receives committed exceptions
-error_handler eh (
-    exceptionW, 3'b0, tretW, PCW, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
+// Trap handler — sits entirely in Writeback, receives committed exceptions
+trap_handler th (
+    exceptionW, interruptA, tretW, PCW, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
     trap_event, trap_pc_next, trap_mstatus_mie, trap_mstatus_mpie, trap_mepc, trap_mcause, trap_mtval, tret_mstatus_mie, tret_mstatus_mpie
 );
 

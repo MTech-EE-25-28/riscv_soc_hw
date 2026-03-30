@@ -103,9 +103,9 @@ always @(negedge clk) begin
         end else if (csr_write_en) begin
         case (csr_addr)
                 // write based on correct masking of bits for each csr
-                MSTATUS : mstatus  <= (csr_prev_value & 32'hFFFF_FF77) | (csr_curr_value & 32'h0000_0088);
+                MSTATUS : mstatus  <= (csr_prev_value & 32'hFFFF_FF00) | (csr_curr_value & 32'h0000_0088); // only MIE[3] and MPIE[7] writable
                 MIE     : mie      <= (csr_prev_value & 32'hFFFF_FFFF) | (csr_curr_value & 32'h0000_0000); // writes internally
-                MTVEC   : mtvec    <= (csr_prev_value & 32'h0000_0003) | (csr_curr_value & 32'hFFFF_FFFC); // 31:2 - Trap handler base-address, 4bytes aligned,
+                MTVEC   : mtvec    <= (csr_curr_value & 32'hFFFF_FFFD); // [31:2]=base, [1]=0 (only modes 0/1 valid), [0]=mode
                 MSCRATCH: mscratch <= csr_curr_value; // no reserved bits
                 MEPC    : mepc     <= (csr_prev_value & 32'h0000_0000) | (csr_curr_value & 32'hFFFF_FFFC); // 31:2 - Trap program counter, 4bytes aligned
                 MCAUSE  : mcause   <= (csr_prev_value & 32'hFFFF_FC00) | (csr_curr_value & 32'h0000_03FF); // 9:0 - mcause should lie within it.

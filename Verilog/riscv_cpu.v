@@ -2,6 +2,7 @@
 // riscv_cpu.v - Top Module to test riscv_cpu
 module riscv_cpu (
     input         clk, reset,
+    input   [4:0] interruptA,
     input         Ext_MemWrite,
     input  [31:0] Ext_WriteData, Ext_DataAdr,
     output        MemWrite,
@@ -17,7 +18,7 @@ wire        MemWrite_rv32, imem_rst, dmem_rst;
 
 // instantiate processor and memories
 riscv_pl rvpl (
-    clk, reset, PCF, Instr, MemWrite_rv32, DataAdr_rv32, WriteData_rv32, wea,
+    clk, reset, interruptA, PCF, Instr, MemWrite_rv32, DataAdr_rv32, WriteData_rv32, wea,
     ReadData, Result, funct3, PC, ALUResultW, WriteDataW, ReadDataW
 );
 instr_mem instrmem (clk, 1'b0, PCF, 32'b0, Instr);

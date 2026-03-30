@@ -1,6 +1,7 @@
 
+// Testbench for exception handling in the RISC-V CPU
+// load trap.hex in instr_mem.v
 module tb_exception;
-
 reg clk, reset;
 reg Ext_MemWrite;
 reg [31:0] Ext_WriteData, Ext_DataAdr;
@@ -9,7 +10,7 @@ wire [31:0] WriteData, DataAdr, ReadData;
 wire MemWrite;
 wire [31:0] PCW, Result, DataAdrW, WriteDataW, ReadDataW;
 
-riscv_cpu uut (clk, reset, Ext_MemWrite, Ext_WriteData, Ext_DataAdr,
+riscv_cpu uut (clk, reset, 5'b0, Ext_MemWrite, Ext_WriteData, Ext_DataAdr,
                MemWrite, WriteData, DataAdr, ReadData,
                PCW, Result, DataAdrW, WriteDataW, ReadDataW);
 

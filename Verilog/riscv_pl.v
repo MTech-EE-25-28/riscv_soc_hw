@@ -2,6 +2,7 @@
 // riscv_pl.v - Pipelined RISC-V CPU Processor
 module riscv_pl (
     input         clk, reset,
+    input   [4:0] interruptA,
     output [31:0] PC,
     input  [31:0] Instr,
     output        MemWriteM,
@@ -23,7 +24,7 @@ controller  c   (InstrD[31:20], InstrD[6:0], InstrD[14:12], InstrD[30], InstrD[2
                  ALUControl, ResultSrc, ImmSrc, MemWrite, ALUSrc, Branch,
                  RegWrite, Jump, Jalr, csrSel, ierr, ecall, ebreak, wfi, ret);
 
-datapath    dp  (clk, reset, ResultSrc,
+datapath    dp  (clk, reset, interruptA, ResultSrc,
                 ALUSrc, RegWrite, ImmSrc, ALUControl, Jalr, csrSel, ierr, ecall, ebreak, wfi, ret,
                 PC, Instr, Mem_WrAddr, Mem_WrData, wea, ReadData, Result, InstrD, MemWrite,
                 Jump, Branch, MemWriteM, funct3, PCW, ALUResultW, WriteDataW, ReadDataW);

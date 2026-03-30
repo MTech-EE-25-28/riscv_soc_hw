@@ -2,6 +2,7 @@
 // riscv_top.v - Top-level module for RISC-V SoC
 module riscv_top (
     input  wire clk, e_rst, // External reset
+    input  wire [4:0] irq, // External interrupts
     // debug outputs
     output  reg reset,
     output  reg [1:0] state,
@@ -24,7 +25,7 @@ wire [31:0] WriteData, DataAdr, ReadData;
 wire [31:0] PCW, Result, DataAdrW, WriteDataW, ReadDataW;
 
 riscv_cpu rv_test (
-    clk, reset, Ext_MemWrite, Ext_WriteData, Ext_DataAdr,
+    clk, reset, irq, Ext_MemWrite, Ext_WriteData, Ext_DataAdr,
     MemWrite, WriteData, DataAdr, ReadData, PCW, Result,
     DataAdrW, WriteDataW, ReadDataW
 );

@@ -1,6 +1,7 @@
 `timescale 1 ns/1 ns
 
 // Test the RISC-V processor for pipelined cpu with a simple program that adds 10 to a value in memory and halts
+// load any one of the {sum, factorial, gcd, matrix_mul, etc}.hex in instr_mem.v
 module tb_program;
 
 // registers to send data
@@ -14,7 +15,7 @@ wire [31:0] WriteData, DataAdr, ReadData;
 wire MemWrite;
 wire [31:0] PCW, Result, DataAdrW, WriteDataW, ReadDataW;
 // Initialize Top Module
-riscv_cpu uut (clk, reset, Ext_MemWrite, Ext_WriteData, Ext_DataAdr, MemWrite, WriteData, DataAdr, ReadData, PCW, Result, DataAdrW, WriteDataW, ReadDataW);
+riscv_cpu uut (clk, reset, 5'b0, Ext_MemWrite, Ext_WriteData, Ext_DataAdr, MemWrite, WriteData, DataAdr, ReadData, PCW, Result, DataAdrW, WriteDataW, ReadDataW);
 
 // generate clock to sequence tests
 always begin

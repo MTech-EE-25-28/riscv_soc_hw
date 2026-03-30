@@ -1,6 +1,7 @@
 `timescale 1 ns/1 ns
 
 // Test the RISC-V processor for pipelined cpu
+// load rv32i_test.hex in instr_mem.v
 module tb_pl;
 
 // registers to send data
@@ -15,7 +16,8 @@ wire MemWrite;
 wire [31:0] PCW, Result, DataAdrW, WriteDataW, ReadDataW;
 
 // Initialize Top Module
-riscv_cpu uut (clk, reset, Ext_MemWrite, Ext_WriteData, Ext_DataAdr, MemWrite, WriteData, DataAdr, ReadData, PCW, Result, DataAdrW, WriteDataW, ReadDataW);
+riscv_cpu uut (clk, reset, 5'b0, Ext_MemWrite, Ext_WriteData, Ext_DataAdr, MemWrite, WriteData,
+               DataAdr, ReadData, PCW, Result, DataAdrW, WriteDataW, ReadDataW);
 
 integer fault_instrs = 0, i = 0, flag = 0;
 reg [31:0] last_pcw = 32'hFFFFFFFF; // guard: only check once per unique PCW
