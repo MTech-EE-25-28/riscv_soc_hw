@@ -3,32 +3,40 @@ module csr_handler (
     input         clk, reset, ivalid,
 
     input         csr_write_en,
-    input  [ 1:0]  csr_type,
+    input  [ 1:0] csr_type,
     input  [11:0] csr_addr,
     input  [31:0] csr_write_data, // data from rs1
-    output reg [31:0] csr_read_data
+    output reg [31:0] csr_read_data,
+
+    // trap handler
+    input         trap, trap_mstatus_mie, trap_mstatus_mpie,
+    input  [31:0] trap_mepc, trap_mcause, trap_mtval,
+
+    // trap return handler
+    input        tret, tret_mstatus_mie, tret_mstatus_mpie,
+
+    // csr fields
+    output  [31:0] csr_mstatus, csr_mie, csr_mip, csr_mtvec,
+    output  [31:0] csr_mepc, csr_mcause, csr_mscratch, csr_mtval
 );
 
-localparam  CSR_MSTATUS  = 12'h300,
-            CSR_MISA     = 12'h301,
-            CSR_MIE      = 12'h304,
-            CSR_MTVEC    = 12'h305,
-            CSR_MSTATUSH = 12'h310,
-            CSR_MSCRATCH = 12'h340,
-            CSR_MEPC     = 12'h341,
-            CSR_MCAUSE   = 12'h342,
-            CSR_MTVAL    = 12'h343,
-            CSR_MIP      = 12'h344,
-            CSR_MTINST   = 12'h345,
-            CSR_MTVAL2   = 12'h346,
-            CSR_MCYCLEL  = 12'hB00,
-            CSR_INSTRETL = 12'hB02,
-            CSR_MCYCLEH  = 12'hB80,
-            CSR_INSTRETH = 12'hB82;
+localparam  MSTATUS  = 12'h300,
+            MISA     = 12'h301,
+            MIE      = 12'h304,
+            MTVEC    = 12'h305,
+            MSCRATCH = 12'h340,
+            MEPC     = 12'h341,
+            MCAUSE   = 12'h342,
+            MTVAL    = 12'h343,
+            MIP      = 12'h344,
+            MCYCLEL  = 12'hB00,
+            INSTRETL = 12'hB02,
+            MCYCLEH  = 12'hB80,
+            INSTRETH = 12'hB82;
 
-reg [31:0] mstatus, mscratch, mepc, mcause, mtval, mip, mtinst, mtval2;
+reg [31:0] mstatus, mie, mtvec, mscratch, mepc, mcause, mtval, mip;
 reg [63:0] cycle_counter, instret_counter;
-reg [31:0] csr_prev_value;
+reg [31:0] csr_prev_value, csr_curr_value;
 
 // instruction retired counter
 always @(posedge clk) begin
@@ -48,68 +56,78 @@ end
 // get previous csr value
 always @(*) begin
     if (!reset) begin
-        csr_prev_value = 32'b0;
+        csr_prev_value = 32'b0; csr_curr_value = 32'b0;
     end else begin
         case (csr_addr)
-            CSR_MISA    : csr_prev_value = {2'b01, 4'b000, 26'h0001100};
-            CSR_MCYCLEH : csr_prev_value = cycle_counter[63:32];
-            CSR_MCYCLEL : csr_prev_value = cycle_counter[31:0];
-            CSR_INSTRETH: csr_prev_value = instret_counter[63:32];
-            CSR_INSTRETL: csr_prev_value = instret_counter[31:0];
-            CSR_MSTATUS : csr_prev_value = mstatus;
-            CSR_MSCRATCH: csr_prev_value = mscratch;
-            CSR_MEPC    : csr_prev_value = mepc;
-            CSR_MCAUSE  : csr_prev_value = mcause;
-            CSR_MTVAL   : csr_prev_value = mtval;
-            CSR_MIP      : csr_prev_value = mip;
-            CSR_MTINST   : csr_prev_value = mtinst;
-            CSR_MTVAL2   : csr_prev_value = mtval2;
-            default:      csr_prev_value = 32'b0; // For unsupported CSRs, return 0
+            MISA    : csr_prev_value = {2'b01, 4'b000, 26'h0001100};
+            MCYCLEH : csr_prev_value = cycle_counter[63:32];
+            MCYCLEL : csr_prev_value = cycle_counter[31:0];
+            INSTRETH: csr_prev_value = instret_counter[63:32];
+            INSTRETL: csr_prev_value = instret_counter[31:0];
+            MSTATUS : csr_prev_value = mstatus;
+            MIE     : csr_prev_value = mie;
+            MTVEC   : csr_prev_value = mtvec;
+            MSCRATCH: csr_prev_value = mscratch;
+            MEPC    : csr_prev_value = mepc;
+            MCAUSE  : csr_prev_value = mcause;
+            MTVAL   : csr_prev_value = mtval;
+            MIP     : csr_prev_value = mip;
+            default:  csr_prev_value = 32'b0; // For unsupported CSRs, return 0
+        endcase
+        case (csr_type)  // InstrE[13:12]: CSRRW/I=01  CSRRS/I=10  CSRRC/I=11
+            2'b01: csr_curr_value = csr_write_data;                    // CSRRW/CSRRWI: overwrite
+            2'b10: csr_curr_value = csr_prev_value | csr_write_data;   // CSRRS/CSRRSI: set bits
+            2'b11: csr_curr_value = csr_prev_value & ~csr_write_data;  // CSRRC/CSRRCI: clear bits
+            default: csr_curr_value = csr_prev_value; // 2'b00: ecall/ebreak/mret — no write
         endcase
     end
 end
 
 // write csr
+// mstatus concerned bits to update: MIE (3), MPIE (7), MPP (12-11)
+// initialize mstatus with MPP=11 (machine previous previlege) no other mode supported.
 always @(negedge clk) begin
     if (!reset) begin
-        mstatus <= 32'b0; mscratch <= 32'b0; mepc <= 32'b0;
-        mcause <= 32'b0; mtval <= 32'b0; mip <= 32'b0;
-        mtinst <= 32'b0; mtval2 <= 32'b0;
-    end else if (csr_write_en) begin
+        mie <= 32'b0; mtvec <= 32'b0; mepc <= 32'b0;
+        mip <= 32'b0; mtval <= 32'b0; mscratch <= 32'b0;
+        mstatus <= {19'b0, 2'b11, 11'b0};
+        mcause  <= 32'b0;
+    end else begin
+        if (trap) begin
+            mepc <= {trap_mepc[31:2], 2'b00};
+            mcause <= trap_mcause;
+            mtval <= trap_mtval;
+            mstatus <= {19'b0, 2'b11, 3'b0, trap_mstatus_mpie, 3'b0, trap_mstatus_mie, 3'b0};
+        end else if (tret) begin
+            mstatus <= {19'b0, 2'b11, 3'b0, tret_mstatus_mpie, 3'b0, tret_mstatus_mie, 3'b0};
+        end else if (csr_write_en) begin
         case (csr_addr)
-            CSR_MSTATUS: begin
-                mstatus <= csr_write_data;
-            end
-            // CSR_MIE: begin
-            // end
-            // CSR_MTVEC: begin
-            // end
-            // CSR_MSCRATCH: begin
-            // end
-            // CSR_MEPC: begin
-            // end
-            // CSR_MCAUSE: begin
-            // end
-            // CSR_MTVAL: begin
-            // end
-            // CSR_MIP: begin
-            // end
-            // CSR_MTINST: begin
-            // end
-            // CSR_MTVAL2: begin
-            // end
-        endcase
+                // write based on correct masking of bits for each csr
+                MSTATUS : mstatus  <= (csr_prev_value & 32'hFFFF_FF77) | (csr_curr_value & 32'h0000_0088);
+                MIE     : mie      <= (csr_prev_value & 32'hFFFF_FFFF) | (csr_curr_value & 32'h0000_0000); // writes internally
+                MTVEC   : mtvec    <= (csr_prev_value & 32'h0000_0003) | (csr_curr_value & 32'hFFFF_FFFC); // 31:2 - Trap handler base-address, 4bytes aligned,
+                MSCRATCH: mscratch <= csr_curr_value; // no reserved bits
+                MEPC    : mepc     <= (csr_prev_value & 32'h0000_0000) | (csr_curr_value & 32'hFFFF_FFFC); // 31:2 - Trap program counter, 4bytes aligned
+                MCAUSE  : mcause   <= (csr_prev_value & 32'hFFFF_FC00) | (csr_curr_value & 32'h0000_03FF); // 9:0 - mcause should lie within it.
+                MTVAL   : mtval    <= csr_curr_value; // no reserved bits
+                MIP     : mip      <= 32'b0; // all reserved bits, writes internally clear if not trap
+                default: /* do nothing for unsupported CSRs */ ;
+            endcase
+        end
     end
 end
 
 // read csr
-always @(*) begin
-    case (csr_type)
-        2'b00: csr_read_data = csr_prev_value; // read current value before write
-        2'b01: csr_read_data = csr_prev_value | csr_write_data; // set bits
-        2'b10: csr_read_data = csr_prev_value & ~csr_write_data; // clear bits
-        default: csr_read_data = 32'b0;
-    endcase
-end
+assign csr_read_data = csr_prev_value;
+
+// for trap handling
+assign csr_mstatus  = mstatus;
+assign csr_mie      = mie;
+assign csr_mip      = mip;
+assign csr_mtvec    = mtvec;
+assign csr_mepc     = mepc;
+assign csr_mcause   = mcause;
+assign csr_mtval    = mtval;
+assign csr_mscratch = mscratch;
 
 endmodule

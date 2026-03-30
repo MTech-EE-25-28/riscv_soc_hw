@@ -1,0 +1,137 @@
+
+.temp.file.elf:     file format elf32-littleriscv
+
+SYMBOL TABLE:
+00000000 l    d  .init	00000000 .init
+00000030 l    d  .text	00000000 .text
+00001000 l    d  .heap	00000000 .heap
+00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
+00000000 l    d  .comment	00000000 .comment
+00000000 l    d  .debug_line	00000000 .debug_line
+00000000 l    d  .debug_line_str	00000000 .debug_line_str
+00000000 l    d  .debug_info	00000000 .debug_info
+00000000 l    d  .debug_abbrev	00000000 .debug_abbrev
+00000000 l    d  .debug_aranges	00000000 .debug_aranges
+00000000 l    d  .debug_str	00000000 .debug_str
+00000000 l    d  .debug_loclists	00000000 .debug_loclists
+00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
+00000000 l    d  .debug_macro	00000000 .debug_macro
+00000000 l    d  .debug_frame	00000000 .debug_frame
+00000000 l    df *ABS*	00000000 .temp.start.o
+00000000 l    df *ABS*	00000000 trap.c
+00000800 g       *ABS*	00000000 __flash_size
+00000000 g       .init	00000000 __trap_vector_end
+00000100 g       *ABS*	00000000 __stack_size
+00000000 g       .init	00000000 __init_start
+00000030 g       .text	00000000 __text_start
+00000088 g       .text	00000000 __rodata_end
+00001000 g       .text	00000000 __bss_end
+00000030 g     F .text	0000003c trap_handler
+00001800 g       .riscv.attributes	00000000 _stack_top
+00000000 g       .init	00000000 _start
+00000000 g       .init	00000000 __trap_vector_start
+00000088 g       .text	00000000 __rodata_start
+00002000 g       *ABS*	00000000 __ram
+00001000 g       .text	00000000 __data_end
+00000030 g       .init	00000000 __init_end
+00000088 g       .text	00000000 __text_end
+00001000 g       .text	00000000 __bss_start
+0000006c g     F .text	0000001c main
+00001700 g       .heap	00000000 __heap_end
+00000800 g       *ABS*	00000000 __ram_size
+00001000 g       .heap	00000000 __heap_start
+00000000 g       *ABS*	00000000 __flash
+00001000 g       .text	00000000 __data_start
+
+
+
+Disassembly of section .init:
+
+00000000 <__init_start>:
+     ### .section .init
+     ### .globl _start
+     ### 
+     ### _start:
+     ###     la sp, _stack_top
+   0:	       00002117          	auipc	x2,0x2
+   4:	       80010113          	addi	x2,x2,-2048 # 1800 <_stack_top>
+     ### 
+     ###     # zero .bss
+     ###     la t0, __bss_start
+   8:	       00001297          	auipc	x5,0x1
+   c:	       ff828293          	addi	x5,x5,-8 # 1000 <__bss_end>
+     ###     la t1, __bss_end
+  10:	       00001317          	auipc	x6,0x1
+  14:	       ff030313          	addi	x6,x6,-16 # 1000 <__bss_end>
+     ### 
+     ### 1:
+     ###     bge t0, t1, 2f
+  18:	/--/-X 0062d863          	bge	x5,x6,28 <__init_start+0x28>
+     ###     sw zero, 0(t0)
+  1c:	|  |   0002a023          	sw	x0,0(x5)
+     ###     addi t0, t0, 4
+  20:	|  |   00428293          	addi	x5,x5,4
+     ###     j 1b
+  24:	|  \-- ff5ff06f          	jal	x0,18 <__init_start+0x18>
+     ### 
+     ### 2:
+     ###     call main
+  28:	\----> 044000ef          	jal	x1,6c <main>
+     ### 
+     ### 3:  j 3b
+  2c:	   /-- 0000006f          	jal	x0,2c <__init_start+0x2c>
+
+Disassembly of section .text:
+
+00000030 <trap_handler>:
+     ### extern void trap_handler();
+     ### 
+     ### #define UART_CTSR  (* (volatile int *)0x00002000)
+     ### #define UART_DATA  (* (volatile int *)0x00002004)
+     ### 
+     ### void __attribute__((interrupt("machine"))) trap_handler (void) {
+  30:	ff010113          	addi	x2,x2,-16
+  34:	00e12623          	sw	x14,12(x2)
+  38:	00f12423          	sw	x15,8(x2)
+     ###     // Advance mepc past the trapping instruction so mret returns to the next instr
+     ###     uint32_t mepc, mcause;
+     ###     asm volatile ("csrr %0, mepc" : "=r"(mepc));
+  3c:	341027f3          	csrrs	x15,mepc,x0
+     ###     mepc += 4;
+  40:	00478793          	addi	x15,x15,4
+     ###     asm volatile ("csrw mepc, %0" : : "r"(mepc));
+  44:	34179073          	csrrw	x0,mepc,x15
+     ###     asm volatile ("csrr %0, mcause" : "=r"(mcause)); // find exception cause
+  48:	34202773          	csrrs	x14,mcause,x0
+     ###     UART_DATA = mcause; // write cause to UART
+  4c:	000027b7          	lui	x15,0x2
+  50:	00e7a223          	sw	x14,4(x15) # 2004 <__ram+0x4>
+     ###     UART_CTSR = 1; // enable UART, signal trap handled
+  54:	00100713          	addi	x14,x0,1
+  58:	00e7a023          	sw	x14,0(x15)
+     ### }
+  5c:	00c12703          	lw	x14,12(x2)
+  60:	00812783          	lw	x15,8(x2)
+  64:	01010113          	addi	x2,x2,16
+  68:	30200073          	mret
+
+0000006c <main>:
+     ###     // // 5. Test illegal instruction (expect mcause=2)
+     ###     // // assert(result[0] == 2);
+     ### 
+     ### 
+     ###     // set trap handler address in mtvec
+     ###     asm("csrw mtvec, %0" :: "r"(trap_handler));
+  6c:	03000793          	addi	x15,x0,48
+  70:	30579073          	csrrw	x0,mtvec,x15
+  74:	deadcafe          	.word	0xdeadcafe
+     ###     asm(".word 0xdeadcafe");
+     ### 
+     ###     asm volatile ("ecall");
+  78:	00000073          	ecall
+     ###     asm volatile ("ebreak");
+  7c:	00100073          	ebreak
+     ### 
+     ###     return 0;
+  80:	00000513          	addi	x10,x0,0
+  84:	00008067          	jalr	x0,0(x1)

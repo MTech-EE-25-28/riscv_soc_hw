@@ -7,7 +7,8 @@ module datapath (
     input         RegWriteD,
     input [1:0]   ImmSrcD,
     input [4:0]   ALUControlD,
-    input         JalrD, csrSelD,
+    input         JalrD, csrSelD, ierrD, ecallD,
+    input         ebreakD, wfiD, retD,
     output [31:0] PCF,
     input  [31:0] Instr,
     output [31:0] Mem_WrAddr, Mem_WrData,
@@ -20,153 +21,246 @@ module datapath (
     output [31:0] PCW, ALUResultW, WriteDataW, MaskedReadDataW
 );
 
-wire [31:0] PCNext, PCJalr, PCTargetE, AuiPC;
-wire [31:0] SrcA, SrcB, WriteData;
-
-wire        ALUSrcE, JumpE, JalrE;
-wire [31:0] rs1, RD1E, RD2E;
-wire  [4:0] ALUControlE;
-wire  [2:0] funct3E;
-
-wire [31:0] ALUSrcA, ALUSrcB;
-wire ALUStall, StallF, StallD, FlushD, FlushE;
+// signal definitions
+// Pipeline control
+wire        ALUStall;
+wire        StallF,  StallD,  FlushD,  FlushE;
 wire  [1:0] ForwardAE, ForwardBE;
-
-wire        RegWriteE, RegWriteM, RegWriteW;
-wire  [1:0] ResultSrcE, ResultSrcM, ResultSrcW;
-wire        MemWriteE;
-
-wire [31:0]  ALUResultE, ResultE, ResultM;
-
-wire [31:0] PCD, PCE, PCM;
-wire [31:0] InstrE, WriteDataM;
-
-wire  [4:0] RdM, RdW;
-wire [31:0] ImmExtD, ImmExtE;
-wire [31:0] lAuiPCD, lAuiPCE, lAuiPCM, lAuiPCW;
-wire [31:0] PCPlus4F, PCPlus4D, PCPlus4E, PCPlus4M, PCPlus4W;
-
-wire [31:0] ReadDataW;  // Masked read data in writeback stage
-wire  [2:0] funct3W;
-wire Zero, Branch, BranchE, csrSelE;
-wire unused[2:0];
-wire ivalid;
-
-wire        BranchTakenE;
-wire        BranchM, BranchTakenM;
-wire [31:0] PCTargetM;
 wire        FetchHold, DecodeHold;
+wire        PCSrcE, PCSrcTrap;
 
-// Branch predictor wires
-wire        BPPredictTakenF, BPPredictionValidF;
-wire [31:0] BPPredictedTargetF;
-wire        FetchPredTakenF;
-wire [31:0] FetchNextPCCandidate;
-wire        PredTakenD;
-wire [31:0] PredTargetD;
-wire        PredTakenE;
-wire [31:0] PredTargetE;
+// PC pipeline
+wire [31:0] PCJalr, PCAfterExec, PCAfterJalr, AuiPC;
+wire [31:0] PCPlus4F, PCPlus4D, PCPlus4E, PCPlus4M, PCPlus4W;
+wire [31:0]          PCD,       PCE,       PCM;       // PCF = module output
+wire [31:0]          PCTargetE, PCTargetM;
+wire [31:0] lAuiPCD, lAuiPCE,  lAuiPCM,  lAuiPCW;
+
+// Instruction / alignment pipeline
+wire [31:0] InstrE;                   // InstrD = module output
+wire        misAlignF, misAlignD;
+wire [31:0] ImmExtD, ImmExtE;
+
+// Register file / operands
+wire [31:0] rs1, SrcA, SrcB, WriteData;
+wire [31:0] ALUSrcA, ALUSrcB;
+wire [31:0] RD1E, RD2E;
+wire  [4:0] RdM, RdW;
+wire [31:0] WriteDataM;
+
+// ALU / result pipeline
+wire [31:0] ALUResultE, ResultE, ResultM;
+wire [31:0] ReadDataW;                // ResultW = module output
+wire [31:0] CSRResultE;
+wire        Zero, ALUSrcE;
+
+// Decoded control signals pipeline
+wire        RegWriteE,  RegWriteM,  RegWriteW;
+wire  [1:0] ResultSrcE, ResultSrcM, ResultSrcW;
+wire        MemWriteE;               // MemWriteM = module output
+wire  [4:0] ALUControlE;
+wire  [2:0] funct3E,  funct3W;       // funct3M = module output
+wire        JumpE, JalrE, BranchE, csrSelE;
+
+// Branch prediction pipeline
+wire        BPPredictTakenF,  BPPredictionValidF;
+wire        PredTakenF,  PredTakenD,  PredTakenE;
+wire [31:0] PredTargetF, PredTargetD, PredTargetE;
+wire [31:0] FetchNextPCCandidate, BranchRecoveryPCE, ExecuteNextPCCandidate;
+wire        BranchTakenE, BranchM,    BranchTakenM;
 wire        BranchDirectionMissE, BranchTargetMissE, FalseBranchPredictionE, BranchMispredictE;
-wire [31:0] BranchRecoveryPCE, ExecuteNextPCCandidate;
-wire        JumpMispredictE, PCSrcE;
+wire        JumpMispredictE;
 
-assign FetchHold = (StallF || ALUStall) && !PCSrcE; // PCSrcE overrides stall: flush must always redirect PC
+// Exception pipeline  D -> E -> M -> W
+// excDec encoding: [2]=ecall  [1]=fetch-misalign  [0]=illegal // ebreak ignored
+// exceptionW encoding: [5]=store-misalign [4]=load-misalign [3]=ebreak [2]=ecall [1]=fetch-misalign [0]=illegal
+wire [3:0]  excDecD,            excDecE,             excDecM,             excDecW;
+wire        tretD,              tretE,               tretM,               tretW;
+wire        memMisAlignLoadM,   memMisAlignLoadW;
+wire        memMisAlignStoreM,  memMisAlignStoreW;
+wire [5:0]  exceptionW;
+
+// Trap / CSR interface
+wire        trap_event, trap_active;
+wire [31:0] trap_pc_next,      trap_mepc,      trap_mcause,    trap_mtval;
+wire        trap_mstatus_mie,  trap_mstatus_mpie;
+wire        tret_mstatus_mie,  tret_mstatus_mpie;
+wire [31:0] csr_mstatus, csr_mie,      csr_mip,      csr_mtvec;
+wire [31:0] csr_mepc,    csr_mcause,   csr_mscratch, csr_mtval;
+
+// Misc
+wire unused[2:0];
+
+assign PCSrcTrap  = trap_event;
+assign misAlignF  = (PCF[1:0] != 2'b00);
+
+assign FetchHold  = (StallF || ALUStall || misAlignF) && !PCSrcE && !PCSrcTrap;
 assign DecodeHold = StallD || ALUStall;
 
+// -------------------------------------------------------------------------
+// Fetch stage
+
+// branch predictor
 branch_predictor bp (
-    clk, reset, 1'b1, PCF, BPPredictTakenF, BPPredictedTargetF, BPPredictionValidF,
+    clk, reset, 1'b1, PCF, BPPredictTakenF, PredTargetF, BPPredictionValidF,
     BranchM, PCM, PCTargetM, BranchTakenM
 );
 
-assign FetchPredTakenF  = BPPredictTakenF && BPPredictionValidF;
-assign FetchNextPCCandidate = FetchPredTakenF ? BPPredictedTargetF : PCPlus4F;
-
+assign PredTakenF           = BPPredictTakenF && BPPredictionValidF;
+assign FetchNextPCCandidate = PredTakenF ? PredTargetF : PCPlus4F;
 assign BranchTakenE         = BranchE && Branch;
 
 // Case 1: Branch direction misprediction: predicted taken/not-taken differs from actual
 // Case 2: Branch target misprediction: predicted target differs from actual, when both predicted and actual are taken
 // Case 3: False branch prediction: predicted taken but not a branch instruction
 // on any of these cases, we need to recover by flushing the incorrect instructions and updating the PC to the correct target
-assign BranchDirectionMissE = BranchE && (PredTakenE != BranchTakenE);
-assign BranchTargetMissE    = BranchE && PredTakenE && BranchTakenE && (PredTargetE != PCTargetE);
+assign BranchDirectionMissE   = BranchE && (PredTakenE != BranchTakenE);
+assign BranchTargetMissE      = BranchE && PredTakenE && BranchTakenE && (PredTargetE != PCTargetE);
 assign FalseBranchPredictionE = PredTakenE && !BranchE && !JumpE; // JAL is not a false prediction
-assign BranchMispredictE    = FalseBranchPredictionE || BranchDirectionMissE || BranchTargetMissE;
+assign BranchMispredictE      = FalseBranchPredictionE || BranchDirectionMissE || BranchTargetMissE;
 // For JAL, only flush if BTB did not already redirect fetch to the correct target
-assign JumpMispredictE = JumpE && !(PredTakenE && (PredTargetE == PCTargetE));
-assign PCSrcE = JumpMispredictE || JalrE || BranchMispredictE;
+assign JumpMispredictE  = JumpE && !(PredTakenE && (PredTargetE == PCTargetE));
+assign PCSrcE           = JumpMispredictE || JalrE || BranchMispredictE;
 
 // If branch taken, use branch target, else PC+4
 // If jump, use jump target, else branch recovery PC
-assign BranchRecoveryPCE    = BranchTakenE ? PCTargetE : PCPlus4E;
+assign BranchRecoveryPCE      = BranchTakenE ? PCTargetE : PCPlus4E;
 assign ExecuteNextPCCandidate = JumpE ? PCTargetE : BranchRecoveryPCE;
 
-// next PC logic
-mux2 #(32) pcmux (FetchNextPCCandidate, ExecuteNextPCCandidate, (JumpMispredictE || BranchMispredictE), PCNext);
-mux2 #(32) jalrmux (PCNext, ALUResultE, JalrE, PCJalr);
+// PC mux chain: branch/jump override, then JALR override, then trap override
+mux2 #(32) pcmux   (FetchNextPCCandidate, ExecuteNextPCCandidate, (JumpMispredictE || BranchMispredictE), PCAfterExec);
+mux2 #(32) jalrmux (PCAfterExec, ALUResultE, JalrE, PCAfterJalr);
+mux2 #(32) trapmux (PCAfterJalr, trap_pc_next, PCSrcTrap, PCJalr);
 
 reset_ff   pcreg (clk, reset, FetchHold, PCJalr, PCF);
 bk_adder   pcadd4 (PCF, 32'd4, 1'b0, PCPlus4F, unused[0]);
 
-// Decode Pipeline register
-pl_reg_d pld (clk, DecodeHold, FlushD, Instr, PCF, PCPlus4F, FetchPredTakenF, BPPredictedTargetF,
-              InstrD, PCD, PCPlus4D, PredTakenD, PredTargetD);
+// -------------------------------------------------------------------------
+// Decode stage
+pl_reg_d pld (
+    clk, DecodeHold, FlushD,
+    Instr, PCF, PCPlus4F, PredTakenF, misAlignF, PredTargetF,
+    InstrD, PCD, PCPlus4D, PredTakenD, misAlignD, PredTargetD
+);
 
-// register file logic
+// Register file
 reg_file   rf (clk, RegWriteW, InstrD[19:15], InstrD[24:20], RdW, ResultW, rs1, WriteData);
 imm_extend ext (InstrD[31:7], ImmSrcD, ImmExtD);
+
+// CSR source A mux: zimm (rs1 field as 5-bit zero-extended) or rs1 register
 assign SrcA = (csrSelD && InstrD[14]) ? {{27{1'b0}}, InstrD[19:15]} : rs1;
 
 bk_adder   auipcadder ({InstrD[31:12], 12'b0}, PCD, 1'b0, AuiPC, unused[1]);
-mux2 #(32) lauipcmux (AuiPC, {InstrD[31:12], 12'b0}, InstrD[5], lAuiPCD);
+mux2 #(32) lauipcmux  (AuiPC, {InstrD[31:12], 12'b0}, InstrD[5], lAuiPCD);
 
-// Execute Pipeline register
+// Pack decode-stage exceptions: [3]=ebreak [2]=ecall [1]=fetch-misalign [0]=illegal
+assign excDecD = {ebreakD, ecallD, misAlignD, ierrD};
+assign tretD   = retD;
+
+// CSR handler
+// Reads happen in Decode (for the CSR read value forwarded to Execute).
+// Writes / trap commits happen on negedge clk, driven by WB-stage trap signals.
+// ivalid: instruction in Execute stage is valid (not flushed).
+wire ivalid_csr = !FlushE && !ALUStall;
+csr_handler csr (
+    clk, reset, ivalid_csr, csrSelE, InstrE[13:12], InstrE[31:20], ALUSrcA, CSRResultE,
+    // trap from WB-stage error_handler
+    trap_active, trap_mstatus_mie, trap_mstatus_mpie, trap_mepc, trap_mcause, trap_mtval,
+    // trap return
+    tretW, tret_mstatus_mie, tret_mstatus_mpie,
+    // csr output fields
+    csr_mstatus, csr_mie, csr_mip, csr_mtvec, csr_mepc, csr_mcause, csr_mscratch, csr_mtval
+);
+
+// -------------------------------------------------------------------------
+// Execute stage
 pl_reg_e ple (
-    clk, FlushE, ALUStall, ResultSrcD, MemWriteD, csrSelD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD, SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD,
-    ResultSrcE, MemWriteE, csrSelE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, InstrE, ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE
+    clk, FlushE, ALUStall, ResultSrcD, csrSelD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD,
+    SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD, excDecD, tretD,
+    ResultSrcE, csrSelE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, InstrE,
+    ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE, excDecE, tretE
 );
 
 // ALU logic
-mux3 #(32) srcamux (RD1E, ResultW, ResultM, ForwardAE, ALUSrcA);
-mux3 #(32) rd2mux  (RD2E, ResultW, ResultM, ForwardBE, ALUSrcB);
-bk_adder   pcaddbranch (PCE, ImmExtE, 1'b0, PCTargetE, unused[2]);
+mux3 #(32) srcamux    (RD1E, ResultW, ResultM, ForwardAE, ALUSrcA);
+mux3 #(32) rd2mux     (RD2E, ResultW, ResultM, ForwardBE, ALUSrcB);
+bk_adder   pcaddbranch(PCE, ImmExtE, 1'b0, PCTargetE, unused[2]);
 
 mux2 #(32) srcbmux (ALUSrcB, ImmExtE, ALUSrcE, SrcB);
 alu        alu (clk, ALUSrcA, SrcB, ALUControlE, ALUResultE, Zero, ALUStall);
-wire [31:0] CSRResultE;
-csr_handler csr (clk, reset, !FlushE && InstrE, 1'b1, InstrD[13:12], InstrD[31:20], SrcA, CSRResultE);
+
 branching_unit bu (funct3E, Zero, ALUResultE[31], Branch);
 mux2 #(32) csrmux (ALUResultE, CSRResultE, csrSelE, ResultE);
 
+// -------------------------------------------------------------------------
+// Memory stage — detect load/store alignment faults here
+// Misaligned load: lh/lhu require addr[0]==0; lw requires addr[1:0]==00
+// Misaligned store: sh requires addr[0]==0; sw requires addr[1:0]==00
+// (byte accesses are always aligned)
+wire isLoadM  = (ResultSrcE[0]); // ResultSrc[0]=1 => load (from execute going into M)
+// detect in execute stage before registering, flag passes through pl_reg_m
+wire misAlignLoad_pre  = (funct3E == 3'b001 || funct3E == 3'b101) ? ALUResultE[0]       // lh/lhu
+                       : (funct3E == 3'b010)                       ? |ALUResultE[1:0]    // lw
+                       : 1'b0;
+wire misAlignStore_pre = (funct3E == 3'b001)                       ? ALUResultE[0]       // sh
+                       : (funct3E == 3'b010)                       ? |ALUResultE[1:0]    // sw
+                       : 1'b0;
+wire misAlignLoadE  = misAlignLoad_pre  && !csrSelE && ResultSrcE[0]; // only for actual loads
+wire misAlignStoreE = misAlignStore_pre && MemWriteE;                 // only for actual stores
+
 pl_reg_m plm (
-    clk, reset, ALUStall, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE,
-    BranchE, BranchTakenE, PCTargetE,
-    ResultSrcM, MemWriteM, RegWriteM, ResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM,
-    BranchM, BranchTakenM, PCTargetM
+    clk, reset, ALUStall, PCSrcTrap, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE, BranchE, BranchTakenE, PCTargetE, excDecE, tretE, misAlignLoadE, misAlignStoreE,
+    ResultSrcM, MemWriteM, RegWriteM, ResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM, BranchM, BranchTakenM, PCTargetM, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM
 );
 
+// Suppress memory write when store is misaligned (prevent corrupt writes)
+wire MemWriteM_safe = MemWriteM && !memMisAlignStoreM;
+
+// -------------------------------------------------------------------------
+// Writeback stage
 pl_reg_w plw (
-    clk, reset, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M,
-    ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W
+    clk, reset, PCSrcTrap, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM,
+    ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W, excDecW, tretW, memMisAlignLoadW, memMisAlignStoreW
 );
 
-// Store masker for store operations - generates byte enables and aligns data
+// Priority in error_handler: [0] > [1] > [2] > [3] > [4] > [5]
+// [6]=store-misalign [5]=load-misalign [4]=ebreak [3]=ecall [2]=fetch-misalign [1]=illegal
+assign exceptionW = {memMisAlignStoreW, memMisAlignLoadW, excDecW[3], excDecW[2], excDecW[1], excDecW[0]};
+
+// Error handler — sits entirely in Writeback, receives committed exceptions
+error_handler eh (
+    exceptionW, 3'b0, tretW, PCW, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
+    trap_event, trap_pc_next, trap_mstatus_mie, trap_mstatus_mpie, trap_mepc, trap_mcause, trap_mtval, tret_mstatus_mie, tret_mstatus_mpie
+);
+
+// trap_active: only on exception/interrupt, not on tret (csr_handler has separate tret port)
+assign trap_active = trap_event && !(|tretW);
+
+// Suppress register writeback on the trapping instruction
+wire RegWriteW_safe = RegWriteW && !trap_event;
+
+// Store masker — generates byte enables and aligned write data
 wire [31:0] AlignedWriteDataM;
 wire  [3:0] weaM;
 store_masker store_mask (funct3M, ResultM[1:0], WriteDataM, AlignedWriteDataM, weaM);
 
-// Memory masker for load operations - operates in Writeback stage for sequential BRAM
+// Load masker — operates in Writeback (sequential BRAM read data arrives in WB)
 load_masker load_mask (funct3W, ALUResultW[1:0], ReadData, MaskedReadDataW);
 
-// Result Source
+// Result mux
 mux4 #(32) resultmux (ALUResultW, MaskedReadDataW, PCPlus4W, lAuiPCW, ResultSrcW, ResultW);
 
+// -------------------------------------------------------------------------
+// Hazard unit
+// PCSrcTrap flushes the entire pipe (same mechanism as a branch redirect)
 hazard_unit hz (
-    clk, reset, InstrD[19:15], InstrD[24:20], InstrE[19:15], InstrE[24:20], InstrE[11:7], RdM, RdW, ResultSrcE[0], RegWriteM, RegWriteW, PCSrcE,
+    clk, reset, InstrD[19:15], InstrD[24:20], InstrE[19:15], InstrE[24:20], InstrE[11:7], RdM, RdW,
+    ResultSrcE[0], RegWriteM, RegWriteW_safe, PCSrcE || PCSrcTrap,
     StallF, StallD, FlushD, FlushE, ForwardAE, ForwardBE
 );
 
 assign Mem_WrData = AlignedWriteDataM;
 assign Mem_WrAddr = ResultM;
-assign wea = MemWriteM ? weaM : 4'b0000;
+assign wea        = MemWriteM_safe ? weaM : 4'b0000;
 
 endmodule

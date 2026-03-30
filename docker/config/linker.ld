@@ -1,50 +1,74 @@
 ENTRY(_start)
 
 MEMORY {
-    ROM       : ORIGIN = 0x00000000, LENGTH = 2K     /* Boot ROM */
-    TRAP_VEC  : ORIGIN = 0x00000800, LENGTH = 512    /* Trap handler */
-    TEXT      : ORIGIN = 0x00000A00, LENGTH = 1536   /* app space */
-    DATA      : ORIGIN = 0x00001000, LENGTH = 2K     /* Data/stack */
+    ROM   : ORIGIN = 0x00000000, LENGTH = 4K      /* Boot ROM (trap vectors + code) */
+    DATA  : ORIGIN = 0x00001000, LENGTH = 2K      /* Data + stack */
 }
 
 SECTIONS {
-    /* Trap vector section - at 0x800 */
-    .trap_vector 0x00000800 : {
+
+    /*  Trap Vector Table (in ROM) */
+    .trap_vector : ALIGN(4) {
+        __trap_vector_start = .;
         KEEP(*(.trap_vector))
         *(.trap_handler)
-    } > TRAP_VEC
+        __trap_vector_end = .;
+    } > ROM
 
-    /* Application code section - starts at 0xA00 */
-    .init 0x00000A00 : {
+    /*  Startup Code */
+    .init : ALIGN(4) {
+        __init_start = .;
         *(.init)
-    } > TEXT
+        __init_end = .;
+    } > ROM
 
-    .text : {
+    /*  Text Section */
+    .text : ALIGN(4) {
+        __text_start = .;
         *(.text.init)
         *(.text)
         *(.text.*)
-    } > TEXT
+        __text_end = .;
+    } > ROM
 
-    /* Data section */
-    .data : {
+    /*  Read-only Data */
+    .rodata : ALIGN(4) {
+        __rodata_start = .;
+        *(.rodata)
+        *(.rodata.*)
+        __rodata_end = .;
+    } > ROM
+
+    /*  Initialized Data */
+    .data : ALIGN(4) {
+        __data_start = .;
         *(.data)
         *(.data.*)
         *(.sdata)
         *(.sdata.*)
+        __data_end = .;
     } > DATA
 
-    /* BSS section */
-    .bss : {
-        PROVIDE(__bss_start = .);
+    /*  BSS (Zero-initialized) */
+    .bss : ALIGN(4) {
+        __bss_start = .;
         *(.bss)
         *(.bss.*)
         *(.sbss)
         *(.sbss.*)
-        PROVIDE(__bss_end = .);
+        *(COMMON)
+        __bss_end = .;
     } > DATA
 
-    /* Stack (grows down from top of DATA, 256 bytes = 0.25K) */
-    .stack (ORIGIN(DATA) + LENGTH(DATA) - 256) : {
+    /*  Heap */
+    .heap : ALIGN(4) {
+        __heap_start = .;
+        . = ORIGIN(DATA) + LENGTH(DATA) - 256;
+        __heap_end = .;
+    } > DATA
+
+    /*  Stack (top of DATA) */
+    .stack (ORIGIN(DATA) + LENGTH(DATA)) : {
         PROVIDE(_stack_top = .);
     } > DATA
 }
