@@ -29,7 +29,7 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 ### Usage
 
 - Use the [Docker 🔗](./docker/readme.md) to build the hex file.
-- Move the hex file location to instruction memory directory and set the correct path.
+- Set the hex file path in `instr_mem.v` depending on the execution directory and the testbench.
 - Run `simulate.sh` for local simulation, add wave flag to use gtkwave to see vcd.
 
     ```
@@ -52,11 +52,17 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
     - [x] Implement 32-bit signed multiplier (maybe extend from 16-bit dadda)
     - [x] Implement Divider
     - [x] Implement Reminder
-- [ ] CSR Extension
+- [x] zicsr Extension
+    - [x] Implement CSR registers (cssrw, csrrs, csrrc with immediate variants)
+    - [x] Implement mtvec, mepc, mstatus, mcause, mtval at minimum
+    - [x] Implement MRET instruction
+    - [x] Implement trap handler to handle exceptions and interrupts
 - [ ] AXI-Lite to AXI Full
 - [ ] UART, SPI Integeration with AXI
 - [ ] GPIO Peripheral
-- [ ] Systolic Matrix Multiplier
+- [ ] Matrix Multiplier
+    - [x] Design and implement systolic array matrix multiplier
+    - [ ] Integrate with CPU using AXI Full
 
 ### References
 
