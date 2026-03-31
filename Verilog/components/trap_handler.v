@@ -11,7 +11,7 @@
 //   [5] = misaligned store      (memory stage detect, propagated to WB)
 //
 // interrupt encoding (priority: lower index = higher priority):
-// [0] - spi, [1] - uart, [2] - gpio, [3] - matrix multiplier, [4] - timer
+// [0] - spi, [1] - uart, [2] - gpio, [3] - timer, [4] - matrix multiplier
 // tret: MRET detected in decode, propagated to WB.
 module trap_handler (
     input  [5:0]  exception,    // see encoding above

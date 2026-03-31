@@ -39,7 +39,13 @@ initial begin
     wait(trap_done); Interrupt = 5'd0; repeat (20) @(posedge clk);
     Interrupt = 5'b10000; repeat (100) @(posedge clk); // repeat trap handler trigger
 
-    #30000;
+    #100;
+    $finish;
+end
+
+// timeout
+initial begin
+    #6000;
     $display("[TIMEOUT] handler_calls=%0d (expected 5)", handler_calls);
     $finish;
 end
