@@ -36,7 +36,7 @@ wire [31:0] PCPlus4F, PCPlus4D, PCPlus4E, PCPlus4M, PCPlus4W;
 wire [31:0]          PCD,       PCE,       PCM;       // PCF = module output
 wire [31:0]          PCTargetE, PCTargetM;
 wire [31:0] lAuiPCD, lAuiPCE,  lAuiPCM,  lAuiPCW;
-
+wire        validD, validE, validM;
 // Instruction / alignment pipeline
 wire [31:0] InstrE;                   // InstrD = module output
 wire        misAlignF, misAlignD;
@@ -141,7 +141,7 @@ bk_adder   pcadd4 (PCF, 32'd4, 1'b0, PCPlus4F, unused[0]);
 pl_reg_d pld (
     clk, DecodeHold, FlushD,
     Instr, PCF, PCPlus4F, PredTakenF, misAlignF, PredTargetF,
-    InstrD, PCD, PCPlus4D, PredTakenD, misAlignD, PredTargetD
+    InstrD, PCD, PCPlus4D, PredTakenD, misAlignD, PredTargetD, validD
 );
 
 // Register file
@@ -177,9 +177,9 @@ csr_handler csr (
 // Execute stage
 pl_reg_e ple (
     clk, FlushE, ALUStall, ResultSrcD, csrSelD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD,
-    SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD, excDecD, tretD,
+    SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD, excDecD, tretD, validD,
     ResultSrcE, csrSelE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, InstrE,
-    ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE, excDecE, tretE
+    ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE, excDecE, tretE, validE
 );
 
 // ALU logic
@@ -210,8 +210,8 @@ wire misAlignLoadE  = misAlignLoad_pre  && !csrSelE && ResultSrcE[0]; // only fo
 wire misAlignStoreE = misAlignStore_pre && MemWriteE;                 // only for actual stores
 
 pl_reg_m plm (
-    clk, reset, ALUStall, PCSrcTrap, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE, BranchE, BranchTakenE, PCTargetE, excDecE, tretE, misAlignLoadE, misAlignStoreE,
-    ResultSrcM, MemWriteM, RegWriteM, ResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM, BranchM, BranchTakenM, PCTargetM, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM
+    clk, reset, ALUStall, PCSrcTrap, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE, BranchE, BranchTakenE, PCTargetE, excDecE, tretE, misAlignLoadE, misAlignStoreE, validE,
+    ResultSrcM, MemWriteM, RegWriteM, ResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM, BranchM, BranchTakenM, PCTargetM, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM, validM
 );
 
 // Suppress memory write when store is misaligned (prevent corrupt writes)
@@ -229,7 +229,7 @@ assign exceptionW = {memMisAlignStoreW, memMisAlignLoadW, excDecW[3], excDecW[2]
 
 // Trap handler — sits entirely in Writeback, receives committed exceptions
 trap_handler th (
-    exceptionW, interruptA, tretW, PCW, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
+    exceptionW, interruptA, tretW, PCW, PCM, validM, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
     trap_event, trap_pc_next, trap_mstatus_mie, trap_mstatus_mpie, trap_mepc, trap_mcause, trap_mtval, tret_mstatus_mie, tret_mstatus_mpie
 );
 

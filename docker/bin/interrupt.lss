@@ -1,0 +1,196 @@
+
+.temp.file.elf:     file format elf32-littleriscv
+
+SYMBOL TABLE:
+00000000 l    d  .init	00000000 .init
+00000030 l    d  .text	00000000 .text
+00001000 l    d  .heap	00000000 .heap
+00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
+00000000 l    d  .comment	00000000 .comment
+00000000 l    d  .debug_line	00000000 .debug_line
+00000000 l    d  .debug_line_str	00000000 .debug_line_str
+00000000 l    d  .debug_info	00000000 .debug_info
+00000000 l    d  .debug_abbrev	00000000 .debug_abbrev
+00000000 l    d  .debug_aranges	00000000 .debug_aranges
+00000000 l    d  .debug_str	00000000 .debug_str
+00000000 l    d  .debug_loclists	00000000 .debug_loclists
+00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
+00000000 l    d  .debug_macro	00000000 .debug_macro
+00000000 l    d  .debug_frame	00000000 .debug_frame
+00000000 l    df *ABS*	00000000 .temp.start.o
+00000000 l    df *ABS*	00000000 interrupt.c
+00000800 g       *ABS*	00000000 __flash_size
+00000000 g       .init	00000000 __trap_vector_end
+00000100 g       *ABS*	00000000 __stack_size
+00000000 g       .init	00000000 __init_start
+00000030 g       .text	00000000 __text_start
+000000f8 g       .text	00000000 __rodata_end
+00001000 g       .text	00000000 __bss_end
+00000030 g     F .text	000000b4 trap_handler
+00001800 g       .riscv.attributes	00000000 _stack_top
+00000000 g       .init	00000000 _start
+00000000 g       .init	00000000 __trap_vector_start
+000000f8 g       .text	00000000 __rodata_start
+00002000 g       *ABS*	00000000 __ram
+00001000 g       .text	00000000 __data_end
+00000030 g       .init	00000000 __init_end
+000000f8 g       .text	00000000 __text_end
+00001000 g       .text	00000000 __bss_start
+000000e4 g     F .text	00000014 main
+00001700 g       .heap	00000000 __heap_end
+00000800 g       *ABS*	00000000 __ram_size
+00001000 g       .heap	00000000 __heap_start
+00000000 g       *ABS*	00000000 __flash
+00001000 g       .text	00000000 __data_start
+
+
+
+Disassembly of section .init:
+
+00000000 <__init_start>:
+     ### .section .init
+     ### .globl _start
+     ### 
+     ### _start:
+     ###     la sp, _stack_top
+   0:	       00002117          	auipc	x2,0x2
+   4:	       80010113          	addi	x2,x2,-2048 # 1800 <_stack_top>
+     ### 
+     ###     # zero .bss
+     ###     la t0, __bss_start
+   8:	       00001297          	auipc	x5,0x1
+   c:	       ff828293          	addi	x5,x5,-8 # 1000 <__bss_end>
+     ###     la t1, __bss_end
+  10:	       00001317          	auipc	x6,0x1
+  14:	       ff030313          	addi	x6,x6,-16 # 1000 <__bss_end>
+     ### 
+     ### 1:
+     ###     bge t0, t1, 2f
+  18:	/--/-X 0062d863          	bge	x5,x6,28 <__init_start+0x28>
+     ###     sw zero, 0(t0)
+  1c:	|  |   0002a023          	sw	x0,0(x5)
+     ###     addi t0, t0, 4
+  20:	|  |   00428293          	addi	x5,x5,4
+     ###     j 1b
+  24:	|  \-- ff5ff06f          	jal	x0,18 <__init_start+0x18>
+     ### 
+     ### 2:
+     ###     call main
+  28:	\----> 0bc000ef          	jal	x1,e4 <main>
+     ### 
+     ### 3:  j 3b
+  2c:	   /-- 0000006f          	jal	x0,2c <__init_start+0x2c>
+
+Disassembly of section .text:
+
+00000030 <trap_handler>:
+     ### #define TEST_LOC (*(volatile uint32_t *)(0x00001000))
+     ### 
+     ### // Trap handler prototype (defined in assembly)
+     ### extern void trap_handler();
+     ### 
+     ### void __attribute__((interrupt("machine"))) trap_handler (void) {
+  30:	             ff010113          	addi	x2,x2,-16
+  34:	             00e12623          	sw	x14,12(x2)
+  38:	             00f12423          	sw	x15,8(x2)
+     ###     uint32_t mepc, mcause;
+     ###     asm volatile ("csrr %0, mcause" : "=r"(mcause));
+  3c:	             342027f3          	csrrs	x15,mcause,x0
+     ### 
+     ###     if (mcause & 0x80000000) {
+  40:	/----------- 0807d263          	bge	x15,x0,c4 <trap_handler+0x94>
+     ###         // Interrupt
+     ###         // mepc already points to the interrupted instruction
+     ###         uint32_t id = mcause & 0x1F;
+  44:	|            01f7f793          	andi	x15,x15,31
+     ###         // switch case needs jump table to be loaded into dmem
+     ###         if (id == 16) { // SPI — read received byte to clear RX interrupt flag
+  48:	|            01000713          	addi	x14,x0,16
+  4c:	|        /-- 02e79063          	bne	x15,x14,6c <trap_handler+0x3c>
+     ###             (void) SPI_DATA;
+  50:	|        |   000027b7          	lui	x15,0x2
+  54:	|        |   0347a703          	lw	x14,52(x15) # 2034 <__ram+0x34>
+     ###             SPI_STATUS = 0;
+  58:	|        |   0207ac23          	sw	x0,56(x15)
+     ###             TEST_LOC = 1;
+     ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
+     ###             TIMER_CTRL = 0;
+     ###             TEST_LOC = 1;
+     ###         } else if (id == 20) { // Matrix Mul ignored
+     ###             TEST_LOC = 1;
+  5c:	|     /--|-> 000017b7          	lui	x15,0x1
+  60:	|     |  |   00100713          	addi	x14,x0,1
+  64:	|     |  |   00e7a023          	sw	x14,0(x15) # 1000 <__bss_end>
+  68:	|  /--|--|-- 04c0006f          	jal	x0,b4 <trap_handler+0x84>
+     ###         } else if (id == 17) { // UART — read received byte to drain RX FIFO
+  6c:	|  |  |  \-> 01100713          	addi	x14,x0,17
+  70:	|  |  |  /-- 00e79a63          	bne	x15,x14,84 <trap_handler+0x54>
+     ###             (void) UART_DATA;
+  74:	|  |  |  |   000027b7          	lui	x15,0x2
+  78:	|  |  |  |   0047a703          	lw	x14,4(x15) # 2004 <__ram+0x4>
+     ###             UART_STATUS = 0;
+  7c:	|  |  |  |   0007a423          	sw	x0,8(x15)
+     ###             TEST_LOC = 1;
+  80:	|  |  +--|-- fddff06f          	jal	x0,5c <trap_handler+0x2c>
+     ###         } else if (id == 18) { // GPIO — read pin state to clear edge-detect flag
+  84:	|  |  |  \-> 01200713          	addi	x14,x0,18
+  88:	|  |  |  /-- 00e79863          	bne	x15,x14,98 <trap_handler+0x68>
+     ###             (void) GPIO_DATA;
+  8c:	|  |  |  |   000027b7          	lui	x15,0x2
+  90:	|  |  |  |   0187a783          	lw	x15,24(x15) # 2018 <__ram+0x18>
+     ###             TEST_LOC = 1;
+  94:	|  |  +--|-- fc9ff06f          	jal	x0,5c <trap_handler+0x2c>
+     ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
+  98:	|  |  |  \-> 01300713          	addi	x14,x0,19
+  9c:	|  |  |  /-- 00e79863          	bne	x15,x14,ac <trap_handler+0x7c>
+     ###             TIMER_CTRL = 0;
+  a0:	|  |  |  |   000027b7          	lui	x15,0x2
+  a4:	|  |  |  |   0207a423          	sw	x0,40(x15) # 2028 <__ram+0x28>
+     ###             TEST_LOC = 1;
+  a8:	|  |  +--|-- fb5ff06f          	jal	x0,5c <trap_handler+0x2c>
+     ###         } else if (id == 20) { // Matrix Mul ignored
+  ac:	|  |  |  \-> 01400713          	addi	x14,x0,20
+  b0:	|  |  \----- fae786e3          	beq	x15,x14,5c <trap_handler+0x2c>
+     ###         );
+     ###         // Log cause to UART for debug visibility
+     ###         UART_DATA   = mcause;
+     ###         UART_STATUS = 1;
+     ###     }
+     ### }
+  b4:	|  >-------> 00c12703          	lw	x14,12(x2)
+  b8:	|  |         00812783          	lw	x15,8(x2)
+  bc:	|  |         01010113          	addi	x2,x2,16
+  c0:	|  |         30200073          	mret
+     ###         asm volatile (
+  c4:	\--|-------> 34102773          	csrrs	x14,mepc,x0
+  c8:	   |         00470713          	addi	x14,x14,4
+  cc:	   |         34171073          	csrrw	x0,mepc,x14
+     ###         UART_DATA   = mcause;
+  d0:	   |         00002737          	lui	x14,0x2
+  d4:	   |         00f72223          	sw	x15,4(x14) # 2004 <__ram+0x4>
+     ###         UART_STATUS = 1;
+  d8:	   |         00100793          	addi	x15,x0,1
+  dc:	   |         00f72423          	sw	x15,8(x14)
+     ### }
+  e0:	   \-------- fd5ff06f          	jal	x0,b4 <trap_handler+0x84>
+
+000000e4 <main>:
+     ### 
+     ### int main() {
+     ### 
+     ###     // Set trap handler — direct mode (mtvec[1:0]=00): all traps go to trap_handler
+     ###     // For vectored mode set mtvec = (base | 1): interrupts go to base + mcause[4:0]*4
+     ###     asm("csrw mtvec, %0" :: "r"(trap_handler));
+  e4:	    03000793          	addi	x15,x0,48
+  e8:	    30579073          	csrrw	x0,mtvec,x15
+     ###     // asm(".word 0xdeadcafe");
+     ###     asm volatile ("csrw mtvec, %0" :: "r"(trap_handler));
+  ec:	    30579073          	csrrw	x0,mtvec,x15
+     ###     // Enable machine-mode interrupts (mstatus.MIE = 1)
+     ###     asm volatile ("csrsi mstatus, 8"); // set bit 3 (MIE)
+  f0:	    30046073          	csrrsi	x0,mstatus,8
+     ### 
+     ###     // asm volatile ("ecall");
+     ###     // asm volatile ("ebreak");
+     ###     while (1);
+  f4:	/-- 0000006f          	jal	x0,f4 <main+0x10>

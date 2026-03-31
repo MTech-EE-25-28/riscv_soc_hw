@@ -17,7 +17,8 @@ module trap_handler (
     input  [5:0]  exception,    // see encoding above
     input  [4:0]  interrupt,    // see encoding above
     input         tret,         // MRET
-    input  [31:0] pc,           // trap pc
+    input  [31:0] pc, pc_m,     // trap p
+    input         valid_m,      // valid bit for M-stage
     input  [31:0] mem_addr,     // load/store address misalignment mtval
 
     // CSR values needed for trap/return PC and status update
@@ -37,16 +38,9 @@ module trap_handler (
 );
 
 always @(*) begin
-    // defaults
-    trap               = 1'b0;
-    pc_next            = pc + 4;
-    trap_mstatus_mie   = 1'b0;
-    trap_mstatus_mpie  = 1'b0;
-    trap_mepc          = 32'b0;
-    trap_mcause        = 32'b0;
-    trap_mtval         = 32'b0;
-    tret_mstatus_mie   = 1'b0;
-    tret_mstatus_mpie  = 1'b0;
+    trap             = 1'b0; pc_next           = pc + 4; // defaults
+    tret_mstatus_mie = 1'b0; tret_mstatus_mpie = 1'b0;
+    trap_mepc        = 32'b0; trap_mcause      = 32'b0; trap_mtval = 32'b0;
 
     if (|exception) begin
         trap              = 1'b1;
@@ -56,45 +50,33 @@ always @(*) begin
         pc_next           = {csr_mtvec[31:2], 2'b00}; // direct/vectored base
 
         // Priority: illegal > fetch-misalign > ecall > ebreak > load-misalign > store-misalign
-        if (exception[0]) begin
-            // illegal instruction
-            trap_mcause = 32'd2;
-            trap_mtval  = 32'b0;
-        end else if (exception[1]) begin
-            // instruction-address misaligned
-            trap_mcause = 32'd0;
-            trap_mtval  = pc;
-        end else if (exception[2]) begin
-            // ecall from M-mode
-            trap_mcause = 32'd11;
-            trap_mtval  = 32'b0;
-        end else if (exception[3]) begin
-            // ebreak (breakpoint)
-            trap_mcause = 32'd3;
-            trap_mtval  = 32'b0;
-        end else if (exception[4]) begin
-            // load address misaligned
-            trap_mcause = 32'd4;
-            trap_mtval  = mem_addr;
-        end else begin
-            // store/AMO address misaligned
-            trap_mcause = 32'd6;
-            trap_mtval  = mem_addr;
+        if (exception[0]) begin // illegal instruction
+            trap_mcause = 32'd2; trap_mtval  = 32'b0;
+        end else if (exception[1]) begin // instruction-address misaligned
+            trap_mcause = 32'd0; trap_mtval  = pc;
+        end else if (exception[2]) begin // ecall from M-mode
+            trap_mcause = 32'd11; trap_mtval  = 32'b0;
+        end else if (exception[3]) begin // ebreak (breakpoint)
+            trap_mcause = 32'd3; trap_mtval  = 32'b0;
+        end else if (exception[4]) begin // load address misaligned
+            trap_mcause = 32'd4; trap_mtval  = mem_addr;
+        end else begin // store/AMO address misaligned
+            trap_mcause = 32'd6; trap_mtval  = mem_addr;
         end
 
-    end else if (|interrupt) begin
+    end else if (csr_mstatus_mie && valid_m && |interrupt) begin
         trap              = 1'b1;
-        trap_mepc         = {pc[31:2], 2'b00};
-        trap_mtval        = 32'b0;
         trap_mstatus_mpie = csr_mstatus_mie;
         trap_mstatus_mie  = 1'b0;
+        trap_mepc         = {pc_m[31:2], 2'b00};
+        trap_mtval        = 32'b0;
 
         // Encode platform mcause (bit[31]=1 = interrupt, lower bits = source id)
         /* */if (interrupt[0]) trap_mcause = {1'b1, 31'd16}; // SPI
         else if (interrupt[1]) trap_mcause = {1'b1, 31'd17}; // UART
         else if (interrupt[2]) trap_mcause = {1'b1, 31'd18}; // GPIO
         else if (interrupt[3]) trap_mcause = {1'b1, 31'd19}; // Timer
-        else if (interrupt[4]) trap_mcause = {1'b1, 31'd20}; // Reserved
+        else if (interrupt[4]) trap_mcause = {1'b1, 31'd20}; // matrix mul
         else                   trap_mcause = {1'b1, 31'd0};
 
         // Vectored mode (mtvec[1:0]==01): jump to base + mcause[4:0]*4 for per-source ISR
@@ -105,7 +87,7 @@ always @(*) begin
             pc_next = {csr_mtvec[31:2], 2'b00};
 
     end else if (tret) begin
-        trap              = 1'b1; // flush pipeline
+        trap              = 1'b1;             // flush pipeline
         tret_mstatus_mie  = csr_mstatus_mpie; // MIE <- MPIE on return
         tret_mstatus_mpie = 1'b1;             // MPIE set back to 1
         pc_next           = csr_mepc;

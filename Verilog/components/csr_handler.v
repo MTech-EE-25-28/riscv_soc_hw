@@ -86,7 +86,7 @@ end
 // write csr
 // mstatus concerned bits to update: MIE (3), MPIE (7), MPP (12-11)
 // initialize mstatus with MPP=11 (machine previous previlege) no other mode supported.
-always @(negedge clk) begin
+always @(posedge clk) begin
     if (!reset) begin
         mie <= 32'b0; mtvec <= 32'b0; mepc <= 32'b0;
         mip <= 32'b0; mtval <= 32'b0; mscratch <= 32'b0;

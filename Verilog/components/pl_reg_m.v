@@ -16,7 +16,7 @@ module pl_reg_m (
     input  [31:0] PCTargetE,
     input   [3:0] excDecE,
     input         tretE,
-    input         misAlignLoadE, misAlignStoreE,
+    input         misAlignLoadE, misAlignStoreE, validE,
 
     output reg  [1:0] ResultSrcM,
     output reg        MemWriteM, RegWriteM,
@@ -29,12 +29,12 @@ module pl_reg_m (
     output reg [31:0] PCTargetM,
     output reg  [3:0] excDecM,
     output reg        tretM,
-    output reg        memMisAlignLoadM, memMisAlignStoreM
+    output reg        memMisAlignLoadM, memMisAlignStoreM, validM
 );
 
 always @(posedge clk) begin
     if (!clr || flush) begin
-        WriteDataM <= 0; RdM <= 0; PCPlus4M <= 0; lAuiPCM <= 0;
+        WriteDataM <= 0; RdM <= 0; PCPlus4M <= 0; lAuiPCM <= 0; validM <= 0;
         RegWriteM <= 0; ResultSrcM <= 0; MemWriteM <= 0; ALUResultM <= 0;
         memMisAlignLoadM <= 0; memMisAlignStoreM <= 0; funct3M <= 0; PCM <= 0;
         BranchM <= 0; BranchTakenM <= 0; PCTargetM <= 0; excDecM <= 0; tretM <= 0;
@@ -44,7 +44,7 @@ always @(posedge clk) begin
         PCPlus4M <= PCPlus4E; lAuiPCM <= lAuiPCE; funct3M <= funct3E; PCM <= PCE;
         BranchM <= BranchE; BranchTakenM <= BranchTakenE; PCTargetM <= PCTargetE;
         memMisAlignLoadM <= misAlignLoadE; memMisAlignStoreM <= misAlignStoreE;
-        excDecM <= excDecE; tretM <= tretE;
+        excDecM <= excDecE; tretM <= tretE; validM <= validE;
     end
 end
 
