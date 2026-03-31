@@ -1,6 +1,6 @@
 
 // Testbench for exception handling in the RISC-V CPU
-// load trap.hex in instr_mem.v
+// load exception.hex in instr_mem.v
 module tb_exception;
 reg clk, reset;
 reg Ext_MemWrite;
