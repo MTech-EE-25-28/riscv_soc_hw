@@ -6,7 +6,7 @@ module csr_handler (
     input  [ 1:0] csr_type,
     input  [11:0] csr_addr,
     input  [31:0] csr_write_data, // data from rs1
-    output reg [31:0] csr_read_data,
+    output [31:0] csr_read_data,
 
     // trap handler
     input         trap, trap_mstatus_mie, trap_mstatus_mpie,

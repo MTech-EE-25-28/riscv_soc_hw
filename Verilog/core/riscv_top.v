@@ -48,7 +48,7 @@ always @(posedge clk) begin
                 // memory write
                 counter <= counter + 1'b1; reset <= 1'b1;
                 if (counter < 2) begin
-                    Ext_MemWrite <= 1'b1; Ext_WriteData <= 32'h0000000A; Ext_DataAdr <= 32'h00000800;
+                    Ext_MemWrite <= 1'b1; Ext_WriteData <= 32'h0000000A; Ext_DataAdr <= 32'h00001000;
                 end else begin
                     Ext_MemWrite <= 1'b0; Ext_WriteData <= 32'b0; Ext_DataAdr <= 32'b0;
                     counter <= 1'b0; state <= ST_RUN;
@@ -57,10 +57,10 @@ always @(posedge clk) begin
             end
             ST_RUN: begin
                 // Wait for program to run and write result to memory
-                if (MemWrite && DataAdr == 32'h00000804) begin
+                if (MemWrite && DataAdr == 32'h00001004) begin
                     debug_regs[0] <= WriteData[31:0]; // Capture debug info
                 end
-                if (MemWrite && DataAdr == 32'h00000808) begin
+                if (MemWrite && DataAdr == 32'h00001008) begin
                     debug_regs[1] <= WriteData[31:0];
                     state <= ST_DONE;
                 end
