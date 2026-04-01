@@ -67,9 +67,8 @@ wire [31:0] remainder_signed;
 
 // Instruction Decode
 always @(*) begin
+    signA = 1'b0; signB = 1'b0; select_remainder = 1'b0;
     if (internal_enable) begin
-        signA = 1'b0; signB = 1'b0; select_remainder = 1'b0;
-
         case (funct3_in)
             3'b100: begin // DIV
                 signA = 1'b1;

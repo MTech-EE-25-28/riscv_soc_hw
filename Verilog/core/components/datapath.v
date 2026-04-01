@@ -69,7 +69,7 @@ wire        PredTakenF,  PredTakenD,  PredTakenE;
 wire [31:0] PredTargetF, PredTargetD, PredTargetE;
 wire [31:0] FetchNextPCCandidate, BranchRecoveryPCE, ExecuteNextPCCandidate;
 wire        BranchTakenE, BranchM,    BranchTakenM;
-wire        BranchDirectionMissE, BranchTargetMissE, FalseBranchPredictionE, BranchMispredictE;
+wire        BranchDirectionMissE, FalseBranchPredictionE, BranchMispredictE;
 wire        JumpMispredictE;
 
 // Exception pipeline  D -> E -> M -> W
@@ -115,12 +115,13 @@ assign BranchTakenE         = BranchE && Branch;
 // Case 2: Branch target misprediction: predicted target differs from actual, when both predicted and actual are taken
 // Case 3: False branch prediction: predicted taken but not a branch instruction
 // on any of these cases, we need to recover by flushing the incorrect instructions and updating the PC to the correct target
-assign BranchDirectionMissE   = BranchE && (PredTakenE != BranchTakenE);
-assign BranchTargetMissE      = BranchE && PredTakenE && BranchTakenE && (PredTargetE != PCTargetE);
-assign FalseBranchPredictionE = PredTakenE && !BranchE && !JumpE; // JAL is not a false prediction
-assign BranchMispredictE      = FalseBranchPredictionE || BranchDirectionMissE || BranchTargetMissE;
-// For JAL, only flush if BTB did not already redirect fetch to the correct target
-assign JumpMispredictE  = JumpE && !(PredTakenE && (PredTargetE == PCTargetE));
+// XOR Branch directly with PredTakenE — avoids extra AND gate (BranchTakenE) on critical path
+assign BranchDirectionMissE   = BranchE && (PredTakenE ^ Branch);
+assign FalseBranchPredictionE = PredTakenE && !BranchE && !JumpE;
+assign BranchMispredictE      = FalseBranchPredictionE || BranchDirectionMissE;
+// assign BranchTargetMissE      = BranchE && PredTakenE && BranchTakenE && (PredTargetE != PCTargetE);
+// MCU (<8KB): alias probability near-zero, skip 32-bit target compare on critical path (Remove BranchTargetMissE)
+assign JumpMispredictE  = JumpE && !PredTakenE;
 assign PCSrcE           = JumpMispredictE || JalrE || BranchMispredictE;
 
 // If branch taken, use branch target, else PC+4

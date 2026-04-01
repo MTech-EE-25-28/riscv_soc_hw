@@ -2,15 +2,16 @@
 // Branch Predictor with BTB (Branch Target Buffer)
 module branch_predictor #(
     parameter ADDR_WIDTH = 32,
-    parameter BTB_SIZE = 8
+    parameter BTB_SIZE = 8,
+    parameter TAG_WIDTH = 8 // for better timing, its uC as well
 ) (
     input wire clk,
     input wire reset,
     input wire enable,
     input wire [ADDR_WIDTH-1:0] pc_fetch,
-    output reg predict_taken,
-    output reg [ADDR_WIDTH-1:0] predicted_target,
-    output reg prediction_valid,
+    output wire predict_taken,
+    output wire [ADDR_WIDTH-1:0] predicted_target,
+    output wire prediction_valid,
     input wire update_en,
     input wire [ADDR_WIDTH-1:0] pc_update,
     input wire [ADDR_WIDTH-1:0] target_update,
@@ -26,7 +27,7 @@ localparam INDEX_WIDTH = $clog2(BTB_SIZE);
 
 reg [ADDR_WIDTH-1:0] btb_targets [0:BTB_SIZE-1];
 reg [1:0]            btb_counters [0:BTB_SIZE-1]; // 2-bit saturating counters
-reg [ADDR_WIDTH-INDEX_WIDTH-2-1:0] btb_tags [0:BTB_SIZE-1]; // PC tags for matching
+reg [TAG_WIDTH-1:0] btb_tags [0:BTB_SIZE-1]; // PC tags for matching
 reg btb_valid [0:BTB_SIZE-1];
 
 // Index generation (use lower bits of PC, excluding byte offset)
@@ -34,27 +35,18 @@ wire [INDEX_WIDTH-1:0] fetch_index = pc_fetch[INDEX_WIDTH+1:2];
 wire [INDEX_WIDTH-1:0] update_index = pc_update[INDEX_WIDTH+1:2];
 
 // Tag generation (upper bits of PC)
-wire [ADDR_WIDTH-INDEX_WIDTH-2-1:0] fetch_tag = pc_fetch[ADDR_WIDTH-1:INDEX_WIDTH+2];
-wire [ADDR_WIDTH-INDEX_WIDTH-2-1:0] update_tag = pc_update[ADDR_WIDTH-1:INDEX_WIDTH+2];
+wire [TAG_WIDTH-1:0] fetch_tag = pc_fetch[TAG_WIDTH+INDEX_WIDTH+1:INDEX_WIDTH+2];
+wire [TAG_WIDTH-1:0] update_tag = pc_update[TAG_WIDTH+INDEX_WIDTH+1:INDEX_WIDTH+2];
 
 // Prediction Logic
 wire tag_match = btb_valid[fetch_index] && (btb_tags[fetch_index] == fetch_tag);
 wire [1:0] counter_val = btb_counters[fetch_index];
 
-integer i; // simulation purpose only
+assign prediction_valid = enable && reset && tag_match;
+assign predict_taken    = enable && reset && tag_match && (counter_val[1] == 1'b0);
+assign predicted_target = (enable && reset && tag_match) ? btb_targets[fetch_index] : 32'h0;
 
-always @(posedge clk) begin
-    if (!reset || !enable) begin
-        // During reset, output no prediction
-        prediction_valid <= 1'b0;
-        predict_taken    <= 1'b0;
-        predicted_target <= 32'h0;
-    end else begin
-        predict_taken    <= tag_match && (counter_val[1] == 1'b0); // Taken if upper bit is 0
-        predicted_target <= tag_match ? btb_targets[fetch_index] : 32'h0;
-        prediction_valid <= tag_match;
-    end
-end
+integer i; // simulation purpose only
 
 always @(posedge clk) begin
     if (!reset) begin

@@ -38,9 +38,10 @@ module trap_handler (
 );
 
 always @(*) begin
-    trap             = 1'b0; pc_next           = pc + 4; // defaults
-    tret_mstatus_mie = 1'b0; tret_mstatus_mpie = 1'b0;
-    trap_mepc        = 32'b0; trap_mcause      = 32'b0; trap_mtval = 32'b0;
+    trap             = 1'b0;  pc_next           = pc + 4; // defaults
+    tret_mstatus_mie = 1'b0;  tret_mstatus_mpie = 1'b0;
+    trap_mstatus_mie = 1'b0;  trap_mstatus_mpie = 1'b0;
+    trap_mepc        = 32'b0; trap_mcause       = 32'b0; trap_mtval = 32'b0;
 
     if (|exception) begin
         trap              = 1'b1;
