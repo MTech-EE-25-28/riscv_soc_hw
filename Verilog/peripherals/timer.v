@@ -69,7 +69,7 @@ always @(*) begin // apb read transaction
     end
 end
 
-assign pready = psel ? 1'b1 : 1'b0; // always ready
+assign pready = (psel && penable) ? 1'b1 : 1'b0; // assert only in APB access phase
 
 // timer counting logic
 always @(posedge clk) begin
