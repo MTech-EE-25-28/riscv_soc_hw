@@ -15,12 +15,9 @@ module reg_file #(parameter DATA_WIDTH = 32) (
 
 reg [DATA_WIDTH-1:0] reg_file_arr [0:31];
 
-initial begin
-    reg_file_arr[0] = 0;
-end
-
 // register file write logic (synchronous)
 always @(negedge clk) begin
+    reg_file_arr[0] <= 0; // ensure x0 is always 0
     if (wr_en) reg_file_arr[wr_addr] <= wr_data;
 end
 

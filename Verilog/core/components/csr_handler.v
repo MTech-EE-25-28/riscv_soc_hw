@@ -100,7 +100,7 @@ always @(posedge clk) begin
             mstatus <= {19'b0, 2'b11, 3'b0, trap_mstatus_mpie, 3'b0, trap_mstatus_mie, 3'b0};
         end else if (tret) begin
             mstatus <= {19'b0, 2'b11, 3'b0, tret_mstatus_mpie, 3'b0, tret_mstatus_mie, 3'b0};
-        end else if (csr_write_en) begin
+        end else if (csr_write_en && ivalid) begin  // gate writes on ivalid to prevent spurious commits on FlushE
         case (csr_addr)
                 // write based on correct masking of bits for each csr
                 MSTATUS : mstatus  <= (csr_prev_value & 32'hFFFF_FF00) | (csr_curr_value & 32'h0000_0088); // only MIE[3] and MPIE[7] writable

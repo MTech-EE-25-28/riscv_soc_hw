@@ -36,8 +36,8 @@ always @(posedge clk) begin
     if (clr) begin
         PredTakenE <= 0; PredTargetE <= 0; csrSelE <= 0;
         RegWriteE <= 0; ResultSrcE <= 0; MemWriteE <= 0;
-        JumpE <= 0; JalrE <= 0; BranchE <= 0; ALUControlE <= 0;
-        ImmExtE <= 0; PCPlus4E <= 0; lAuiPCE <= 0; funct3E <= 0;
+        JumpE <= 0; JalrE <= 0; BranchE <= 0; ALUControlE <= 0; RD1E <= 0;
+        ImmExtE <= 0; PCPlus4E <= 0; lAuiPCE <= 0; funct3E <= 0; RD2E <= 0;
         ALUSrcE <= 0; PCE <= 0; InstrE <= 0; excDecE <= 0; tretE <= 0; validE <= 0;
     end else if (!stall) begin
         RegWriteE <= RegWriteD; ResultSrcE <= ResultSrcD; MemWriteE <= MemWriteD;

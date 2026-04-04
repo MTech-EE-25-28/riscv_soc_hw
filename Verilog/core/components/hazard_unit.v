@@ -5,6 +5,7 @@ module hazard_unit (
     input [4:0] Rs1D, Rs2D, Rs1E, Rs2E,
     input [4:0] RdE, RdM, RdW,
     input RsE0, RegWriteM, RegWriteW, PCSrcE,
+    input mem_stall,  // external stall from APB interface
     output reg StallF, StallD,
     output reg FlushD, FlushE,
     output reg [1:0] ForwardAE, ForwardBE
@@ -27,7 +28,7 @@ always @(*) begin
 
         lwStall = RsE0 & ((Rs1D == RdE) | (Rs2D == RdE));
 
-        StallF = lwStall; StallD = lwStall;
+        StallF = lwStall || mem_stall; StallD = lwStall || mem_stall;
 
         FlushD = PCSrcE;
         FlushE = lwStall | PCSrcE;

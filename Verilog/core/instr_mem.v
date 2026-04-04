@@ -14,7 +14,7 @@ initial begin
     // add the path from execution directory to the .hex file
     // $readmemh("/home/user/projects/docker/bin/matrix_mul.hex", instr_ram);
     // $readmemh("./docker/bin/rv32i_test.hex", instr_ram);
-    $readmemh("./docker/bin/interrupt.hex", instr_ram);
+    $readmemh("./docker/bin/soc_test.hex", instr_ram);
 end
 
 // Sequential write

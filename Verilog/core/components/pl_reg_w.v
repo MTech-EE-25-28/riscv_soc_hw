@@ -1,7 +1,7 @@
 
 // pipeline registers writeback stage
 module pl_reg_w (
-    input clk, clr, flush,
+    input clk, clr, flush, stall,
 
     input       [1:0] ResultSrcM,
     input             RegWriteM,
@@ -29,7 +29,7 @@ always @(posedge clk) begin
         RegWriteW <= 0; ResultSrcW <= 0; ALUResultW <= 0; ReadDataW <= 0;
         excDecW <= 0; tretW <= 0; memMisAlignLoadW <= 0; memMisAlignStoreW <= 0;
         RdW <= 0; PCPlus4W <= 0; lAuiPCW <= 0; PCW <= 0; WriteDataW <= 0; funct3W <= 0;
-    end else begin
+    end else if (!stall) begin
         RegWriteW <= RegWriteM; ResultSrcW <= ResultSrcM; ALUResultW <= ALUResultM;
         ReadDataW <= ReadData; RdW <= RdM; PCPlus4W <= PCPlus4M; lAuiPCW <= lAuiPCM;
         PCW <= PCM; WriteDataW <= WriteDataM; funct3W <= funct3M; excDecW <= excDecM;
