@@ -13,6 +13,7 @@ filename="${basename%.*}"
 CFG_DIR="./config"
 LINKER="$CFG_DIR/linker.ld"
 STARTUP="$CFG_DIR/start.s"
+TRAP_HANDLER="./code/trap_handler.c"
 
 # Architecture
 ARCH=rv32im_zicsr
@@ -47,7 +48,8 @@ rm -f .temp.*
 if \
    $CC $CFLAGS -c "$STARTUP" -o .temp.start.o && \
    $CC $CFLAGS -c "$infile" -o .temp.file.o && \
-   $CC $LDFLAGS -o .temp.file.elf .temp.start.o .temp.file.o && \
+   $CC $CFLAGS -c "$TRAP_HANDLER" -o .temp.trap.o && \
+   $CC $LDFLAGS -o .temp.file.elf .temp.start.o .temp.file.o .temp.trap.o && \
    $OBJDUMP --visualize-jumps -t -S --source-comment='     ### ' \
        .temp.file.elf -M no-aliases,numeric > "$filename.lss" && \
    $OBJCOPY -O binary .temp.file.elf .temp.file.bin && \
