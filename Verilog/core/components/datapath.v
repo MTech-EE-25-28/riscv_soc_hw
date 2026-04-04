@@ -19,7 +19,8 @@ module datapath (
     input         MemWriteD, JumpD, BranchD,
     output        MemWriteM,
     output  [2:0] funct3M,
-    output [31:0] PCW, ALUResultW, WriteDataW, MaskedReadDataW
+    output [31:0] PCW, ALUResultW, WriteDataW, MaskedReadDataW,
+    input          mem_stall  // stall all stages during APB peripheral access
 );
 
 // signal definitions
@@ -163,7 +164,7 @@ assign tretD   = retD;
 // Reads happen in Decode (for the CSR read value forwarded to Execute).
 // Writes / trap commits happen on negedge clk, driven by WB-stage trap signals.
 // ivalid: instruction in Execute stage is valid (not flushed).
-wire ivalid_csr = !FlushE && !ALUStall;
+wire ivalid_csr = !FlushE && !ALUStall && !mem_stall; // don't re-commit CSR writes during APB stalls
 csr_handler csr (
     clk, reset, ivalid_csr, csrSelE, InstrE[13:12], InstrE[31:20], ALUSrcA, CSRResultE,
     // trap from WB-stage error_handler
@@ -177,7 +178,7 @@ csr_handler csr (
 // -------------------------------------------------------------------------
 // Execute stage
 pl_reg_e ple (
-    clk, FlushE, ALUStall, ResultSrcD, csrSelD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD,
+    clk, FlushE, ALUStall || mem_stall, ResultSrcD, csrSelD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD,
     SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD, excDecD, tretD, validD,
     ResultSrcE, csrSelE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, InstrE,
     ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE, excDecE, tretE, validE
@@ -211,7 +212,7 @@ wire misAlignLoadE  = misAlignLoad_pre  && !csrSelE && ResultSrcE[0]; // only fo
 wire misAlignStoreE = misAlignStore_pre && MemWriteE;                 // only for actual stores
 
 pl_reg_m plm (
-    clk, reset, ALUStall, PCSrcTrap, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE, BranchE, BranchTakenE, PCTargetE, excDecE, tretE, misAlignLoadE, misAlignStoreE, validE,
+    clk, reset, ALUStall || mem_stall, PCSrcTrap, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE, BranchE, BranchTakenE, PCTargetE, excDecE, tretE, misAlignLoadE, misAlignStoreE, validE,
     ResultSrcM, MemWriteM, RegWriteM, ResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM, BranchM, BranchTakenM, PCTargetM, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM, validM
 );
 
@@ -221,7 +222,7 @@ wire MemWriteM_safe = MemWriteM && !memMisAlignStoreM;
 // -------------------------------------------------------------------------
 // Writeback stage
 pl_reg_w plw (
-    clk, reset, PCSrcTrap, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM,
+    clk, reset, PCSrcTrap, mem_stall, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM,
     ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W, excDecW, tretW, memMisAlignLoadW, memMisAlignStoreW
 );
 
@@ -257,6 +258,7 @@ mux4 #(32) resultmux (ALUResultW, MaskedReadDataW, PCPlus4W, lAuiPCW, ResultSrcW
 hazard_unit hz (
     clk, reset, InstrD[19:15], InstrD[24:20], InstrE[19:15], InstrE[24:20], InstrE[11:7], RdM, RdW,
     ResultSrcE[0], RegWriteM, RegWriteW_safe, PCSrcE || PCSrcTrap,
+    mem_stall,
     StallF, StallD, FlushD, FlushE, ForwardAE, ForwardBE
 );
 
