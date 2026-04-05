@@ -11,10 +11,12 @@ module instr_mem #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 32, MEM_SIZE = 2048) 
 reg [DATA_WIDTH-1:0] instr_ram [0:MEM_SIZE-1];
 
 initial begin
-    // add the path from execution directory to the .hex file
-    // $readmemh("/home/user/projects/docker/bin/matrix_mul.hex", instr_ram);
-    // $readmemh("./docker/bin/rv32i_test.hex", instr_ram);
-    $readmemh("./docker/bin/soc_test.hex", instr_ram);
+    // Hex file is supplied at runtime via +HEX=<path> plusarg.
+    // Fallback: soc_test.hex (used by tb_soc).
+    string hex_file;
+    if (!$value$plusargs("HEX=%s", hex_file))
+        hex_file = "./docker/bin/soc_test.hex";
+    $readmemh(hex_file, instr_ram);
 end
 
 // Sequential write

@@ -3,7 +3,7 @@
 module riscv_pl (
     input         clk, reset,
     input   [4:0] interruptA,
-    input         mem_stall,  // stall from APB interface for peripheral LW/SW
+    input         apb_done,
     output [31:0] PC,
     input  [31:0] Instr,
     output        MemWriteM,
@@ -28,6 +28,6 @@ datapath    dp  (clk, reset, interruptA, ResultSrc,
                 ALUSrc, RegWrite, ImmSrc, ALUControl, Jalr, csrSel, ierr, ecall, ebreak, wfi, ret,
                 PC, Instr, Mem_WrAddr, Mem_WrData, wea, ReadData, Result, InstrD, MemWrite,
                 Jump, Branch, MemWriteM, funct3, PCW, ALUResultW, WriteDataW, ReadDataW,
-                mem_stall);
+                apb_done);
 
 endmodule

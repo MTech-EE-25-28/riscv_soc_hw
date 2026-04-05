@@ -19,15 +19,17 @@ module axi_interface (
     // CPU Interface
     input  wire [31:0] cpu_paddr,
     input  wire [31:0] cpu_wdata,
-    input  wire        write, // 0 - read
-    output reg         stall,    // stall CPU during APB transaction
+    input  wire        write,     // 0 - read
+    output wire        apb_done,
     output reg  [31:0] cpu_rdata, // captured peripheral read data
 
     // Peripheral interface
     output wire  [4:0] irq,
     // Pads
     output wire        pwm_out0, pwm_out1,
-    inout  wire [31:0] gpio_pad
+    inout  wire [31:0] gpio_pad,
+    input  wire        rx,
+    output wire        tx
 );
 
 localparam  IDLE  = 2'b00,
@@ -62,26 +64,32 @@ gpio gpio_u (
 );
 
 // Internal wire for UART slave responses
-// wire        uart_pready_w, uart_pslverr_w;
-// wire [31:0] uart_prdata_w;
-// wire        uart_irq_w;
+wire        uart_pready_w, uart_pslverr_w;
+wire [31:0] uart_prdata_w;
 
-// uart_top uart_u (
-
-// );
+uart_top uart_u (
+    .pclk(pclk), .presetn(presetn),
+    .psel(psel[1]), .penable(penable), .pwrite(pwrite),
+    .paddr(paddr), .pwdata(pwdata),
+    .prdata(uart_prdata_w), .pready(uart_pready_w), .pslverr(uart_pslverr_w),
+    .rx(rx), .tx(tx)
+);
 
 // Mux read data and ready from the addressed peripheral
 wire        pready_int = psel[2] ? timer_pready_w :
-                         psel[3] ? gpio_pready_w  : pready;
+                         psel[3] ? gpio_pready_w  :
+                         psel[1] ? uart_pready_w  : pready;
 wire [31:0] prdata_int = psel[2] ? timer_prdata_w :
-                         psel[3] ? gpio_prdata_w  : prdata;
+                         psel[3] ? gpio_prdata_w  :
+                         psel[1] ? uart_prdata_w  : prdata;
 
 // irq[4]=matrixmul, irq[3]=timer, irq[2]=gpio, irq[1]=uart, irq[0]=qspi
 assign irq = {1'b0, timer_irq_w, gpio_irq_w, 2'b00};
 
 reg [1:0] state;
 reg [4:0] periph_sel; // 4-matrixmul, 3-timer, 2-gpio, 1-uart, 0-qspi
-reg       just_done;  // blocks re-trigger for one cycle after a transaction completes
+
+assign apb_done = (state == WAIT);
 
 // address decoder for peripheral selection
 always @(*) begin
@@ -106,49 +114,46 @@ always @(posedge clk) begin
     if (!resetn) begin
         paddr  <= 32'hFFFF_FFFF; psel  <= 5'b0; penable <= 1'b0;
         pwrite <= 1'b0;  pwdata <= 32'b0; state <= IDLE;
-        stall  <= 1'b0;  just_done <= 1'b0; cpu_rdata <= 32'b0;
+        cpu_rdata <= 32'b0;
     end else begin
-        just_done <= 1'b0; // default: clear each cycle
         case (state)
             IDLE: begin
-                // Only start a transaction when a peripheral is addressed AND we didn't
-                // just finish one (just_done prevents re-triggering before CPU advances)
-                if (|periph_sel && !just_done) begin
+                // ph_stall (from hazard unit) freezes the pipeline combinationally the moment
+                if (|periph_sel) begin
                     paddr   <= cpu_paddr;
                     pwdata  <= cpu_wdata;
                     psel    <= periph_sel;
                     pwrite  <= write;
                     penable <= 1'b0; // APB setup phase: psel=1, penable=0
-                    stall   <= 1'b1; // hold CPU
                     state   <= write ? WRITE : READ;
                 end else begin
-                    stall   <= 1'b0;
                     psel    <= 5'b0;
                     penable <= 1'b0;
                 end
             end
-            // WRITE/READ run unconditionally — not gated by periph_sel so they
-            // cannot get stuck if cpu_paddr changes while the transaction runs
             WRITE: begin
                 penable <= 1'b1;
                 if (pready_int) begin
-                    penable   <= 1'b0;
-                    psel      <= 5'b0;
-                    stall     <= 1'b0;  // release CPU; it will advance on next posedge
-                    just_done <= 1'b1;  // block re-trigger for that one cycle
-                    state     <= IDLE;
+                    penable <= 1'b0;
+                    psel    <= 5'b0;
+                    state   <= WAIT;
                 end
             end
             READ: begin
                 penable <= 1'b1;
                 if (pready_int) begin
-                    cpu_rdata <= prdata_int; // latch peripheral read data while psel/penable still high
+                    cpu_rdata <= prdata_int;
                     penable   <= 1'b0;
                     psel      <= 5'b0;
-                    stall     <= 1'b0;
-                    just_done <= 1'b1;
-                    state     <= IDLE;
+                    state     <= WAIT;
                 end
+            end
+            // WAIT: apb_done pulses high (combinational) this cycle.
+            // soc.v: MemStall = ph_stall && !apb_done => drops to 0 this cycle,
+            // allowing pl_reg_m to advance at the posedge.  Next cycle cpu_paddr
+            // carries the NEW address, so no re-trigger on the old address.
+            WAIT: begin
+                state <= IDLE;
             end
         endcase
     end

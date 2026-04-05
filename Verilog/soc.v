@@ -20,7 +20,10 @@ module soc (
     output wire        MemWrite,
     output wire        pwm_out0, pwm_out1,
     // GPIO pads
-    inout  wire [31:0] gpio_pad
+    inout  wire [31:0] gpio_pad,
+    // UART Physical Interface
+    input  wire        rx,
+    output wire        tx
 );
 
 wire [31:0] WriteData, InstrAddr;
@@ -31,14 +34,18 @@ wire [2:0]  funct3;
 wire        imem_wea;
 wire [4:0]  irq_w;
 wire [31:0] PCF, dmem_rdata, cpu_rdata;
-wire        apb_stall; // stall CPU while APB transaction is in progress
 
-// ReadData mux: peripheral addresses come from APB cpu_rdata, dmem otherwise
-wire [31:0] ReadData = (DataAdr >= 32'h0000_2000) ? cpu_rdata : dmem_rdata;
+// apb_done: 1-cycle pulse from axi_interface (state==WAIT) that overrides
+wire apb_done_w;
+
+// ReadData mux: peripheral addresses use APB cpu_rdata, SRAM uses dmem_rdata.
+// Use WB-stage address (ALUResultW=ALUResult) so the mux is correct when the
+// M-stage has a different instruction (e.g. a bubble after a peripheral load stall).
+wire [31:0] ReadData = (ALUResult >= 32'h0000_2000) ? cpu_rdata : dmem_rdata;
 
 // instantiate processor
 riscv_pl rvpl (
-    clk, rst_n, irq_w, apb_stall, PCF, Instr, MemWrite, DataAdr, WriteData, mem_wea,
+    clk, rst_n, irq_w, apb_done_w, PCF, Instr, MemWrite, DataAdr, WriteData, mem_wea,
     ReadData, funct3, PCW, Result, ALUResult, WriteDataW, ReadDataW
 );
 
@@ -58,7 +65,8 @@ assign req_wdata = (DataAdr >= 32'h0000_2000) ? WriteData : 32'hFFFF_FFFF;
 axi_interface apb_if (
     clk, rst_n, clk, rst_n, pready, prdata, pslverr,
     paddr, psel, penable, pwrite, pwdata,
-    req_addr, req_wdata, MemWrite, apb_stall, cpu_rdata, irq_w, pwm_out0, pwm_out1, gpio_pad
+    req_addr, req_wdata, MemWrite, apb_done_w, cpu_rdata, irq_w,
+    pwm_out0, pwm_out1, gpio_pad, rx, tx
 );
 
 endmodule

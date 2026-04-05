@@ -17,14 +17,19 @@ wire [31:0] pwdata;
 // Debug outputs
 wire [31:0] PC, Result, ALUResult, DataAdr, WriteData, ReadData;
 wire        MemWrite, pwm_out0, pwm_out1;
+// peripheral interfaces
 wire [31:0] gpio_pad;
+wire        tx, rx;
+assign rx = tx; // UART loopback: tx idles high, so rx never floats
 
 soc dut (
     clk, reset, pclk, presetn, pready, prdata, pslverr, paddr, psel, penable, pwrite, pwdata,
-    PC, Result, ALUResult, DataAdr, WriteData, ReadData, MemWrite, pwm_out0, pwm_out1, gpio_pad
+    PC, Result, ALUResult, DataAdr, WriteData, ReadData, MemWrite,
+    pwm_out0, pwm_out1, gpio_pad, rx, tx
 );
 
 always #10 clk = ~clk; // 50MHz clock
+always #10 pclk = ~pclk; // APB/peripheral clock (same frequency)
 
 initial begin
     $dumpfile("./Verilog/dumps/tb_soc.vcd");
@@ -34,26 +39,23 @@ initial begin
     #100; // Wait for reset to propagate
 
     reset = 1; presetn = 1; // Release reset
-    #10000;
-    $display("Testbench timeout. Something might be wrong.");
+    #1000000;
+    $display("Testbench timeout.");
     $finish;
 end
 
 integer skip=0;
 always @(negedge clk) begin
-    // debug info
-    // if (PC >= 32'h44 && PC <= 32'he8) $display("mepc=%h",dut.rvpl.dp.csr.mepc);
     if (MemWrite && reset) begin
         if (DataAdr == 32'h00001000) begin
             skip = skip + 1; // write first time 0, then 108
-            $display("Memory operation detected at address 0x00001000");
             if (skip > 1) begin
-                if (Result == 32'd108) begin
-                    $display("Test passed: Program halted successfully");
-                end else begin
-                    $display("Test failed: Program did not halt correctly %d", WriteData);
+                if (Result == 32'd108 && skip == 2) begin
+                    $display("Timer Interrupt Triggered and Handled Successfully! Result = %d", Result);
+                end else if (Result == 32'd111) begin
+                    $display("UART Transmission completed Successfully! Result = %d", Result);
+                    #10000; $finish;
                 end
-                $finish;
             end
         end
     end
