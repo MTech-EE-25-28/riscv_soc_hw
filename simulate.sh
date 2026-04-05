@@ -73,10 +73,21 @@ else
     COE_ARG=""
 fi
 
-# 5) Run simulation
-vvp "$OUT" $COE_ARG
+# 5) Choose hex file based on testbench name
+# add the files from the root directory of script location
+case "$TB_NAME" in
+    tb_interrupt)  HEX_ARG="+HEX=./docker/bin/interrupt.hex" ;;
+    tb_exception)  HEX_ARG="+HEX=./docker/bin/exception.hex" ;;
+    tb_pl)         HEX_ARG="+HEX=./docker/bin/rv32i_test.hex" ;;
+    tb_soc)        HEX_ARG="+HEX=./docker/bin/soc_test.hex" ;;
+    tb_program)    HEX_ARG="+HEX=./docker/bin/matrix_mul.hex" ;;
+    *)             HEX_ARG="" ;;
+esac
 
-# 6) Open waveform ONLY if requested
+# 6) Run simulation
+vvp "$OUT" $COE_ARG $HEX_ARG
+
+# 7) Open waveform ONLY if requested
 if [ "$WAVE_FLAG" = "wave" ]; then
     VCD_FILE="$VERILOG_ROOT/dumps/${TB_NAME}.vcd"
 
@@ -88,5 +99,5 @@ if [ "$WAVE_FLAG" = "wave" ]; then
     fi
 fi
 
-# 7) Cleanup
+# 8) Cleanup
 rm -f "$OUT"
