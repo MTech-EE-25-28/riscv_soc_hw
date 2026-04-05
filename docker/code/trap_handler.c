@@ -17,8 +17,8 @@ void __attribute__((interrupt("machine"))) trap_handler (void) {
             QSPI_STATUS = 0;
             TEST_LOC = 1;
         } else if (id == 17) { // UART — read received byte to drain RX FIFO
-            (void) UART_DATA;
-            UART_STATUS = 0;
+            (void) UART_URDR;
+            // UART_UCR0 = 0;
             TEST_LOC = 1;
         } else if (id == 18) { // GPIO — read pin state to clear edge-detect flag
             (void) GPIO_GDAT;
@@ -36,7 +36,8 @@ void __attribute__((interrupt("machine"))) trap_handler (void) {
         mepc += 4; // put mepc on the next instruction
         asm volatile ("csrw mepc, %0" : : "r"(mepc));
         // Log cause to UART for debug visibility
-        UART_DATA   = mcause;
-        UART_STATUS = 1;
+        UART_UBRR = 0x04;
+        UART_UCR1 = 0x07;
+        UART_UTDR = mcause;
     }
 }

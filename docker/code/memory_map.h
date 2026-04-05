@@ -5,8 +5,11 @@
 #define QSPI_STATUS (*(volatile uint32_t *)(QSPI_BASE + 0x08))
 
 #define UART_BASE  0x00002040
-#define UART_DATA  (*(volatile uint32_t *)(UART_BASE + 0x04))
-#define UART_STATUS (*(volatile uint32_t *)(UART_BASE + 0x08))
+#define UART_USR0  (*(volatile uint32_t *)(UART_BASE + 0x00))  // Status:  {ne,fe,pe,owe,idle,tc,rxne,txe}
+#define UART_URDR  (*(volatile uint32_t *)(UART_BASE + 0x04))  // RX Data Register (read)
+#define UART_UTDR  (*(volatile uint32_t *)(UART_BASE + 0x08))  // TX Data Register (write)
+#define UART_UCR1  (*(volatile uint32_t *)(UART_BASE + 0x0C))  // Control: {IERXNE,IETXE,PS,PCE,M,RE,TE,UE}
+#define UART_UBRR  (*(volatile uint32_t *)(UART_BASE + 0x10))  // Baud Rate Register
 
 #define TIMER_BASE 0x00002080
 #define TIMER_TCCR (*(volatile uint32_t *)(TIMER_BASE + 0x00))
