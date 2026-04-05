@@ -1,26 +1,6 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 04.04.2026 17:47:33
-// Design Name: 
-// Module Name: UART_module_tb
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
-
-module UART_module_tb;
+// testbench to verify the functionality of the UART module
+module tb_UART_module;
 
     // --- Signals ---
     reg clk, reset, rx;
@@ -61,12 +41,14 @@ module UART_module_tb;
 
     // --- Main Sequence ---
     initial begin
+        $dumpfile("./Verilog/dumps/tb_UART_module.vcd");
+        $dumpvars(0, tb_UART_module);
         // 1. Reset
         reset = 1; rx = 1; BRR_in = 0; BRR_en = 0; CR_in = 0; CR_en = 0; TDR_in = 0; TDR_en = 0; RDR_ren = 0;
         #100 reset = 0; #50;
 
         // Base config: BRR=10 (1 tick = 100ns, 1 bit = 1600ns)
-        @(posedge clk); BRR_in = 16'd10; BRR_en = 1; 
+        @(posedge clk); BRR_in = 16'd10; BRR_en = 1;
         @(posedge clk); BRR_en = 0;
 
         $display("========================================");
@@ -89,7 +71,7 @@ module UART_module_tb;
         $display("\n[TEST 2] 9-Bit, Odd Parity (Clean Frame)");
         config_CR1(1, 1, 1, 1, 1, 1); // M=1, PCE=1, PS=1
         // Data 0x1AA (1 1010 1010 -> 5 ones). Odd Parity should be 0.
-        send_custom_frame(9'h1AA, 1, 1, 1, 0, 0, 0); 
+        send_custom_frame(9'h1AA, 1, 1, 1, 0, 0, 0);
         wait(RXNE_flag);
         if (RDR_out == 9'h1AA && !PE_flag) $display(" -> PASS"); else $display(" -> FAIL");
         clear_rdr();
@@ -100,7 +82,7 @@ module UART_module_tb;
         $display("\n[TEST 3] Injecting Parity Error (M=0, Even Parity)");
         config_CR1(1, 1, 1, 0, 1, 0); // M=0, PCE=1, PS=0
         // Data 0x33 (4 ones -> Even parity is 0). Injecting PE flips it to 1.
-        send_custom_frame(9'h033, 0, 1, 0, 1 /*Inject PE*/, 0, 0); 
+        send_custom_frame(9'h033, 0, 1, 0, 1 /*Inject PE*/, 0, 0);
         wait(RXNE_flag);
         if (PE_flag) $display(" -> PASS: Parity Error Detected!"); else $display(" -> FAIL: No PE flag");
         clear_rdr();
@@ -109,7 +91,7 @@ module UART_module_tb;
         // TEST 4: Frame Error Injection (FE)
         // ---------------------------------------------------------
         $display("\n[TEST 4] Injecting Frame Error (Bad Stop Bit)");
-        send_custom_frame(9'h0F0, 0, 1, 0, 0, 1 /*Inject FE*/, 0); 
+        send_custom_frame(9'h0F0, 0, 1, 0, 0, 1 /*Inject FE*/, 0);
         wait(RXNE_flag);
         if (FE_flag) $display(" -> PASS: Frame Error Detected!"); else $display(" -> FAIL: No FE flag");
         clear_rdr();
@@ -120,10 +102,10 @@ module UART_module_tb;
         $display("\n[TEST 5] Injecting Noise Error (Mid-bit Glitch)");
         // The task will flip the line specifically at tick #7 of data bit 4.
         // It should flag NE=1, but STILL read the correct data due to majority voting!
-        send_custom_frame(9'h0A5, 0, 1, 0, 0, 0, 1 /*Inject NE*/); 
+        send_custom_frame(9'h0A5, 0, 1, 0, 0, 0, 1 /*Inject NE*/);
         wait(RXNE_flag);
-        if (NE_flag && RDR_out == 9'h0A5) 
-            $display(" -> PASS: Noise Flag set AND Data was recovered correctly!"); 
+        if (NE_flag && RDR_out == 9'h0A5)
+            $display(" -> PASS: Noise Flag set AND Data was recovered correctly!");
         else $display(" -> FAIL: NE=%b, Data=%h", NE_flag, RDR_out);
         clear_rdr();
 
@@ -132,12 +114,12 @@ module UART_module_tb;
         // ---------------------------------------------------------
         $display("\n[TEST 6] Triggering Overrun Error (OWE)");
         $display(" -> Sending First Byte (0x11)... Not reading RDR.");
-        send_custom_frame(9'h011, 0, 1, 0, 0, 0, 0); 
+        send_custom_frame(9'h011, 0, 1, 0, 0, 0, 0);
         wait(RXNE_flag);
         #100; // Intentionally NOT calling clear_rdr()
-        
+
         $display(" -> Sending Second Byte (0x22)...");
-        send_custom_frame(9'h022, 0, 1, 0, 0, 0, 0); 
+        send_custom_frame(9'h022, 0, 1, 0, 0, 0, 0);
         wait(RXNE_flag); // Wait for second frame to finish
         @(posedge clk);  // Wait one tick for flags to settle
         if (OWE_flag) $display(" -> PASS: Overrun Error Detected!"); else $display(" -> FAIL: No OWE flag");
@@ -148,7 +130,7 @@ module UART_module_tb;
         // ---------------------------------------------------------
         $display("\n[TEST 7] Waiting for Idle Flag");
         // Frame finished, RX is high. Needs 10 bits of idle time (160 ticks = 16000 ns).
-        #17000; 
+        #17000;
         if (IDLE_flag) $display(" -> PASS: Idle Flag Detected!"); else $display(" -> FAIL: No IDLE flag");
 
         $display("\n========================================");
@@ -178,8 +160,8 @@ module UART_module_tb;
 
     // --- Helper Task: Dynamic Frame Generator ---
     task send_custom_frame(
-        input [8:0] data, 
-        input m_val, input pce_val, input ps_val, 
+        input [8:0] data,
+        input m_val, input pce_val, input ps_val,
         input inj_pe, input inj_fe, input inj_ne
     );
         integer limit, i;
@@ -193,9 +175,9 @@ module UART_module_tb;
             for(i=0; i<limit; i=i+1) begin
                 if (inj_ne && i == 4) begin
                     // Inject a fast 1-tick glitch at the 7th tick to trigger majority voter
-                    rx = data[i];  #700; 
-                    rx = ~data[i]; #100; 
-                    rx = data[i];  #800; 
+                    rx = data[i];  #700;
+                    rx = ~data[i]; #100;
+                    rx = data[i];  #800;
                 end else begin
                     rx = data[i]; #1600;
                 end
@@ -208,7 +190,7 @@ module UART_module_tb;
 
             rx = inj_fe ? 0 : 1; // Send bad stop bit if injected
             #1600;
-            
+
             rx = 1; // Idle line return
             #1600;
         end

@@ -1,6 +1,7 @@
-`timescale 1ns / 1ps
 
-module APB_UART_Wrapper (
+module APB_UART_Wrapper #(
+    parameter BASE_ADDR = 32'h0000_2040
+) (
     // APB Bus Interface
     input  wire        pclk,
     input  wire        presetn,  // APB reset is active-low
@@ -35,7 +36,7 @@ module APB_UART_Wrapper (
     wire brr_en_wire = apb_write && (offset == 8'h10);
     wire tdr_en_wire = apb_write && (offset == 8'h08);
 
-    // Data passes directly from the APB bus to the UART inputs. 
+    // Data passes directly from the APB bus to the UART inputs.
     // The UART will only latch them when the respective _en wire is high.
     wire [7:0]  cr_in_wire  = pwdata[7:0];
     wire [15:0] brr_in_wire = pwdata[15:0];
@@ -58,7 +59,7 @@ module APB_UART_Wrapper (
                 8'h04: prdata = {23'd0, rdr_out_wire}; // Pad upper bits with 0
                 default: pslverr = 1'b1; // Invalid read address
             endcase
-        end 
+        end
         else if (apb_write) begin
             case (offset)
                 8'h08, 8'h0C, 8'h10: pslverr = 1'b0; // Valid write addresses
@@ -69,26 +70,26 @@ module APB_UART_Wrapper (
 
     // --- 3. Instantiate the Core UART Module ---
     // Convert active-low APB reset to active-high UART reset
-    wire uart_reset = ~presetn; 
+    wire uart_reset = ~presetn;
 
     UART_module core_uart (
         .clk(pclk),
         .reset(uart_reset),
-        
+
         .rx(rx),
         .tx(tx),
-        
+
         .CR_in(cr_in_wire),
         .CR_en(cr_en_wire),
-        
+
         .BRR_in(brr_in_wire),
         .BRR_en(brr_en_wire),
-        
+
         .TDR_in(tdr_in_wire),
         .TDR_en(tdr_en_wire),
-        
+
         .RDR_ren(rdr_ren_wire),
-        
+
         .SR_out(sr_out_wire),
         .RDR_out(rdr_out_wire)
     );

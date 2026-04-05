@@ -39,9 +39,13 @@ module timer #(
 );
 
 
-reg [31:0] TCCR; // addr BASE + 0x00
-reg [31:0] TCNT; // addr BASE + 0x04
-reg [31:0] OCMR; // addr BASE + 0x08
+localparam TCCR_ADDR = BASE_ADDR;           // BASE + 0x00
+localparam TCNT_ADDR = BASE_ADDR + 32'h4;   // BASE + 0x04
+localparam OCMR_ADDR = BASE_ADDR + 32'h8;   // BASE + 0x08
+
+reg [31:0] TCCR; // Timer Control Register
+reg [31:0] TCNT; // Timer Counter Register (read-only)
+reg [31:0] OCMR; // Output Compare Register
 reg [15:0] counter0, counter1; // internal counters
 
 always @(posedge clk) begin // apb write transaction
@@ -49,9 +53,9 @@ always @(posedge clk) begin // apb write transaction
         TCCR <= 32'b0; OCMR <= 32'b0; pslverr <= 1'b0;
     end else if (psel && penable && pwrite) begin
         case (paddr)
-            32'h0000_2080: TCCR <= pwdata;
-            32'h0000_2088: OCMR <= pwdata;
-            default: pslverr <= 1'b1;
+            TCCR_ADDR: TCCR <= pwdata;
+            OCMR_ADDR: OCMR <= pwdata;
+            default:   pslverr <= 1'b1;
         endcase
     end
 end
@@ -59,10 +63,10 @@ end
 always @(*) begin // apb read transaction
     if (psel && penable && !pwrite) begin
         case (paddr) // read
-            32'h0000_2080: prdata = TCCR;
-            32'h0000_2084: prdata = TCNT;
-            32'h0000_2088: prdata = OCMR;
-            default:       prdata = 32'b0;
+            TCCR_ADDR: prdata = TCCR;
+            TCNT_ADDR: prdata = TCNT;
+            OCMR_ADDR: prdata = OCMR;
+            default:   prdata = 32'b0;
         endcase
     end else begin
         prdata = 32'b0;
