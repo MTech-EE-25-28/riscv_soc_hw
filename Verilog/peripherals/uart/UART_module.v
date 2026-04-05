@@ -1,22 +1,22 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
+// Company:
+// Engineer:
+//
 // Create Date: 04.04.2026 15:29:57
-// Design Name: 
+// Design Name:
 // Module Name: UART_module
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
+// Project Name:
+// Target Devices:
+// Tool Versions:
+// Description:
+//
+// Dependencies:
+//
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 module UART_module (
@@ -30,13 +30,13 @@ module UART_module (
     // Register Inputs & Enables
     input wire [15:0] BRR_in,
     input wire BRR_en,
-    
+
     input wire [7:0] CR_in,
     input wire CR_en,
-    
+
     input wire [8:0] TDR_in,
     input wire TDR_en,
-    
+
     input wire RDR_ren,
 
     // Register Outputs
@@ -107,7 +107,7 @@ module UART_module (
             end else if (load_tdr_to_shift) begin
                 txe_flag <= 1'b1; // Instant update when loaded to shift reg
             end
-            
+
             // Transmission Complete
             if (load_tdr_to_shift) begin
                 tc_flag <= 1'b0;
@@ -138,9 +138,8 @@ module UART_module (
 
     always @(posedge clk or posedge reset) begin
         if (reset) begin
-            tx_state <= TX_IDLE;
-            tx <= 1'b1;
-            tx_s_tick_cnt <= 0;
+            tx_state <= TX_IDLE; tx <= 1'b1; tx_s_tick_cnt <= 0;
+            tx_bit_ptr <= 0; tx_shift_reg <= 0;
         end else if (UE && TE) begin
             if (baud_tick_16x) begin
                 case (tx_state)
@@ -209,14 +208,14 @@ module UART_module (
     reg rx_parity_bit;
     reg [7:0] idle_timeout;
 
-    wire decoded_bit = (rx_samples[0] & rx_samples[1]) | 
-                       (rx_samples[1] & rx_samples[2]) | 
+    wire decoded_bit = (rx_samples[0] & rx_samples[1]) |
+                       (rx_samples[1] & rx_samples[2]) |
                        (rx_samples[0] & rx_samples[2]);
 
     wire samples_mixed = (rx_samples != 3'b000) && (rx_samples != 3'b111);
     assign rx_frame_done = (rx_state == RX_STOP) && (rx_s_tick_cnt == 15) && baud_tick_16x;
-    
-    
+
+
     always @(posedge clk or posedge reset) begin
         if (reset) begin
             RDR_reg <= 9'd0;
@@ -226,30 +225,30 @@ module UART_module (
             if (RDR_ren) begin
                 rxne_flag <= 1'b0;
             end
-            
+
             if (rx_frame_done) begin
                 RDR_reg <= rx_shift_reg;
                 rxne_flag <= 1'b1;
-                
+
                 // Update all status flags synchronously with RDR
-                ne_flag <= temp_ne_flag | samples_mixed; 
-                
+                ne_flag <= temp_ne_flag | samples_mixed;
+
                 if (decoded_bit == 1'b0) fe_flag <= 1'b1;
                 else fe_flag <= 1'b0;
-                
+
 //                if (PCE) begin
 //                    if ((PS ^ (^rx_shift_reg[7:0])) != rx_parity_bit) pe_flag <= 1'b1;
 //                    else pe_flag <= 1'b0;
 //                end
-                
+
                 if (PCE) begin
                     // Use ternary operator to select 9-bit or 8-bit XOR reduction
-                    if ((PS ^ (M ? ^rx_shift_reg[8:0] : ^rx_shift_reg[7:0])) != rx_parity_bit) 
+                    if ((PS ^ (M ? ^rx_shift_reg[8:0] : ^rx_shift_reg[7:0])) != rx_parity_bit)
                         pe_flag <= 1'b1;
-                    else 
+                    else
                         pe_flag <= 1'b0;
                 end
-                
+
                 if (rxne_flag) owe_flag <= 1'b1; // Overwrite Error
             end
         end else begin
@@ -260,11 +259,9 @@ module UART_module (
 
     always @(posedge clk or posedge reset) begin
         if (reset) begin
-            rx_state <= RX_IDLE;
-            rx_s_tick_cnt <= 0;
-            temp_ne_flag <= 0;
-            idle_flag <= 0;
-            rx_shift_reg <= 0;
+            rx_state <= RX_IDLE; rx_parity_bit <= 0; idle_timeout <= 0;
+            rx_s_tick_cnt <= 0; temp_ne_flag <= 0; rx_bit_ptr <= 0;
+            idle_flag <= 0; rx_shift_reg <= 0; rx_samples <= 0;
         end else if (UE && RE) begin
             if (baud_tick_16x) begin
                 case (rx_state)
@@ -280,7 +277,7 @@ module UART_module (
                             else idle_timeout <= idle_timeout + 1;
                         end
                     end
-                    
+
                     RX_START: begin
                         if (rx_s_tick_cnt == 7 && rx) begin
                             rx_state <= RX_IDLE; // False start glitch
@@ -291,7 +288,7 @@ module UART_module (
                             temp_ne_flag <= 0; // Clear intermediate noise flag
                         end else rx_s_tick_cnt <= rx_s_tick_cnt + 1;
                     end
-                    
+
                     RX_DATA: begin
                         if (rx_s_tick_cnt == 7) rx_samples[0] <= rx;
                         if (rx_s_tick_cnt == 8) rx_samples[1] <= rx;
@@ -301,13 +298,13 @@ module UART_module (
                             rx_s_tick_cnt <= 0;
                             if (samples_mixed) temp_ne_flag <= 1'b1;
                             rx_shift_reg[rx_bit_ptr] <= decoded_bit;
-                            
+
                             if (rx_bit_ptr == (M ? 4'd8 : 4'd7)) begin
                                 rx_state <= PCE ? RX_PARITY : RX_STOP;
                             end else rx_bit_ptr <= rx_bit_ptr + 1;
                         end else rx_s_tick_cnt <= rx_s_tick_cnt + 1;
                     end
-                    
+
                     RX_PARITY: begin
                         if (rx_s_tick_cnt == 7) rx_samples[0] <= rx;
                         if (rx_s_tick_cnt == 8) rx_samples[1] <= rx;
@@ -320,7 +317,7 @@ module UART_module (
                             rx_state <= RX_STOP;
                         end else rx_s_tick_cnt <= rx_s_tick_cnt + 1;
                     end
-                    
+
                     RX_STOP: begin
                         if (rx_s_tick_cnt == 7) rx_samples[0] <= rx;
                         if (rx_s_tick_cnt == 8) rx_samples[1] <= rx;

@@ -24,8 +24,10 @@ module uart_top #(
     wire apb_write  = apb_access && pwrite;
     wire apb_read   = apb_access && !pwrite;
 
-    // Zero-Wait State: Always ready when selected
-    assign pready = 1'b1;
+    // Assert pready only in APB access phase (psel && penable), matching timer/gpio pattern.
+    // If pready=1 unconditionally the FSM sees pready before penable is ever asserted,
+    // overrides penable back to 0, and the slave never sees apb_write=1.
+    assign pready = (psel && penable) ? 1'b1 : 1'b0;
 
     // --- 1. Map APB Writes to UART Inputs ---
     // Relative offset from BASE_ADDR for decoding
