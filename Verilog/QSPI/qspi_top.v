@@ -157,7 +157,7 @@ module qspi_top (
     // ==========================================================
     // RX FIFO
     // ==========================================================
-    fifo_sync2 #(.DATA_WIDTH(32), .DEPTH(32)) rx_fifo (
+    fifo_sync2 #(.DATA_WIDTH(8), .DEPTH(32)) rx_fifo (
         .clk(clk),
         .resetn(resetn),
 
@@ -192,7 +192,7 @@ module qspi_top (
         .resetn(resetn),
 
         .start(csr_start),
-        
+
 
         .csr_opcode(csr_opcode),
         .csr_addr(csr_addr),

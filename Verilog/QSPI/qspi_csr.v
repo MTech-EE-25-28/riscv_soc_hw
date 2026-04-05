@@ -171,7 +171,7 @@ module qspi_csr (
 
     always @(*) begin
         // zero-wait-state slave
-        if (psel)
+        if (psel && penable)
             pready = 1'b1;
         else
             pready = 1'b0;

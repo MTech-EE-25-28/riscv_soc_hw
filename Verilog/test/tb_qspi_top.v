@@ -15,7 +15,7 @@ module tb_qspi_top;
 
     initial begin
         resetn = 0;
-        #40 resetn = 1;
+        #100 resetn = 1;
     end
 
     //--------------------------------------------
@@ -62,11 +62,11 @@ module tb_qspi_top;
     //--------------------------------------------
     task apb_write(input [31:0] addr, input [31:0] data);
     begin
-        @(posedge clk);
+        @(posedge clk); #1;
         psel=1; pwrite=1; penable=0; paddr=addr; pwdata=data;
-        @(posedge clk);
+        @(posedge clk); #1;
         penable=1;
-        @(posedge clk);
+        @(posedge clk); #1;
         psel=0; penable=0;
     end
     endtask
@@ -76,9 +76,9 @@ module tb_qspi_top;
     //--------------------------------------------
     task apb_read(input [31:0] addr);
     begin
-        @(posedge clk);
+        @(posedge clk); #1;
         psel=1; pwrite=0; penable=0; paddr=addr;
-        @(posedge clk);
+        @(posedge clk); #1;
         penable=1;
         @(posedge clk);
         $display("APB READ [%h] = %h", addr, prdata);
@@ -92,7 +92,7 @@ module tb_qspi_top;
     task wait_done();
     begin
         wait(done);
-        @(posedge clk);
+        @(posedge clk); #1;
     end
     endtask
 
@@ -116,6 +116,8 @@ module tb_qspi_top;
     // TEST SEQUENCE
     //--------------------------------------------
     initial begin
+        $dumpfile("./Verilog/dumps/tb_qspi_top.vcd");
+        $dumpvars(0, tb_qspi_top);
         psel=0; penable=0; pwrite=0;
         wait(resetn);
 
@@ -138,6 +140,7 @@ module tb_qspi_top;
         apb_write(32'h10, 32'h1);               // length = 1
         apb_write(32'h00, CTRL(4'd2,0));
 
+        //$finish;
         wait_done();
         apb_read(32'h0C);
 
