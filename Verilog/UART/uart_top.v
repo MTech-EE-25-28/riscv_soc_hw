@@ -1,5 +1,5 @@
 
-module APB_UART_Wrapper #(
+module uart_top #(
     parameter BASE_ADDR = 32'h0000_2040
 ) (
     // APB Bus Interface
@@ -28,8 +28,8 @@ module APB_UART_Wrapper #(
     assign pready = 1'b1;
 
     // --- 1. Map APB Writes to UART Inputs ---
-    // Extract the lower 8 bits of the address for decoding
-    wire [7:0] offset = paddr[7:0];
+    // Relative offset from BASE_ADDR for decoding
+    wire [7:0] offset = paddr[7:0] - BASE_ADDR[7:0];
 
     // Combinational Enables: These pulse High only during the APB Access Phase
     wire cr_en_wire  = apb_write && (offset == 8'h0C);
