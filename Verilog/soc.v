@@ -18,7 +18,9 @@ module soc (
     // Debug outputs
     output wire [31:0] PCW, Result, ALUResult, DataAdr, WriteDataW, ReadDataW,
     output wire        MemWrite,
-    output wire        pwm_out0, pwm_out1
+    output wire        pwm_out0, pwm_out1,
+    // GPIO pads
+    inout  wire [31:0] gpio_pad
 );
 
 wire [31:0] WriteData, InstrAddr;
@@ -56,7 +58,7 @@ assign req_wdata = (DataAdr >= 32'h0000_2000) ? WriteData : 32'hFFFF_FFFF;
 axi_interface apb_if (
     clk, rst_n, clk, rst_n, pready, prdata, pslverr,
     paddr, psel, penable, pwrite, pwdata,
-    req_addr, req_wdata, MemWrite, apb_stall, cpu_rdata, irq_w, pwm_out0, pwm_out1
+    req_addr, req_wdata, MemWrite, apb_stall, cpu_rdata, irq_w, pwm_out0, pwm_out1, gpio_pad
 );
 
 endmodule

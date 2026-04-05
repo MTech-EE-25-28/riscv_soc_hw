@@ -17,9 +17,10 @@ module trap_handler (
     input  [5:0]  exception,    // see encoding above
     input  [4:0]  interrupt,    // see encoding above
     input         tret,         // MRET
-    input  [31:0] pc, pc_m,     // trap p
-    input         valid_m,      // valid bit for M-stage
-    input  [31:0] mem_addr,     // load/store address misalignment mtval
+    input  [31:0] pc, pc_m, pc_e, // WB, MEM, EX stage PCs
+    input         valid_m,         // valid bit for M-stage
+    input         valid_e,         // valid bit for E-stage
+    input  [31:0] mem_addr,        // load/store address misalignment mtval
 
     // CSR values needed for trap/return PC and status update
     input  [31:0] csr_mtvec, csr_mepc,
@@ -65,11 +66,15 @@ always @(*) begin
             trap_mcause = 32'd6; trap_mtval  = mem_addr;
         end
 
-    end else if (csr_mstatus_mie && valid_m && |interrupt) begin
+    end else if (csr_mstatus_mie && |interrupt) begin
+        // Take interrupt regardless of pipeline bubble in M stage.
+        // mepc = earliest in-flight PC: M if valid, else E (first instruction
+        // squashed by the flush that caused the M-stage bubble, e.g. loop branch).
         trap              = 1'b1;
         trap_mstatus_mpie = csr_mstatus_mie;
         trap_mstatus_mie  = 1'b0;
-        trap_mepc         = {pc_m[31:2], 2'b00};
+        trap_mepc         = valid_m ? {pc_m[31:2], 2'b00} :
+                            valid_e ? {pc_e[31:2], 2'b00} : {pc[31:2], 2'b00};
         trap_mtval        = 32'b0;
 
         // Encode platform mcause (bit[31]=1 = interrupt, lower bits = source id)

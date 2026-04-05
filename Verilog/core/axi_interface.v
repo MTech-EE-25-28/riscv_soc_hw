@@ -26,7 +26,8 @@ module axi_interface (
     // Peripheral interface
     output wire  [4:0] irq,
     // Pads
-    output wire        pwm_out0, pwm_out1
+    output wire        pwm_out0, pwm_out1,
+    inout  wire [31:0] gpio_pad
 );
 
 localparam  IDLE  = 2'b00,
@@ -37,17 +38,46 @@ localparam  IDLE  = 2'b00,
 // Internal wires for timer slave responses — avoids driving the module's own input ports
 wire        timer_pready_w, timer_pslverr_w;
 wire [31:0] timer_prdata_w;
-wire        timer_irq_w;  // intermediate: prevents other irq bits floating as x in sim
-wire        pready_int = psel[2] ? timer_pready_w : pready;
-wire [31:0] prdata_int = psel[2] ? timer_prdata_w : prdata; // mux read data from correct peripheral
+wire        timer_irq_w;
 
 timer timer_u (
     clk, resetn, pclk, presetn, psel[2], penable, pwrite, paddr, pwdata,
     timer_prdata_w, timer_pready_w, timer_pslverr_w,
     timer_irq_w, pwm_out0, pwm_out1
 );
-// irq[3]=timer;
-assign irq = {1'b0, timer_irq_w, 3'b000};
+
+// Internal wires for GPIO slave responses
+wire        gpio_pready_w, gpio_pslverr_w;
+wire [31:0] gpio_prdata_w;
+wire        gpio_irq_w;
+
+gpio gpio_u (
+    .clk(clk), .resetn(resetn),
+    .pclk(pclk), .presetn(presetn),
+    .psel(psel[3]), .penable(penable), .pwrite(pwrite),
+    .paddr(paddr), .pwdata(pwdata),
+    .prdata(gpio_prdata_w), .pready(gpio_pready_w), .pslverr(gpio_pslverr_w),
+    .irq(gpio_irq_w),
+    .gpio_pad(gpio_pad)
+);
+
+// Internal wire for UART slave responses
+// wire        uart_pready_w, uart_pslverr_w;
+// wire [31:0] uart_prdata_w;
+// wire        uart_irq_w;
+
+// uart_top uart_u (
+
+// );
+
+// Mux read data and ready from the addressed peripheral
+wire        pready_int = psel[2] ? timer_pready_w :
+                         psel[3] ? gpio_pready_w  : pready;
+wire [31:0] prdata_int = psel[2] ? timer_prdata_w :
+                         psel[3] ? gpio_prdata_w  : prdata;
+
+// irq[4]=matrixmul, irq[3]=timer, irq[2]=gpio, irq[1]=uart, irq[0]=qspi
+assign irq = {1'b0, timer_irq_w, gpio_irq_w, 2'b00};
 
 reg [1:0] state;
 reg [4:0] periph_sel; // 4-matrixmul, 3-timer, 2-gpio, 1-uart, 0-qspi

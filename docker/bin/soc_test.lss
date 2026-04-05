@@ -13,10 +13,10 @@ SYMBOL TABLE:
 00000000 l    d  .debug_abbrev	00000000 .debug_abbrev
 00000000 l    d  .debug_aranges	00000000 .debug_aranges
 00000000 l    d  .debug_str	00000000 .debug_str
+00000000 l    d  .debug_loclists	00000000 .debug_loclists
 00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
 00000000 l    d  .debug_macro	00000000 .debug_macro
 00000000 l    d  .debug_frame	00000000 .debug_frame
-00000000 l    d  .debug_loclists	00000000 .debug_loclists
 00000000 l    df *ABS*	00000000 .temp.start.o
 00000000 l    df *ABS*	00000000 trap_handler.c
 00000000 l    df *ABS*	00000000 soc_test.c
@@ -25,19 +25,19 @@ SYMBOL TABLE:
 00000100 g       *ABS*	00000000 __stack_size
 00000000 g       .init	00000000 __init_start
 00000044 g       .text	00000000 __text_start
-00000138 g       .text	00000000 __rodata_end
+00000150 g       .text	00000000 __rodata_end
 00001000 g       .text	00000000 __bss_end
 00000044 g     F .text	000000b4 trap_handler
 00001800 g       .riscv.attributes	00000000 _stack_top
 00000000 g       .init	00000000 _start
 00000000 g       .init	00000000 __trap_vector_start
-00000138 g       .text	00000000 __rodata_start
+00000150 g       .text	00000000 __rodata_start
 00002000 g       *ABS*	00000000 __ram
 00001000 g       .text	00000000 __data_end
 00000044 g       .init	00000000 __init_end
-00000138 g       .text	00000000 __text_end
+00000150 g       .text	00000000 __text_end
 00001000 g       .text	00000000 __bss_start
-000000f8 g     F .text	00000040 main
+000000f8 g     F .text	00000058 main
 00001700 g       .heap	00000000 __heap_end
 00000800 g       *ABS*	00000000 __ram_size
 00001000 g       .heap	00000000 __heap_start
@@ -148,9 +148,9 @@ Disassembly of section .text:
      ###         } else if (id == 18) { // GPIO — read pin state to clear edge-detect flag
   94:	|  |  |  \-> 01200713          	addi	x14,x0,18
   98:	|  |  |  /-- 00e79863          	bne	x15,x14,a8 <trap_handler+0x64>
-     ###             (void) GPIO_DATA;
+     ###             (void) GPIO_GDAT;
   9c:	|  |  |  |   000027b7          	lui	x15,0x2
-  a0:	|  |  |  |   0c87a783          	lw	x15,200(x15) # 20c8 <__ram+0xc8>
+  a0:	|  |  |  |   0c47a783          	lw	x15,196(x15) # 20c4 <__ram+0xc4>
      ###             TEST_LOC = 1;
   a4:	|  +--|--|-- fcdff06f          	jal	x0,70 <trap_handler+0x2c>
      ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
@@ -205,26 +205,31 @@ Disassembly of section .text:
      ###     TIMER_TCCR = 0x7; // Timer enable + PWM enable + IRQ enable
  10c:	    00700713          	addi	x14,x0,7
  110:	    08e7a023          	sw	x14,128(x15)
-     ### 
+     ###     GPIO_GDIR = 0x1; // Set GPIO pin 0 as output
+ 114:	    00100713          	addi	x14,x0,1
+ 118:	    0ce7a023          	sw	x14,192(x15)
+     ###     GPIO_GDAT = 0x41; // Set GPIO pin 0 high and pin 6 shouldn't be written
+ 11c:	    04100713          	addi	x14,x0,65
+ 120:	    0ce7a223          	sw	x14,196(x15)
      ###     while (1) {
      ###         // Wait for interrupt to occur
-     ###         // The trap handler will set TEST_LOC to 1 when the timer interrupt is handled
-     ###         if (TEST_LOC == 1) {
- 114:	    00100613          	addi	x12,x0,1
- 118:	    000017b7          	lui	x15,0x1
+     ###         // The trap handler will set TEST_LOC to 108 when the timer interrupt is handled
+     ###         if (TEST_LOC == 108) {
+ 124:	    000016b7          	lui	x13,0x1
+ 128:	    06c00613          	addi	x12,x0,108
+ 12c:	/-> 0006a703          	lw	x14,0(x13) # 1000 <__bss_end>
+ 130:	+-- fec71ee3          	bne	x14,x12,12c <__stack_size+0x2c>
      ###             // Clear TEST_LOC for next interrupt
      ###             TEST_LOC = 0;
+ 134:	|   0006a023          	sw	x0,0(x13)
      ###             // Read current timer count
      ###             uint32_t count = TIMER_TCNT;
- 11c:	    000026b7          	lui	x13,0x2
-     ###         if (TEST_LOC == 1) {
- 120:	/-> 0007a703          	lw	x14,0(x15) # 1000 <__bss_end>
- 124:	+-- fec71ee3          	bne	x14,x12,120 <__stack_size+0x20>
-     ###             TEST_LOC = 0;
- 128:	|   0007a023          	sw	x0,0(x15)
-     ###             uint32_t count = TIMER_TCNT;
- 12c:	|   0846a703          	lw	x14,132(x13) # 2084 <__ram+0x84>
+ 138:	|   0847a703          	lw	x14,132(x15)
      ###             // For this test, write it back to a memory location
      ###             TEST_LOC = count;
- 130:	|   00e7a023          	sw	x14,0(x15)
- 134:	\-- fedff06f          	jal	x0,120 <__stack_size+0x20>
+ 13c:	|   00e6a023          	sw	x14,0(x13)
+     ###             GPIO_GDAT ^= 0x1; // Toggle GPIO pin 0
+ 140:	|   0c47a703          	lw	x14,196(x15)
+ 144:	|   00174713          	xori	x14,x14,1
+ 148:	|   0ce7a223          	sw	x14,196(x15)
+ 14c:	\-- fe1ff06f          	jal	x0,12c <__stack_size+0x2c>

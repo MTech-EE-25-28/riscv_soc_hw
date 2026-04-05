@@ -49,7 +49,7 @@ always @(posedge clk) begin // apb write
     end else if (psel && penable && pwrite) begin
         case (paddr)
             GDIR_ADDR: GDIR <= pwdata;
-            GDAT_ADDR: GDAT <= pwdata;
+            GDAT_ADDR: GDAT <= pwdata & GDIR; // only update output bits
             default:   pslverr <= 1'b1;
         endcase
     end

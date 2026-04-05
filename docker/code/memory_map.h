@@ -14,8 +14,8 @@
 #define TIMER_OCMR (*(volatile uint32_t *)(TIMER_BASE + 0x08))
 
 #define GPIO_BASE  0x000020C0
-#define GPIO_DIR   (*(volatile uint32_t *)(GPIO_BASE + 0x04))
-#define GPIO_DATA  (*(volatile uint32_t *)(GPIO_BASE + 0x08))
+#define GPIO_GDIR  (*(volatile uint32_t *)(GPIO_BASE + 0x00))
+#define GPIO_GDAT  (*(volatile uint32_t *)(GPIO_BASE + 0x04))
 
 #define MM_BASE    0x00002100
 #define MM_A       (*(volatile uint32_t *)(MM_BASE + 0x00))

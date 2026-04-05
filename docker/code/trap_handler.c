@@ -21,7 +21,7 @@ void __attribute__((interrupt("machine"))) trap_handler (void) {
             UART_STATUS = 0;
             TEST_LOC = 1;
         } else if (id == 18) { // GPIO — read pin state to clear edge-detect flag
-            (void) GPIO_DATA;
+            (void) GPIO_GDAT;
             TEST_LOC = 1;
         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
             // TIMER_CTRL = 0;

@@ -231,7 +231,7 @@ assign exceptionW = {memMisAlignStoreW, memMisAlignLoadW, excDecW[3], excDecW[2]
 
 // Trap handler — sits entirely in Writeback, receives committed exceptions
 trap_handler th (
-    exceptionW, interruptA, tretW, PCW, PCM, validM, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
+    exceptionW, interruptA, tretW, PCW, PCM, PCE, validM, validE, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
     trap_event, trap_pc_next, trap_mstatus_mie, trap_mstatus_mpie, trap_mepc, trap_mcause, trap_mtval, tret_mstatus_mie, tret_mstatus_mpie
 );
 
