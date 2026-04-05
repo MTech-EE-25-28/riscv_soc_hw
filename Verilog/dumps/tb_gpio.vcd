@@ -1,0 +1,733 @@
+$date
+	Sun Apr  5 15:01:19 2026
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module tb_gpio $end
+$var wire 32 ! gpio_pad [31:0] $end
+$var wire 1 " pslverr $end
+$var wire 1 # pready $end
+$var wire 32 $ prdata [31:0] $end
+$var wire 1 % irq $end
+$var reg 1 & clk $end
+$var reg 32 ' gpio_drive [31:0] $end
+$var reg 32 ( gpio_drive_en [31:0] $end
+$var reg 32 ) paddr [31:0] $end
+$var reg 1 * penable $end
+$var reg 1 + psel $end
+$var reg 32 , pwdata [31:0] $end
+$var reg 1 - pwrite $end
+$var reg 1 . resetn $end
+$scope begin TB_GPIO_DRIVE[0] $end
+$var parameter 2 / i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[1] $end
+$var parameter 2 0 i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[2] $end
+$var parameter 3 1 i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[3] $end
+$var parameter 3 2 i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[4] $end
+$var parameter 4 3 i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[5] $end
+$var parameter 4 4 i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[6] $end
+$var parameter 4 5 i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[7] $end
+$var parameter 4 6 i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[8] $end
+$var parameter 5 7 i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[9] $end
+$var parameter 5 8 i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[10] $end
+$var parameter 5 9 i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[11] $end
+$var parameter 5 : i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[12] $end
+$var parameter 5 ; i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[13] $end
+$var parameter 5 < i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[14] $end
+$var parameter 5 = i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[15] $end
+$var parameter 5 > i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[16] $end
+$var parameter 6 ? i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[17] $end
+$var parameter 6 @ i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[18] $end
+$var parameter 6 A i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[19] $end
+$var parameter 6 B i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[20] $end
+$var parameter 6 C i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[21] $end
+$var parameter 6 D i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[22] $end
+$var parameter 6 E i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[23] $end
+$var parameter 6 F i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[24] $end
+$var parameter 6 G i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[25] $end
+$var parameter 6 H i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[26] $end
+$var parameter 6 I i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[27] $end
+$var parameter 6 J i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[28] $end
+$var parameter 6 K i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[29] $end
+$var parameter 6 L i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[30] $end
+$var parameter 6 M i $end
+$upscope $end
+$scope begin TB_GPIO_DRIVE[31] $end
+$var parameter 6 N i $end
+$upscope $end
+$scope module dut $end
+$var wire 1 & clk $end
+$var wire 32 O gpio_pad [31:0] $end
+$var wire 32 P paddr [31:0] $end
+$var wire 1 & pclk $end
+$var wire 1 * penable $end
+$var wire 1 . presetn $end
+$var wire 1 + psel $end
+$var wire 32 Q pwdata [31:0] $end
+$var wire 1 - pwrite $end
+$var wire 1 . resetn $end
+$var wire 1 # pready $end
+$var parameter 32 R BASE_ADDR $end
+$var parameter 33 S GDAT_ADDR $end
+$var parameter 32 T GDIR_ADDR $end
+$var reg 32 U GDAT [31:0] $end
+$var reg 32 V GDIR [31:0] $end
+$var reg 1 % irq $end
+$var reg 32 W prdata [31:0] $end
+$var reg 1 " pslverr $end
+$scope begin GPIO_TRISTATE[0] $end
+$var parameter 2 X i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[1] $end
+$var parameter 2 Y i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[2] $end
+$var parameter 3 Z i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[3] $end
+$var parameter 3 [ i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[4] $end
+$var parameter 4 \ i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[5] $end
+$var parameter 4 ] i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[6] $end
+$var parameter 4 ^ i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[7] $end
+$var parameter 4 _ i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[8] $end
+$var parameter 5 ` i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[9] $end
+$var parameter 5 a i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[10] $end
+$var parameter 5 b i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[11] $end
+$var parameter 5 c i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[12] $end
+$var parameter 5 d i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[13] $end
+$var parameter 5 e i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[14] $end
+$var parameter 5 f i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[15] $end
+$var parameter 5 g i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[16] $end
+$var parameter 6 h i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[17] $end
+$var parameter 6 i i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[18] $end
+$var parameter 6 j i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[19] $end
+$var parameter 6 k i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[20] $end
+$var parameter 6 l i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[21] $end
+$var parameter 6 m i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[22] $end
+$var parameter 6 n i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[23] $end
+$var parameter 6 o i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[24] $end
+$var parameter 6 p i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[25] $end
+$var parameter 6 q i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[26] $end
+$var parameter 6 r i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[27] $end
+$var parameter 6 s i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[28] $end
+$var parameter 6 t i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[29] $end
+$var parameter 6 u i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[30] $end
+$var parameter 6 v i $end
+$upscope $end
+$scope begin GPIO_TRISTATE[31] $end
+$var parameter 6 w i $end
+$upscope $end
+$upscope $end
+$scope task apb_read $end
+$var reg 32 x addr [31:0] $end
+$upscope $end
+$scope task apb_write $end
+$var reg 32 y addr [31:0] $end
+$var reg 32 z data [31:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+b11111 w
+b11110 v
+b11101 u
+b11100 t
+b11011 s
+b11010 r
+b11001 q
+b11000 p
+b10111 o
+b10110 n
+b10101 m
+b10100 l
+b10011 k
+b10010 j
+b10001 i
+b10000 h
+b1111 g
+b1110 f
+b1101 e
+b1100 d
+b1011 c
+b1010 b
+b1001 a
+b1000 `
+b111 _
+b110 ^
+b101 ]
+b100 \
+b11 [
+b10 Z
+b1 Y
+b0 X
+b10000011000000 T
+b10000011000100 S
+b10000011000000 R
+b11111 N
+b11110 M
+b11101 L
+b11100 K
+b11011 J
+b11010 I
+b11001 H
+b11000 G
+b10111 F
+b10110 E
+b10101 D
+b10100 C
+b10011 B
+b10010 A
+b10001 @
+b10000 ?
+b1111 >
+b1110 =
+b1101 <
+b1100 ;
+b1011 :
+b1010 9
+b1001 8
+b1000 7
+b111 6
+b110 5
+b101 4
+b100 3
+b11 2
+b10 1
+b1 0
+b0 /
+$end
+#0
+$dumpvars
+bx z
+bx y
+bx x
+b0 W
+bx V
+bx U
+b0 Q
+b0 P
+bx O
+0.
+0-
+b0 ,
+0+
+0*
+b0 )
+b0 (
+b0 '
+0&
+x%
+b0 $
+0#
+x"
+bx !
+$end
+#10000
+bz !
+bz O
+0"
+b0 U
+b0 V
+0%
+1&
+#20000
+0&
+#30000
+1&
+#40000
+0&
+b11111111111111111111111111111111 z
+b10000011000000 y
+1.
+#50000
+1&
+#51000
+b11111111111111111111111111111111 ,
+b11111111111111111111111111111111 Q
+b10000011000000 )
+b10000011000000 P
+1-
+1+
+#60000
+0&
+#70000
+1&
+#71000
+1#
+1*
+#80000
+0&
+#90000
+b0 !
+b0 O
+b11111111111111111111111111111111 V
+1&
+#91000
+0#
+b10100101101001011010010110100101 z
+b10000011000100 y
+0-
+0*
+0+
+#100000
+0&
+#110000
+1&
+#111000
+b10100101101001011010010110100101 ,
+b10100101101001011010010110100101 Q
+b10000011000100 )
+b10000011000100 P
+1-
+1+
+#120000
+0&
+#130000
+1&
+#131000
+1#
+1*
+#140000
+0&
+#150000
+b10100101101001011010010110100101 !
+b10100101101001011010010110100101 O
+b10100101101001011010010110100101 U
+1&
+#151000
+0#
+0-
+0*
+0+
+#160000
+0&
+#170000
+1&
+#171000
+b0 z
+b10000011000000 y
+#180000
+0&
+#190000
+1&
+#191000
+b0 ,
+b0 Q
+b10000011000000 )
+b10000011000000 P
+1-
+1+
+#200000
+0&
+#210000
+1&
+#211000
+1#
+1*
+#220000
+0&
+#230000
+bz !
+bz O
+b0 V
+1&
+#231000
+b111100001111000011110000111100 !
+b111100001111000011110000111100 O
+0#
+b111100001111000011110000111100 '
+b11111111111111111111111111111111 (
+0-
+0*
+0+
+#240000
+0&
+#250000
+1&
+#251000
+b10000011000100 x
+#260000
+0&
+#270000
+1&
+#271000
+b10000011000100 )
+b10000011000100 P
+1+
+#280000
+0&
+#290000
+1&
+#291000
+1#
+b111100001111000011110000111100 $
+b111100001111000011110000111100 W
+1*
+#300000
+0&
+#310000
+1&
+#311000
+0#
+b0 $
+b0 W
+b11111111111111110000000000000000 z
+0*
+0+
+#320000
+0&
+#330000
+1&
+#331000
+b11111111111111110000000000000000 ,
+b11111111111111110000000000000000 Q
+b10000011000000 )
+b10000011000000 P
+1-
+1+
+#340000
+0&
+#350000
+1&
+#351000
+1#
+1*
+#360000
+0&
+#370000
+bx01xx10xx01xx10x0011110000111100 !
+bx01xx10xx01xx10x0011110000111100 O
+b11111111111111110000000000000000 V
+1&
+#371000
+b10100101101001010101010101010101 !
+b10100101101001010101010101010101 O
+0#
+b10101010101010100000000000000000 z
+b10000011000100 y
+b101010101010101 '
+b1111111111111111 (
+0-
+0*
+0+
+#380000
+0&
+#390000
+1&
+#391000
+b10101010101010100000000000000000 ,
+b10101010101010100000000000000000 Q
+b10000011000100 )
+b10000011000100 P
+1-
+1+
+#400000
+0&
+#410000
+1&
+#411000
+1#
+1*
+#420000
+0&
+#430000
+b10101010101010100101010101010101 !
+b10101010101010100101010101010101 O
+b10101010101010100000000000000000 U
+1&
+#431000
+0#
+0-
+0*
+0+
+#440000
+0&
+#450000
+1&
+#460000
+0&
+#470000
+1&
+#471000
+1+
+#480000
+0&
+#490000
+1&
+#491000
+1#
+b10101010101010100101010101010101 $
+b10101010101010100101010101010101 W
+1*
+#500000
+0&
+#510000
+1&
+#511000
+0#
+b0 $
+b0 W
+b11011110101011011011111011101111 z
+b10000011000000 y
+0*
+0+
+#520000
+0&
+#530000
+1&
+#531000
+b11011110101011011011111011101111 ,
+b11011110101011011011111011101111 Q
+b10000011000000 )
+b10000011000000 P
+1-
+1+
+#540000
+0&
+#550000
+1&
+#551000
+1#
+1*
+#560000
+0&
+#570000
+b10z0101z1z1z10z0010x0x010x010x0x !
+b10z0101z1z1z10z0010x0x010x010x0x O
+b11011110101011011011111011101111 V
+1&
+#571000
+0#
+b10000011000000 x
+0-
+0*
+0+
+#580000
+0&
+#590000
+1&
+#591000
+1+
+#600000
+0&
+#610000
+1&
+#611000
+1#
+b11011110101011011011111011101111 $
+b11011110101011011011111011101111 W
+1*
+#620000
+0&
+#630000
+1&
+#631000
+0#
+b0 $
+b0 W
+b11111111111111111111111111111111 z
+0*
+0+
+#640000
+0&
+#650000
+1&
+#651000
+b11111111111111111111111111111111 ,
+b11111111111111111111111111111111 Q
+1-
+1+
+#660000
+0&
+#670000
+1&
+#671000
+1#
+1*
+#680000
+0&
+#690000
+b10101010101010100x0x0x0x0x0x0x0x !
+b10101010101010100x0x0x0x0x0x0x0x O
+b11111111111111111111111111111111 V
+1&
+#691000
+bx0x0x0x0x0x0x0x00000000000000000 !
+bx0x0x0x0x0x0x0x00000000000000000 O
+0#
+b0 '
+b11111111111111111111111111111111 (
+0-
+0*
+0+
+#700000
+0&
+#710000
+1&
+#711000
+b10101010101010100000000000000000 !
+b10101010101010100000000000000000 O
+b10010001101000101011001111000 z
+b10000011001100 y
+b0 (
+#720000
+0&
+#730000
+1&
+#731000
+b10010001101000101011001111000 ,
+b10010001101000101011001111000 Q
+b10000011001100 )
+b10000011001100 P
+1-
+1+
+#740000
+0&
+#750000
+1&
+#751000
+1#
+1*
+#760000
+0&
+#770000
+1"
+1&
+#771000
+0#
+0-
+0*
+0+
+#780000
+0&
+#790000
+1&
+#800000
+0&
+#810000
+1&
+#820000
+0&
+#830000
+1&
+#840000
+0&
+#841000
