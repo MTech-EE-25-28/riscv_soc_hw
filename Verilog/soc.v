@@ -6,22 +6,12 @@ module soc (
     // APB Interface
     input  wire        pclk,
     input  wire        presetn,
-    input  wire        pready,
-    input  wire [31:0] prdata,
-    input  wire        pslverr,
-    output wire [31:0] paddr,
-    output wire [4:0]  psel,
-    output wire        penable,
-    output wire        pwrite,
-    output wire [31:0] pwdata,
-
     // Debug outputs
     output wire [31:0] PCW, Result, ALUResult, DataAdr, WriteData_M, WriteDataW, ReadDataW,
     output wire        MemWrite,
+    // peripheral interfaces
     output wire        pwm_out0, pwm_out1,
-    // GPIO pads
     inout  wire [31:0] gpio_pad,
-    // UART Physical Interface
     input  wire        rx,
     output wire        tx
 );
@@ -29,12 +19,12 @@ module soc (
 wire [31:0] WriteData, InstrAddr;
 assign WriteData_M = WriteData;
 wire [31:0] req_addr, req_wdata;
-wire [31:0] Instr;
+wire [31:0] Instr, paddr, prdata;
 wire [3:0]  mem_wea, dmem_wea;
 wire [2:0]  funct3;
-wire        imem_wea;
-wire [4:0]  irq_w;
-wire [31:0] PCF, dmem_rdata, cpu_rdata;
+wire        imem_wea, pwrite, penable, pslverr, pready;
+wire [4:0]  irq_w, psel;
+wire [31:0] PCF, dmem_rdata, cpu_rdata, pwdata;
 
 // apb_done: 1-cycle pulse from axi_interface (state==WAIT) that overrides
 wire apb_done_w;

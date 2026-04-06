@@ -3,17 +3,7 @@
 module tb_soc_mm;
 
 reg clk, reset;
-// APB signals
-reg         pclk;
-reg         presetn;
-reg         pready;
-reg  [31:0] prdata;
-reg         pslverr;
-wire [31:0] paddr;
-wire [4:0]  psel;
-wire        penable;
-wire        pwrite;
-wire [31:0] pwdata;
+reg pclk, presetn;
 // Debug outputs
 wire [31:0] PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData;
 wire        MemWrite, pwm_out0, pwm_out1;
@@ -23,10 +13,11 @@ wire        tx, rx;
 assign rx = tx; // UART loopback: tx idles high, so rx never floats
 
 soc dut (
-    clk, reset, pclk, presetn, pready, prdata, pslverr, paddr, psel, penable, pwrite, pwdata,
+    clk, reset, pclk, presetn,
     PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData, MemWrite,
     pwm_out0, pwm_out1, gpio_pad, rx, tx
 );
+
 
 always #10 clk = ~clk; // 50MHz clock
 always #10 pclk = ~pclk; // APB/peripheral clock (same frequency)
@@ -35,7 +26,7 @@ initial begin
     $dumpfile("./Verilog/dumps/tb_soc_mm.vcd");
     $dumpvars(0, tb_soc_mm);
     // Initialize signals
-    clk = 0; reset = 0; pclk = 0; presetn = 0; pready = 0; prdata = 0; pslverr = 0;
+    clk = 0; reset = 0; pclk = 0; presetn = 0;
     #100; // Wait for reset to propagate
 
     reset = 1; presetn = 1; // Release reset
