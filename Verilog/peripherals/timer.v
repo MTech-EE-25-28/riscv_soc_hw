@@ -28,7 +28,7 @@ module timer #(
     input  wire [31:0] paddr,
     input  wire [31:0] pwdata,
     output reg  [31:0] prdata,
-    output reg         pready,
+    output wire        pready,
     output reg         pslverr,
 
     // Interrupt
@@ -112,6 +112,12 @@ always @(posedge clk) begin
     end
 end
 
-assign TCNT = {counter1, counter0};
+always @(*) begin
+    if (!resetn) begin
+        TCNT <= 32'b0;
+    end else begin
+        TCNT <= {counter1, counter0};
+    end
+end
 
 endmodule

@@ -19,7 +19,7 @@ module gpio #(
     input  wire [31:0] paddr,
     input  wire [31:0] pwdata,
     output reg  [31:0] prdata,
-    output reg         pready,
+    output wire        pready,
     output reg         pslverr,
 
     // Interrupt

@@ -62,7 +62,7 @@ wire  [1:0] ResultSrcE, ResultSrcM, ResultSrcW;
 wire        MemWriteE;               // MemWriteM = module output
 wire  [4:0] ALUControlE;
 wire  [2:0] funct3E,  funct3W;       // funct3M = module output
-wire        JumpE, JalrE, BranchE, csrSelE;
+wire        JumpE, JalrE, Branch, BranchE, csrSelE;
 
 // Branch prediction pipeline
 wire        BPPredictTakenF,  BPPredictionValidF;
