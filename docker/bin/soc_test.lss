@@ -25,19 +25,19 @@ SYMBOL TABLE:
 00000100 g       *ABS*	00000000 __stack_size
 00000000 g       .init	00000000 __init_start
 00000044 g       .text	00000000 __text_start
-00000190 g       .text	00000000 __rodata_end
+000001a4 g       .text	00000000 __rodata_end
 00001000 g       .text	00000000 __bss_end
 00000044 g     F .text	000000c0 trap_handler
 00001800 g       .riscv.attributes	00000000 _stack_top
 00000000 g       .init	00000000 _start
 00000000 g       .init	00000000 __trap_vector_start
-00000190 g       .text	00000000 __rodata_start
+000001a4 g       .text	00000000 __rodata_start
 00002000 g       *ABS*	00000000 __ram
 00001000 g       .text	00000000 __data_end
 00000044 g       .init	00000000 __init_end
-00000190 g       .text	00000000 __text_end
+000001a4 g       .text	00000000 __text_end
 00001000 g       .text	00000000 __bss_start
-00000104 g     F .text	0000008c main
+00000104 g     F .text	000000a0 main
 00001700 g       .heap	00000000 __heap_end
 00000800 g       *ABS*	00000000 __ram_size
 00001000 g       .heap	00000000 __heap_start
@@ -198,64 +198,74 @@ Disassembly of section .text:
      ### int main() {
      ###     // all peripheral register address are declared in memory_map.h
      ###     TEST_LOC = 0; // explicitly zero before use — SRAM is undefined at power-on
- 104:	    000017b7          	lui	x15,0x1
- 108:	    0007a023          	sw	x0,0(x15) # 1000 <__bss_end>
+ 104:	       000017b7          	lui	x15,0x1
+ 108:	       0007a023          	sw	x0,0(x15) # 1000 <__bss_end>
      ### 
      ###     // timer setup
      ###     TIMER_OCMR = 255; // Set timer compare value to 255
- 10c:	    0ff00713          	addi	x14,x0,255
- 110:	    000027b7          	lui	x15,0x2
- 114:	    08e7a423          	sw	x14,136(x15) # 2088 <__ram+0x88>
+ 10c:	       0ff00713          	addi	x14,x0,255
+ 110:	       000027b7          	lui	x15,0x2
+ 114:	       08e7a423          	sw	x14,136(x15) # 2088 <__ram+0x88>
      ###     TIMER_TCCR = 0x07; // Timer enable + PWM enable + IRQ enable
- 118:	    00700713          	addi	x14,x0,7
- 11c:	    08e7a023          	sw	x14,128(x15)
+ 118:	       00700713          	addi	x14,x0,7
+ 11c:	       08e7a023          	sw	x14,128(x15)
      ###     // gpio setup
      ###     GPIO_GDIR = 0x1; // Set GPIO pin 0 as output
- 120:	    00100693          	addi	x13,x0,1
- 124:	    0cd7a023          	sw	x13,192(x15)
+ 120:	       00100693          	addi	x13,x0,1
+ 124:	       0cd7a023          	sw	x13,192(x15)
      ###     GPIO_GDAT = 0x41; // Set GPIO pin 0 high and pin 6 shouldn't be written
- 128:	    04100693          	addi	x13,x0,65
- 12c:	    0cd7a223          	sw	x13,196(x15)
+ 128:	       04100693          	addi	x13,x0,65
+ 12c:	       0cd7a223          	sw	x13,196(x15)
      ###     // uart setup
      ###     UART_UBRR = 0x04; // Set baud rate divisor for 115200 baud
- 130:	    00400693          	addi	x13,x0,4
- 134:	    04d7a823          	sw	x13,80(x15)
+ 130:	       00400693          	addi	x13,x0,4
+ 134:	       04d7a823          	sw	x13,80(x15)
      ###     UART_UCR1 = 0x07; // Enable UART receiver, transmitter and RX interrupt
- 138:	    04e7a623          	sw	x14,76(x15)
+ 138:	       04e7a623          	sw	x14,76(x15)
      ###     UART_UTDR = 'X'; // Send 'X' character
- 13c:	    05800713          	addi	x14,x0,88
- 140:	    04e7a423          	sw	x14,72(x15)
+ 13c:	       05800713          	addi	x14,x0,88
+ 140:	       04e7a423          	sw	x14,72(x15)
      ###     while (!(UART_USR0 & 0x4)); // SR bit[2] = TC (transmission complete), wait until set
- 144:	    00002737          	lui	x14,0x2
- 148:	/-> 04072783          	lw	x15,64(x14) # 2040 <__ram+0x40>
- 14c:	|   0047f793          	andi	x15,x15,4
- 150:	\-- fe078ce3          	beq	x15,x0,148 <main+0x44>
+ 144:	       00002737          	lui	x14,0x2
+ 148:	   /-> 04072783          	lw	x15,64(x14) # 2040 <__ram+0x40>
+ 14c:	   |   0047f793          	andi	x15,x15,4
+ 150:	   \-- fe078ce3          	beq	x15,x0,148 <main+0x44>
      ###     TEST_LOC = 111; // uart transmission should be done by now, set TEST_LOC to 111 to indicate UART test is done
- 154:	    000017b7          	lui	x15,0x1
- 158:	    06f00713          	addi	x14,x0,111
- 15c:	    00e7a023          	sw	x14,0(x15) # 1000 <__bss_end>
+ 154:	       000017b7          	lui	x15,0x1
+ 158:	       06f00713          	addi	x14,x0,111
+ 15c:	       00e7a023          	sw	x14,0(x15) # 1000 <__bss_end>
      ###     while (1) {
      ###         // Wait for interrupt to occur
      ###         // The trap handler will set TEST_LOC to 108 when the timer interrupt is handled
      ###         if (TEST_LOC == 108) {
- 160:	    000016b7          	lui	x13,0x1
- 164:	    06c00613          	addi	x12,x0,108
+ 160:	       000016b7          	lui	x13,0x1
+ 164:	       06c00593          	addi	x11,x0,108
      ###             // Clear TEST_LOC for next interrupt
      ###             TEST_LOC = 0;
      ###             // Read current timer count
      ###             uint32_t count = TIMER_TCNT;
- 168:	    000027b7          	lui	x15,0x2
+ 168:	       000027b7          	lui	x15,0x2
+     ###             UART_UTDR = count; // Send timer count over UART
+     ###             while (!(UART_USR0 & 0x4)); // Wait till transmission is complete
+     ###             TEST_LOC = 789;
+ 16c:	       31500613          	addi	x12,x0,789
      ###         if (TEST_LOC == 108) {
- 16c:	/-> 0006a703          	lw	x14,0(x13) # 1000 <__bss_end>
- 170:	+-- fec71ee3          	bne	x14,x12,16c <main+0x68>
+ 170:	/----> 0006a703          	lw	x14,0(x13) # 1000 <__bss_end>
+ 174:	+----- feb71ee3          	bne	x14,x11,170 <main+0x6c>
      ###             TEST_LOC = 0;
- 174:	|   0006a023          	sw	x0,0(x13)
+ 178:	|      0006a023          	sw	x0,0(x13)
      ###             uint32_t count = TIMER_TCNT;
- 178:	|   0847a703          	lw	x14,132(x15) # 2084 <__ram+0x84>
-     ###             UART_UTDR = count;
- 17c:	|   04e7a423          	sw	x14,72(x15)
+ 17c:	|      0847a703          	lw	x14,132(x15) # 2084 <__ram+0x84>
+     ###             UART_UTDR = count; // Send timer count over UART
+ 180:	|      04e7a423          	sw	x14,72(x15)
+     ###             while (!(UART_USR0 & 0x4)); // Wait till transmission is complete
+ 184:	|  /-> 0407a703          	lw	x14,64(x15)
+ 188:	|  |   00477713          	andi	x14,x14,4
+ 18c:	|  \-- fe070ce3          	beq	x14,x0,184 <main+0x80>
+     ###             TEST_LOC = 789;
+ 190:	|      00c6a023          	sw	x12,0(x13)
      ###             GPIO_GDAT ^= 0x1; // Toggle GPIO pin 0
- 180:	|   0c47a703          	lw	x14,196(x15)
- 184:	|   00174713          	xori	x14,x14,1
- 188:	|   0ce7a223          	sw	x14,196(x15)
- 18c:	\-- fe1ff06f          	jal	x0,16c <main+0x68>
+ 194:	|      0c47a703          	lw	x14,196(x15)
+ 198:	|      00174713          	xori	x14,x14,1
+ 19c:	|      0ce7a223          	sw	x14,196(x15)
+ 1a0:	\----- fd1ff06f          	jal	x0,170 <main+0x6c>

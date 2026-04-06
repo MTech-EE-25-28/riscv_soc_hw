@@ -16,7 +16,7 @@ module soc (
     output wire [31:0] pwdata,
 
     // Debug outputs
-    output wire [31:0] PCW, Result, ALUResult, DataAdr, WriteDataW, ReadDataW,
+    output wire [31:0] PCW, Result, ALUResult, DataAdr, WriteData_M, WriteDataW, ReadDataW,
     output wire        MemWrite,
     output wire        pwm_out0, pwm_out1,
     // GPIO pads
@@ -27,6 +27,7 @@ module soc (
 );
 
 wire [31:0] WriteData, InstrAddr;
+assign WriteData_M = WriteData;
 wire [31:0] req_addr, req_wdata;
 wire [31:0] Instr;
 wire [3:0]  mem_wea, dmem_wea;

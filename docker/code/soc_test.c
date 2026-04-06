@@ -27,7 +27,9 @@ int main() {
             TEST_LOC = 0;
             // Read current timer count
             uint32_t count = TIMER_TCNT;
-            UART_UTDR = count;
+            UART_UTDR = count; // Send timer count over UART
+            while (!(UART_USR0 & 0x4)); // Wait till transmission is complete
+            TEST_LOC = 789;
             GPIO_GDAT ^= 0x1; // Toggle GPIO pin 0
         }
     }

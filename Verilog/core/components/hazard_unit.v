@@ -42,7 +42,7 @@ always @(*) begin
         StallF = lwStall || mem_stall; StallD = lwStall || mem_stall;
 
         FlushD = PCSrcE;
-        FlushE = lwStall | PCSrcE;
+        FlushE = (lwStall && !mem_stall) | PCSrcE;
     end
 end
 

@@ -15,7 +15,7 @@ wire        penable;
 wire        pwrite;
 wire [31:0] pwdata;
 // Debug outputs
-wire [31:0] PC, Result, ALUResult, DataAdr, WriteData, ReadData;
+wire [31:0] PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData;
 wire        MemWrite, pwm_out0, pwm_out1;
 // peripheral interfaces
 wire [31:0] gpio_pad;
@@ -24,7 +24,7 @@ assign rx = tx; // UART loopback: tx idles high, so rx never floats
 
 soc dut (
     clk, reset, pclk, presetn, pready, prdata, pslverr, paddr, psel, penable, pwrite, pwdata,
-    PC, Result, ALUResult, DataAdr, WriteData, ReadData, MemWrite,
+    PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData, MemWrite,
     pwm_out0, pwm_out1, gpio_pad, rx, tx
 );
 
@@ -48,12 +48,14 @@ integer skip=0;
 always @(negedge clk) begin
     if (MemWrite && reset) begin
         if (DataAdr == 32'h00001000) begin
-            skip = skip + 1; // write first time 0, then 108
+            skip = skip + 1;
             if (skip > 1) begin
-                if (Result == 32'd108 && skip == 2) begin
-                    $display("Timer Interrupt Triggered and Handled Successfully! Result = %d", Result);
-                end else if (Result == 32'd111) begin
-                    $display("UART Transmission completed Successfully! Result = %d", Result);
+                if (WriteData_M == 32'd108) begin
+                    $display("Timer Interrupt Triggered and Handled Successfully! Result = %d", WriteData_M);
+                end else if (WriteData_M == 32'd111) begin
+                    $display("UART Transmission completed Successfully! Result = %d", WriteData_M);
+                end else if (WriteData_M == 32'd789) begin
+                    $display("Timer Loop UART TX done! TEST_LOC = %d", WriteData_M);
                     #10000; $finish;
                 end
             end

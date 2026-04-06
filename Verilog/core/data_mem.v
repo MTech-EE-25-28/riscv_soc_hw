@@ -14,6 +14,23 @@ reg [DATA_WIDTH/4-1:0] data_ram1 [0:MEM_SIZE-1];
 reg [DATA_WIDTH/4-1:0] data_ram2 [0:MEM_SIZE-1];
 reg [DATA_WIDTH/4-1:0] data_ram3 [0:MEM_SIZE-1];
 
+// Load .data section initial values from the same hex file used by instr_mem.
+// .data VMA=LMA=0x1000, so it appears at word offset 0x400 in the hex file.
+reg [DATA_WIDTH-1:0] init_mem [0:MEM_SIZE-1];
+initial begin
+    string hex_file;
+    integer i;
+    if ($value$plusargs("HEX=%s", hex_file)) begin
+        $readmemh(hex_file, init_mem);
+        for (i = 0; i < MEM_SIZE; i = i + 1) begin
+            data_ram0[i] = init_mem[i][7:0];
+            data_ram1[i] = init_mem[i][15:8];
+            data_ram2[i] = init_mem[i][23:16];
+            data_ram3[i] = init_mem[i][31:24];
+        end
+    end
+end
+
 // word-aligned address
 wire [ADDR_WIDTH-1:0] word_addr = addr[ADDR_WIDTH-1:2];
 
