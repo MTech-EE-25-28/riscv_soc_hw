@@ -76,11 +76,12 @@ fi
 # 5) Choose hex file based on testbench name
 # add the files from the root directory of script location
 case "$TB_NAME" in
-    tb_interrupt)  HEX_ARG="+HEX=./docker/bin/interrupt.hex" ;;
-    tb_exception)  HEX_ARG="+HEX=./docker/bin/exception.hex" ;;
     tb_pl)         HEX_ARG="+HEX=./docker/bin/rv32i_test.hex" ;;
-    tb_soc)        HEX_ARG="+HEX=./docker/bin/soc_test.hex" ;;
     tb_program)    HEX_ARG="+HEX=./docker/bin/matrix_mul.hex" ;;
+    tb_exception)  HEX_ARG="+HEX=./docker/bin/exception.hex" ;;
+    tb_interrupt)  HEX_ARG="+HEX=./docker/bin/interrupt.hex" ;;
+    tb_soc)        HEX_ARG="+HEX=./docker/bin/soc_test.hex" ;;
+    tb_soc_mm)     HEX_ARG="+HEX=./docker/bin/sw_matrix_mul.hex" ;;
     *)             HEX_ARG="" ;;
 esac
 

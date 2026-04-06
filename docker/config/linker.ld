@@ -39,8 +39,12 @@ SECTIONS {
         __rodata_end = .;
     } > ROM
 
-    /*  Initialized Data */
+    /*  Initialized Data — VMA = LMA = 0x1000 (SRAM).
+     *  data_mem.v loads the same hex file and reads words at @0x400+ directly.
+     *  No startup copy loop needed.
+     *  0x1000–0x100F reserved for MMIO (TEST_LOC@0x1000, OUT@0x1004, CPU_DONE@0x1008). */
     .data : ALIGN(4) {
+        . += 0x10;          /* skip MMIO-reserved region 0x1000–0x100F */
         __data_start = .;
         *(.data)
         *(.data.*)

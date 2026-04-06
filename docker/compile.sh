@@ -53,7 +53,7 @@ if \
    $OBJDUMP --visualize-jumps -t -S --source-comment='     ### ' \
        .temp.file.elf -M no-aliases,numeric > "$filename.lss" && \
    $OBJCOPY -O binary .temp.file.elf .temp.file.bin && \
-   truncate -s $ROM .temp.file.bin && \
+   truncate -s $((4096 + RAM)) .temp.file.bin && \
    $OBJCOPY --verilog-data-width=4 --reverse-bytes=4 \
        -I binary -O verilog .temp.file.bin "$filename.hex" && \
    $SIZE -B --common .temp.file.elf

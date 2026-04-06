@@ -1,0 +1,494 @@
+
+.temp.file.elf:     file format elf32-littleriscv
+
+SYMBOL TABLE:
+00000000 l    d  .init	00000000 .init
+00000044 l    d  .text	00000000 .text
+00001000 l    d  .data	00000000 .data
+00001060 l    d  .heap	00000000 .heap
+00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
+00000000 l    d  .comment	00000000 .comment
+00000000 l    d  .debug_line	00000000 .debug_line
+00000000 l    d  .debug_line_str	00000000 .debug_line_str
+00000000 l    d  .debug_info	00000000 .debug_info
+00000000 l    d  .debug_abbrev	00000000 .debug_abbrev
+00000000 l    d  .debug_aranges	00000000 .debug_aranges
+00000000 l    d  .debug_str	00000000 .debug_str
+00000000 l    d  .debug_loclists	00000000 .debug_loclists
+00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
+00000000 l    d  .debug_macro	00000000 .debug_macro
+00000000 l    d  .debug_frame	00000000 .debug_frame
+00000000 l    df *ABS*	00000000 .temp.start.o
+00000000 l    df *ABS*	00000000 sw_matrix_mul.c
+00001010 l     O .data	00000023 str_start
+00001034 l     O .data	0000002a str_done
+00000000 l    df *ABS*	00000000 trap_handler.c
+000000a4 g     F .text	00000028 uart_send_str
+000000e8 g     F .text	000000b8 uart_send_int
+00000800 g       *ABS*	00000000 __flash_size
+00000000 g       .init	00000000 __trap_vector_end
+00000100 g       *ABS*	00000000 __stack_size
+00000000 g       .init	00000000 __init_start
+00000044 g       .text	00000000 __text_start
+00000068 g     F .text	00000024 memcpy
+00000334 g       .data	00000000 __rodata_end
+00001060 g       .data	00000000 __bss_end
+000001a0 g     F .text	000000c0 trap_handler
+00001800 g       .riscv.attributes	00000000 _stack_top
+0000008c g     F .text	00000018 uart_init
+00000000 g       .init	00000000 _start
+00000000 g       .init	00000000 __trap_vector_start
+00000334 g       .data	00000000 __rodata_start
+00002000 g       *ABS*	00000000 __ram
+0000105e g       .data	00000000 __data_end
+00000044 g       .init	00000000 __init_end
+00000334 g       .text	00000000 __text_end
+00001060 g       .data	00000000 __bss_start
+0000004c g     F .text	0000001c memset
+00000260 g     F .text	000000d4 main
+00001700 g       .heap	00000000 __heap_end
+00000800 g       *ABS*	00000000 __ram_size
+00001060 g       .heap	00000000 __heap_start
+000000cc g     F .text	0000001c uart_send_byte
+00000048 g     F .text	00000004 _put_str
+00000000 g       *ABS*	00000000 __flash
+00000044 g     F .text	00000004 _put_value
+00001010 g       .data	00000000 __data_start
+
+
+
+Disassembly of section .init:
+
+00000000 <__init_start>:
+     ### .section .init
+     ### .globl _start
+     ### 
+     ### _start:
+     ###     la sp, _stack_top
+   0:	       00002117          	auipc	x2,0x2
+   4:	       80010113          	addi	x2,x2,-2048 # 1800 <_stack_top>
+     ### 
+     ###     # install trap handler into mtvec (direct mode, bit[1:0]=0)
+     ###     la t0, trap_handler
+   8:	       00000297          	auipc	x5,0x0
+   c:	       19828293          	addi	x5,x5,408 # 1a0 <trap_handler>
+     ###     csrw mtvec, t0
+  10:	       30529073          	csrrw	x0,mtvec,x5
+     ### 
+     ###     # enable machine-mode interrupts (MIE bit in mstatus)
+     ###     li t0, 0x8
+  14:	       00800293          	addi	x5,x0,8
+     ###     csrs mstatus, t0
+  18:	       3002a073          	csrrs	x0,mstatus,x5
+     ### 
+     ###     # zero .bss
+     ###     la t0, __bss_start
+  1c:	       00001297          	auipc	x5,0x1
+  20:	       04428293          	addi	x5,x5,68 # 1060 <__bss_end>
+     ###     la t1, __bss_end
+  24:	       00001317          	auipc	x6,0x1
+  28:	       03c30313          	addi	x6,x6,60 # 1060 <__bss_end>
+     ### 
+     ### 1:
+     ###     bge t0, t1, 2f
+  2c:	/--/-X 0062d863          	bge	x5,x6,3c <__init_start+0x3c>
+     ###     sw zero, 0(t0)
+  30:	|  |   0002a023          	sw	x0,0(x5)
+     ###     addi t0, t0, 4
+  34:	|  |   00428293          	addi	x5,x5,4
+     ###     j 1b
+  38:	|  \-- ff5ff06f          	jal	x0,2c <__init_start+0x2c>
+     ### 
+     ### 2:
+     ###     call main
+  3c:	\----> 224000ef          	jal	x1,260 <main>
+     ### 
+     ### 3:  j 3b
+  40:	   /-- 0000006f          	jal	x0,40 <__init_start+0x40>
+
+Disassembly of section .text:
+
+00000044 <_put_value>:
+     ###     void _put_value(int32_t val) { print_output(val); }
+     ### 
+     ### #else  // for the test device
+     ###     #define OUT                 (* (volatile     int * ) 0x00001004)
+     ###     #define CPU_DONE            (* (volatile int8_t * ) 0x00001008)
+     ###     void _put_value(int32_t val) { }
+  44:	00008067          	jalr	x0,0(x1)
+
+00000048 <_put_str>:
+     ###     void _put_str(char *str) { }
+  48:	00008067          	jalr	x0,0(x1)
+
+0000004c <memset>:
+     ### #endif
+     ### 
+     ### // generate local bss
+     ### void *memset(void *dst, int val, unsigned int n) {
+     ###     unsigned char *p = (unsigned char *)dst;
+     ###     for (unsigned int i = 0; i < n; i++) {
+  4c:	       00000793          	addi	x15,x0,0
+  50:	/--/-X 00c79463          	bne	x15,x12,58 <memset+0xc>
+     ###         p[i] = (unsigned char)val;
+     ###     }
+     ###     return dst;
+     ### }
+  54:	|  |   00008067          	jalr	x0,0(x1)
+     ###         p[i] = (unsigned char)val;
+  58:	|  \-> 00f50733          	add	x14,x10,x15
+  5c:	|      00b70023          	sb	x11,0(x14)
+     ###     for (unsigned int i = 0; i < n; i++) {
+  60:	|      00178793          	addi	x15,x15,1
+  64:	\----- fedff06f          	jal	x0,50 <memset+0x4>
+
+00000068 <memcpy>:
+     ### 
+     ### void *memcpy(void *dst, const void *src, unsigned int n) {
+     ###     unsigned char *d = (unsigned char *)dst;
+     ###     const unsigned char *s = (const unsigned char *)src;
+     ###     for (unsigned int i = 0; i < n; i++) {
+  68:	       00000793          	addi	x15,x0,0
+  6c:	/--/-X 00c79463          	bne	x15,x12,74 <memcpy+0xc>
+     ###         d[i] = s[i];
+     ###     }
+     ###     return dst;
+     ### }
+  70:	|  |   00008067          	jalr	x0,0(x1)
+     ###         d[i] = s[i];
+  74:	|  \-> 00f58733          	add	x14,x11,x15
+  78:	|      00074683          	lbu	x13,0(x14)
+  7c:	|      00f50733          	add	x14,x10,x15
+     ###     for (unsigned int i = 0; i < n; i++) {
+  80:	|      00178793          	addi	x15,x15,1
+     ###         d[i] = s[i];
+  84:	|      00d70023          	sb	x13,0(x14)
+     ###     for (unsigned int i = 0; i < n; i++) {
+  88:	\----- fe5ff06f          	jal	x0,6c <memcpy+0x4>
+
+0000008c <uart_init>:
+     ### 
+     ### void uart_init() {
+     ###     UART_UBRR = 0x04; // Set baud rate divisor for 115200 baud
+  8c:	000027b7          	lui	x15,0x2
+  90:	00400713          	addi	x14,x0,4
+  94:	04e7a823          	sw	x14,80(x15) # 2050 <__ram+0x50>
+     ###     UART_UCR1 = 0x07; // Enable UART, receiver, transmitter
+  98:	00700713          	addi	x14,x0,7
+  9c:	04e7a623          	sw	x14,76(x15)
+     ### }
+  a0:	00008067          	jalr	x0,0(x1)
+
+000000a4 <uart_send_str>:
+     ### 
+     ### void uart_send_str(char *str) {
+     ###     while (*str) {
+     ###         // while (!(UART_USR0 & 0x2)); // Wait until TXE (transmit buffer empty) is set
+     ###         UART_UTDR = *str++; // Send the next character
+  a4:	       00002737          	lui	x14,0x2
+     ###     while (*str) {
+  a8:	/----> 00054783          	lbu	x15,0(x10)
+  ac:	|  /-- 00079463          	bne	x15,x0,b4 <uart_send_str+0x10>
+     ###         while (!(UART_USR0 & 0x4)); // Wait until TC (transmission complete) is set
+     ###     }
+     ### }
+  b0:	|  |   00008067          	jalr	x0,0(x1)
+     ###         UART_UTDR = *str++; // Send the next character
+  b4:	|  \-> 00150513          	addi	x10,x10,1
+  b8:	|      04f72423          	sw	x15,72(x14) # 2048 <__ram+0x48>
+     ###         while (!(UART_USR0 & 0x4)); // Wait until TC (transmission complete) is set
+  bc:	|  /-> 04072783          	lw	x15,64(x14)
+  c0:	|  |   0047f793          	andi	x15,x15,4
+  c4:	|  \-- fe078ce3          	beq	x15,x0,bc <uart_send_str+0x18>
+  c8:	\----- fe1ff06f          	jal	x0,a8 <uart_send_str+0x4>
+
+000000cc <uart_send_byte>:
+     ### 
+     ### void uart_send_byte(char c) {
+     ###     UART_UTDR = c;
+  cc:	    000027b7          	lui	x15,0x2
+  d0:	    04a7a423          	sw	x10,72(x15) # 2048 <__ram+0x48>
+     ###     while (!(UART_USR0 & 0x4)); // Wait until TC is set
+  d4:	    00002737          	lui	x14,0x2
+  d8:	/-> 04072783          	lw	x15,64(x14) # 2040 <__ram+0x40>
+  dc:	|   0047f793          	andi	x15,x15,4
+  e0:	\-- fe078ce3          	beq	x15,x0,d8 <uart_send_byte+0xc>
+     ### }
+  e4:	    00008067          	jalr	x0,0(x1)
+
+000000e8 <uart_send_int>:
+     ### 
+     ### int uart_send_int(int num) {
+  e8:	       fc010113          	addi	x2,x2,-64
+  ec:	       02112e23          	sw	x1,60(x2)
+  f0:	       02812c23          	sw	x8,56(x2)
+  f4:	       02912a23          	sw	x9,52(x2)
+  f8:	       03212823          	sw	x18,48(x2)
+  fc:	       03312623          	sw	x19,44(x2)
+ 100:	       03412423          	sw	x20,40(x2)
+     ###     if (num == 0) {
+ 104:	   /-- 02051863          	bne	x10,x0,134 <__stack_size+0x34>
+     ###         uart_send_byte('0');
+ 108:	   |   03000513          	addi	x10,x0,48
+ 10c:	   |   fc1ff0ef          	jal	x1,cc <uart_send_byte>
+     ###         return 1;
+ 110:	   |   00100513          	addi	x10,x0,1
+     ###     }
+     ###     for (int i = index - 1; i >= 0; i--) {
+     ###         uart_send_byte(buffer[i]); // send directly — no rodata pointer
+     ###     }
+     ###     return index + neg;
+     ### }
+ 114:	/--|-> 03c12083          	lw	x1,60(x2)
+ 118:	|  |   03812403          	lw	x8,56(x2)
+ 11c:	|  |   03412483          	lw	x9,52(x2)
+ 120:	|  |   03012903          	lw	x18,48(x2)
+ 124:	|  |   02c12983          	lw	x19,44(x2)
+ 128:	|  |   02812a03          	lw	x20,40(x2)
+ 12c:	|  |   04010113          	addi	x2,x2,64
+ 130:	|  |   00008067          	jalr	x0,0(x1)
+ 134:	|  \-> 00050413          	addi	x8,x10,0
+     ###     int neg = 0;
+ 138:	|      00000993          	addi	x19,x0,0
+     ###     if (num < 0) {
+ 13c:	|  /-- 00055a63          	bge	x10,x0,150 <__stack_size+0x50>
+     ###         uart_send_byte('-');
+ 140:	|  |   02d00513          	addi	x10,x0,45
+ 144:	|  |   f89ff0ef          	jal	x1,cc <uart_send_byte>
+     ###         num = -num;
+ 148:	|  |   40800433          	sub	x8,x0,x8
+     ###         neg = 1;
+ 14c:	|  |   00100993          	addi	x19,x0,1
+ 150:	|  \-> 00c10793          	addi	x15,x2,12
+     ###     int index = 0;
+ 154:	|      00000493          	addi	x9,x0,0
+ 158:	|      00078a13          	addi	x20,x15,0
+     ###         buffer[index++] = '0' + num % 10;
+ 15c:	|      00a00693          	addi	x13,x0,10
+ 160:	|  /-> 02d46733          	rem	x14,x8,x13
+ 164:	|  |   00048913          	addi	x18,x9,0
+     ###     while (num > 0) {
+ 168:	|  |   00178793          	addi	x15,x15,1
+     ###         buffer[index++] = '0' + num % 10;
+ 16c:	|  |   00148493          	addi	x9,x9,1
+     ###         num /= 10;
+ 170:	|  |   02d44433          	div	x8,x8,x13
+     ###         buffer[index++] = '0' + num % 10;
+ 174:	|  |   03070713          	addi	x14,x14,48
+ 178:	|  |   fee78fa3          	sb	x14,-1(x15)
+     ###     while (num > 0) {
+ 17c:	|  \-- fe0412e3          	bne	x8,x0,160 <__stack_size+0x60>
+     ###     for (int i = index - 1; i >= 0; i--) {
+ 180:	|      fff00413          	addi	x8,x0,-1
+     ###         uart_send_byte(buffer[i]); // send directly — no rodata pointer
+ 184:	|  /-> 012a07b3          	add	x15,x20,x18
+ 188:	|  |   0007c503          	lbu	x10,0(x15)
+     ###     for (int i = index - 1; i >= 0; i--) {
+ 18c:	|  |   fff90913          	addi	x18,x18,-1
+     ###         uart_send_byte(buffer[i]); // send directly — no rodata pointer
+ 190:	|  |   f3dff0ef          	jal	x1,cc <uart_send_byte>
+     ###     for (int i = index - 1; i >= 0; i--) {
+ 194:	|  \-- fe8918e3          	bne	x18,x8,184 <__stack_size+0x84>
+     ###     return index + neg;
+ 198:	|      01348533          	add	x10,x9,x19
+ 19c:	\----- f79ff06f          	jal	x0,114 <__stack_size+0x14>
+
+000001a0 <trap_handler>:
+     ### 
+     ### // trap handler for RISC-V SoC
+     ### #include <stdint.h>
+     ### #include "memory_map.h"
+     ### // for now it is in direct mode
+     ### void __attribute__((interrupt("machine"))) trap_handler (void) {
+ 1a0:	             ff010113          	addi	x2,x2,-16
+ 1a4:	             00d12623          	sw	x13,12(x2)
+ 1a8:	             00e12423          	sw	x14,8(x2)
+ 1ac:	             00f12223          	sw	x15,4(x2)
+     ###     uint32_t mepc, mcause;
+     ###     asm volatile ("csrr %0, mcause" : "=r"(mcause));
+ 1b0:	             342027f3          	csrrs	x15,mcause,x0
+     ### 
+     ###     if (mcause & 0x80000000) {
+ 1b4:	/----------- 0807d263          	bge	x15,x0,238 <trap_handler+0x98>
+     ###         // Interrupt
+     ###         // mepc already points to the interrupted instruction
+     ###         uint32_t id = mcause & 0x1F;
+ 1b8:	|            01f7f793          	andi	x15,x15,31
+     ###         // switch case needs jump table to be loaded into dmem
+     ###         if (id == 16) { // QSPI — read received byte to clear RX interrupt flag
+ 1bc:	|            01000713          	addi	x14,x0,16
+ 1c0:	|        /-- 00e79e63          	bne	x15,x14,1dc <trap_handler+0x3c>
+     ###             (void) QSPI_DATA;
+ 1c4:	|        |   000027b7          	lui	x15,0x2
+ 1c8:	|        |   0047a703          	lw	x14,4(x15) # 2004 <__ram+0x4>
+     ###             QSPI_STATUS = 0;
+ 1cc:	|        |   0007a423          	sw	x0,8(x15)
+     ###             TEST_LOC = 1;
+     ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
+     ###             // TIMER_CTRL = 0;
+     ###             TEST_LOC = 108;
+     ###         } else if (id == 20) { // Matrix Mul ignored
+     ###             TEST_LOC = 1;
+ 1d0:	|  /-----|-> 000017b7          	lui	x15,0x1
+ 1d4:	|  |     |   00100713          	addi	x14,x0,1
+ 1d8:	|  |  /--|-- 03c0006f          	jal	x0,214 <trap_handler+0x74>
+     ###         } else if (id == 17) { // UART — read received byte to drain RX FIFO
+ 1dc:	|  |  |  \-> 01100713          	addi	x14,x0,17
+ 1e0:	|  |  |  /-- 00e79863          	bne	x15,x14,1f0 <trap_handler+0x50>
+     ###             (void) UART_URDR;
+ 1e4:	|  |  |  |   000027b7          	lui	x15,0x2
+ 1e8:	|  |  |  |   0447a783          	lw	x15,68(x15) # 2044 <__ram+0x44>
+     ###             TEST_LOC = 1;
+ 1ec:	|  +--|--|-- fe5ff06f          	jal	x0,1d0 <trap_handler+0x30>
+     ###         } else if (id == 18) { // GPIO — read pin state to clear edge-detect flag
+ 1f0:	|  |  |  \-> 01200713          	addi	x14,x0,18
+ 1f4:	|  |  |  /-- 00e79863          	bne	x15,x14,204 <trap_handler+0x64>
+     ###             (void) GPIO_GDAT;
+ 1f8:	|  |  |  |   000027b7          	lui	x15,0x2
+ 1fc:	|  |  |  |   0c47a783          	lw	x15,196(x15) # 20c4 <__ram+0xc4>
+     ###             TEST_LOC = 1;
+ 200:	|  +--|--|-- fd1ff06f          	jal	x0,1d0 <trap_handler+0x30>
+     ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
+ 204:	|  |  |  \-> 01300713          	addi	x14,x0,19
+ 208:	|  |  |  /-- 00e79a63          	bne	x15,x14,21c <trap_handler+0x7c>
+     ###             TEST_LOC = 108;
+ 20c:	|  |  |  |   000017b7          	lui	x15,0x1
+ 210:	|  |  |  |   06c00713          	addi	x14,x0,108
+     ###             TEST_LOC = 1;
+ 214:	|  |  \--|-> 00e7a023          	sw	x14,0(x15) # 1000 <__flash_size+0x800>
+ 218:	|  |  /--|-- 00c0006f          	jal	x0,224 <trap_handler+0x84>
+     ###         } else if (id == 20) { // Matrix Mul ignored
+ 21c:	|  |  |  \-> 01400713          	addi	x14,x0,20
+ 220:	|  \--|----- fae788e3          	beq	x15,x14,1d0 <trap_handler+0x30>
+     ###         // Log cause to UART for debug visibility
+     ###         UART_UBRR = 0x04;
+     ###         UART_UCR1 = 0x07;
+     ###         UART_UTDR = mcause;
+     ###     }
+ 224:	|     >----> 00c12683          	lw	x13,12(x2)
+ 228:	|     |      00812703          	lw	x14,8(x2)
+ 22c:	|     |      00412783          	lw	x15,4(x2)
+ 230:	|     |      01010113          	addi	x2,x2,16
+ 234:	|     |      30200073          	mret
+     ###         asm volatile ("csrr %0, mepc" : "=r"(mepc));
+ 238:	\-----|----> 34102773          	csrrs	x14,mepc,x0
+     ###         mepc += 4; // put mepc on the next instruction
+ 23c:	      |      00470713          	addi	x14,x14,4
+     ###         asm volatile ("csrw mepc, %0" : : "r"(mepc));
+ 240:	      |      34171073          	csrrw	x0,mepc,x14
+     ###         UART_UBRR = 0x04;
+ 244:	      |      00002737          	lui	x14,0x2
+ 248:	      |      00400693          	addi	x13,x0,4
+ 24c:	      |      04d72823          	sw	x13,80(x14) # 2050 <__ram+0x50>
+     ###         UART_UCR1 = 0x07;
+ 250:	      |      00700693          	addi	x13,x0,7
+ 254:	      |      04d72623          	sw	x13,76(x14)
+     ###         UART_UTDR = mcause;
+ 258:	      |      04f72423          	sw	x15,72(x14)
+ 25c:	      \----- fc9ff06f          	jal	x0,224 <trap_handler+0x84>
+
+00000260 <main>:
+     ### // Placed in .data (SRAM) — startup copies from flash LMA to SRAM VMA.
+     ### // .rodata (ROM-only) is NOT accessible via lbu on this Harvard-arch CPU.
+     ### static char str_start[] = "Starting matrix multiplication...\n";
+     ### static char str_done[]  = "Matrix multiplication completed. Output:\n";
+     ### 
+     ### int main () {
+ 260:	fe010113          	addi	x2,x2,-32
+ 264:	00112e23          	sw	x1,28(x2)
+ 268:	00812c23          	sw	x8,24(x2)
+ 26c:	00912a23          	sw	x9,20(x2)
+     ###     OUT = 0; CPU_DONE = 0;
+ 270:	00001437          	lui	x8,0x1
+ 274:	00042223          	sw	x0,4(x8) # 1004 <__flash_size+0x804>
+ 278:	00040423          	sb	x0,8(x8)
+     ###     A[0][0] = 1; A[0][1] = 2;
+     ###     A[1][0] = 3; A[1][1] = 4;
+     ###     B[0][0] = 5; B[0][1] = 6;
+     ###     B[1][0] = 7; B[1][1] = 8;
+     ### 
+     ###     uart_init();
+ 27c:	e11ff0ef          	jal	x1,8c <uart_init>
+     ###     uart_send_str(str_start);
+ 280:	00001537          	lui	x10,0x1
+ 284:	01050493          	addi	x9,x10,16 # 1010 <str_start>
+ 288:	01050513          	addi	x10,x10,16
+ 28c:	e19ff0ef          	jal	x1,a4 <uart_send_str>
+     ###     for (i = 0; i < 2; i++) {
+     ###         for (j = 0; j < 2; j++) {
+     ###             C[i][j] = 0;
+     ###             for (k = 0; k < 2; k++) {
+     ###                 C[i][j] += A[i][k] * B[k][j];
+ 290:	01600793          	addi	x15,x0,22
+ 294:	00f12223          	sw	x15,4(x2)
+ 298:	02b00793          	addi	x15,x0,43
+ 29c:	00f12423          	sw	x15,8(x2)
+     ###             }
+     ###         }
+     ###     }
+     ###     uart_send_str(str_done);
+ 2a0:	02448513          	addi	x10,x9,36
+     ###                 C[i][j] += A[i][k] * B[k][j];
+ 2a4:	03200793          	addi	x15,x0,50
+ 2a8:	00f12623          	sw	x15,12(x2)
+     ###     uart_send_str(str_done);
+ 2ac:	df9ff0ef          	jal	x1,a4 <uart_send_str>
+     ###     for (i = 0; i < 2; i++) {
+     ###         for (j = 0; j < 2; j++) {
+     ###             OUT = C[i][j];
+ 2b0:	01300793          	addi	x15,x0,19
+ 2b4:	00f42223          	sw	x15,4(x8)
+     ###             uart_send_int(C[i][j]);
+ 2b8:	01300513          	addi	x10,x0,19
+ 2bc:	e2dff0ef          	jal	x1,e8 <uart_send_int>
+     ###             uart_send_byte('\n');
+ 2c0:	00a00513          	addi	x10,x0,10
+ 2c4:	e09ff0ef          	jal	x1,cc <uart_send_byte>
+     ###             OUT = C[i][j];
+ 2c8:	00412503          	lw	x10,4(x2)
+     ###             _put_value(OUT);
+ 2cc:	00442783          	lw	x15,4(x8)
+     ###             OUT = C[i][j];
+ 2d0:	00a42223          	sw	x10,4(x8)
+     ###             uart_send_int(C[i][j]);
+ 2d4:	e15ff0ef          	jal	x1,e8 <uart_send_int>
+     ###             uart_send_byte('\n');
+ 2d8:	00a00513          	addi	x10,x0,10
+ 2dc:	df1ff0ef          	jal	x1,cc <uart_send_byte>
+     ###             OUT = C[i][j];
+ 2e0:	00812503          	lw	x10,8(x2)
+     ###             _put_value(OUT);
+ 2e4:	00442783          	lw	x15,4(x8)
+     ###             OUT = C[i][j];
+ 2e8:	00a42223          	sw	x10,4(x8)
+     ###             uart_send_int(C[i][j]);
+ 2ec:	dfdff0ef          	jal	x1,e8 <uart_send_int>
+     ###             uart_send_byte('\n');
+ 2f0:	00a00513          	addi	x10,x0,10
+ 2f4:	dd9ff0ef          	jal	x1,cc <uart_send_byte>
+     ###             OUT = C[i][j];
+ 2f8:	00c12503          	lw	x10,12(x2)
+     ###             _put_value(OUT);
+ 2fc:	00442783          	lw	x15,4(x8)
+     ###             OUT = C[i][j];
+ 300:	00a42223          	sw	x10,4(x8)
+     ###             uart_send_int(C[i][j]);
+ 304:	de5ff0ef          	jal	x1,e8 <uart_send_int>
+     ###             uart_send_byte('\n');
+ 308:	00a00513          	addi	x10,x0,10
+ 30c:	dc1ff0ef          	jal	x1,cc <uart_send_byte>
+     ###             _put_value(OUT);
+ 310:	00442783          	lw	x15,4(x8)
+     ###         }
+     ###     }
+     ###     CPU_DONE = 1;
+     ###     return 0;
+ 314:	00000513          	addi	x10,x0,0
+     ###     CPU_DONE = 1;
+ 318:	00100793          	addi	x15,x0,1
+ 31c:	00f40423          	sb	x15,8(x8)
+ 320:	01c12083          	lw	x1,28(x2)
+ 324:	01812403          	lw	x8,24(x2)
+ 328:	01412483          	lw	x9,20(x2)
+ 32c:	02010113          	addi	x2,x2,32
+ 330:	00008067          	jalr	x0,0(x1)
