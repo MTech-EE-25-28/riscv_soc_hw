@@ -29,7 +29,7 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 ### Usage
 
 - Use the [Docker 🔗](./docker/readme.md) to build the hex file.
-- Set the hex file path in `instr_mem.v` depending on the execution directory and the testbench.
+- The simulation script automatically picks the hex file based on the testbench name. So make sure to follow the naming convention for testbenches as mentioned in the script. If required modify the script to add more testbenches and corresponding hex files.
 - Run `simulate.sh` for local simulation, add wave flag to use gtkwave to see vcd.
 
     ```
@@ -40,6 +40,12 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 
     ```
         ./simulate.sh tb_pl wave
+    ```
+
+- Run `tests.sh` to run all the testbenches sequentially. This will run the testbenches without waveforms.
+
+    ```
+    ./tests.sh
     ```
 
 ## TODOs
@@ -57,9 +63,9 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
     - [x] Implement mtvec, mepc, mstatus, mcause, mtval at minimum
     - [x] Implement MRET instruction
     - [x] Implement trap handler to handle exceptions and interrupts
-- [ ] AXI-Lite to AXI Full
-- [ ] UART, SPI Integeration with AXI
-- [ ] GPIO Peripheral
+- [x] AXI-Lite to AXI Full
+- [x] UART, SPI Integeration with AXI
+- [x] GPIO Peripheral
 - [ ] Matrix Multiplier
     - [x] Design and implement systolic array matrix multiplier
     - [ ] Integrate with CPU using AXI Full
