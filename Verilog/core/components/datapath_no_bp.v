@@ -18,12 +18,13 @@ module datapath_no_bp (
     input         MemWriteD, JumpD, BranchD,
     output        MemWriteM,
     output  [2:0] funct3M,
-    output [31:0] PCW, ALUResultW, WriteDataW, MaskedReadDataW
+    output [31:0] PCW, ALUResultW, WriteDataW, MaskedReadDataW,
+    input          apb_done
 );
 
 // signal definitions
 // Pipeline control
-wire        ALUStall;
+wire        ALUStall, MemStall;
 wire        StallF,  StallD,  FlushD,  FlushE;
 wire  [1:0] ForwardAE, ForwardBE;
 wire        FetchHold, DecodeHold;
@@ -132,7 +133,7 @@ assign tretD   = retD;
 // Reads happen in Decode (for the CSR read value forwarded to Execute).
 // Writes / trap commits happen on negedge clk, driven by WB-stage trap signals.
 // ivalid: instruction in Execute stage is valid (not flushed).
-wire ivalid_csr = !FlushE && !ALUStall;
+wire ivalid_csr = !FlushE && !ALUStall && !MemStall; // don't re-commit CSR writes during APB stalls
 csr_handler csr (
     clk, reset, ivalid_csr, csrSelE, InstrE[13:12], InstrE[31:20], ALUSrcA, CSRResultE,
     // trap from WB-stage trap_handler
@@ -146,7 +147,7 @@ csr_handler csr (
 // -------------------------------------------------------------------------
 // Execute stage
 pl_reg_e ple (
-    clk, FlushE, ALUStall, ResultSrcD, csrSelD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD,
+    clk, FlushE, ALUStall || MemStall, ResultSrcD, csrSelD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD,
     SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], 1'b0, 32'h0, excDecD, tretD, validD,
     ResultSrcE, csrSelE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, InstrE,
     ImmExtE, PCPlus4E, lAuiPCE, funct3E, , , excDecE, tretE, validE
@@ -180,7 +181,7 @@ wire misAlignLoadE  = misAlignLoad_pre  && !csrSelE && ResultSrcE[0]; // only fo
 wire misAlignStoreE = misAlignStore_pre && MemWriteE;                 // only for actual stores
 
 pl_reg_m plm (
-    clk, reset, ALUStall, PCSrcTrap, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE, BranchE, BranchTakenE, PCTargetE, excDecE, tretE, misAlignLoadE, misAlignStoreE, validE,
+    clk, reset, ALUStall || MemStall, PCSrcTrap, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE, BranchE, BranchTakenE, PCTargetE, excDecE, tretE, misAlignLoadE, misAlignStoreE, validE,
     ResultSrcM, MemWriteM, RegWriteM, ResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM, BranchM, BranchTakenM, PCTargetM, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM, validM
 );
 
@@ -190,7 +191,7 @@ wire MemWriteM_safe = MemWriteM && !memMisAlignStoreM;
 // -------------------------------------------------------------------------
 // Writeback stage
 pl_reg_w plw (
-    clk, reset, PCSrcTrap, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM,
+    clk, reset, PCSrcTrap, 1'b0, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM,
     ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W, excDecW, tretW, memMisAlignLoadW, memMisAlignStoreW
 );
 
@@ -199,7 +200,7 @@ assign exceptionW = {memMisAlignStoreW, memMisAlignLoadW, excDecW[3], excDecW[2]
 
 // Trap handler — sits entirely in Writeback, receives committed exceptions
 trap_handler th (
-    exceptionW, interruptA, tretW, PCW, PCM, validM, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
+    exceptionW, interruptA, tretW, PCW, PCM, PCE, validM, validE, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
     trap_event, trap_pc_next, trap_mstatus_mie, trap_mstatus_mpie, trap_mepc, trap_mcause, trap_mtval, tret_mstatus_mie, tret_mstatus_mpie
 );
 
@@ -226,7 +227,9 @@ mux4 #(32) resultmux (ALUResultW, MaskedReadDataW, PCPlus4W, lAuiPCW, ResultSrcW
 hazard_unit hz (
     clk, reset, InstrD[19:15], InstrD[24:20], InstrE[19:15], InstrE[24:20], InstrE[11:7], RdM, RdW,
     ResultSrcE[0], RegWriteM, RegWriteW_safe, PCSrcE || PCSrcTrap,
-    StallF, StallD, FlushD, FlushE, ForwardAE, ForwardBE
+    ResultM, apb_done, (MemWriteM || (ResultSrcM == 2'b01)), validM,
+    StallF, StallD, FlushD, FlushE, ForwardAE, ForwardBE,
+    MemStall
 );
 
 assign Mem_WrData = AlignedWriteDataM;
