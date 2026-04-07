@@ -16,15 +16,13 @@ module soc (
     output wire        tx
 );
 
-wire [31:0] WriteData, InstrAddr;
+wire [31:0] WriteData;
 assign WriteData_M = WriteData;
-wire [31:0] req_addr, req_wdata;
-wire [31:0] Instr, paddr, prdata;
-wire [3:0]  mem_wea, dmem_wea;
+wire [31:0] Instr;
+wire [3:0]  mem_wea;
 wire [2:0]  funct3;
-wire        imem_wea, pwrite, penable, pslverr, pready;
-wire [4:0]  irq_w, psel;
-wire [31:0] PCF, dmem_rdata, cpu_rdata, pwdata;
+wire [4:0]  irq_w;
+wire [31:0] PCF, dmem_rdata, cpu_rdata;
 
 // apb_done: 1-cycle pulse from axi_interface (state==WAIT) that overrides
 wire apb_done_w;
@@ -37,28 +35,53 @@ wire [31:0] ReadData = (ALUResult >= 32'h0000_2000) ? cpu_rdata : dmem_rdata;
 // instantiate processor
 wire is_mem_access;
 riscv_pl rvpl (
-    clk, rst_n, irq_w, apb_done_w, PCF, Instr, MemWrite, is_mem_access, DataAdr, WriteData, mem_wea,
-    ReadData, funct3, PCW, Result, ALUResult, WriteDataW, ReadDataW
+    .clk(clk), 
+    .reset(rst_n),
+    .interruptA(irq_w), 
+    .apb_done(apb_done_w), 
+    .PC(PCF), 
+    .Instr(Instr), 
+    .MemWriteM(MemWrite), 
+    .is_mem_accessM(is_mem_access), 
+    .Mem_WrAddr(DataAdr), 
+    .Mem_WrData(WriteData), 
+    .wea(mem_wea),
+    .ReadData(ReadData), 
+    .funct3(funct3), 
+    .PCW(PCW), 
+    .Result(Result), 
+    .ALUResultW(ALUResult), 
+    .WriteDataW(WriteDataW), 
+    .ReadDataW(ReadDataW)
 );
 
-// address decoding for memory access
-assign imem_wea = (paddr >= 32'h0000_0000 && paddr < 32'h0000_1000) ? 1'b1 : 1'b0;
-assign dmem_wea = (DataAdr >= 32'h0000_1000 && DataAdr < 32'h0000_2000) ? mem_wea : 4'b0000;
+memory_controller mem_ctrl (
+    .clk(clk),
+    .resetn(rst_n),
 
-assign InstrAddr = imem_wea ? paddr : PCF;
-// instantiate memories
-instr_mem instrmem (clk, imem_wea, InstrAddr, pwdata, Instr);
-data_mem  datamem  (clk, dmem_wea, DataAdr, WriteData, dmem_rdata);
-// happens at Memory stage
-assign req_addr  = (is_mem_access && DataAdr >= 32'h0000_2000) ? DataAdr   : 32'hFFFF_FFFF;
-assign req_wdata = (is_mem_access && DataAdr >= 32'h0000_2000) ? WriteData : 32'hFFFF_FFFF;
+    // CPU side
+    .PCF(PCF),
+    .DataAdr(DataAdr),
+    .WriteData(WriteData),
+    .mem_wea(mem_wea),
+    .MemWrite(MemWrite),
+    .is_mem_access(is_mem_access),
 
-// instantiate APB interface
-axi_interface apb_if (
-    clk, rst_n, clk, rst_n, pready, prdata, pslverr,
-    paddr, psel, penable, pwrite, pwdata,
-    req_addr, req_wdata, MemWrite, apb_done_w, cpu_rdata, irq_w,
-    pwm_out0, pwm_out1, gpio_pad, rx, tx
+    // Outputs to CPU
+    .Instr(Instr),
+    .dmem_rdata(dmem_rdata),
+    .cpu_rdata(cpu_rdata),
+    .apb_done(apb_done_w),
+
+    // IRQs
+    .irq(irq_w),
+
+    // Peripheral pins
+    .pwm_out0(pwm_out0),
+    .pwm_out1(pwm_out1),
+    .gpio_pad(gpio_pad),
+    .rx(rx),
+    .tx(tx)
 );
-
 endmodule
+
