@@ -18,6 +18,7 @@ module datapath (
     output [31:0] ResultW, InstrD,
     input         MemWriteD, JumpD, BranchD,
     output        MemWriteM,
+    output        is_mem_accessM,  // MemWriteM || load: gates APB trigger in soc.v
     output  [2:0] funct3M,
     output [31:0] PCW, ALUResultW, WriteDataW, MaskedReadDataW,
     input          apb_done   // pulsed high by axi_interface when APB transaction completes
@@ -223,6 +224,7 @@ pl_reg_m plm (
 
 // Suppress memory write when store is misaligned (prevent corrupt writes)
 wire MemWriteM_safe = MemWriteM && !memMisAlignStoreM;
+assign is_mem_accessM = MemWriteM || (ResultSrcM == 2'b01);
 
 // -------------------------------------------------------------------------
 // Writeback stage

@@ -20,14 +20,14 @@ reg [DATA_WIDTH-1:0] init_mem [0:MEM_SIZE-1];
 initial begin
     string hex_file;
     integer i;
-    if ($value$plusargs("HEX=%s", hex_file)) begin
-        $readmemh(hex_file, init_mem);
-        for (i = 0; i < MEM_SIZE; i = i + 1) begin
-            data_ram0[i] = init_mem[i][7:0];
-            data_ram1[i] = init_mem[i][15:8];
-            data_ram2[i] = init_mem[i][23:16];
-            data_ram3[i] = init_mem[i][31:24];
-        end
+    if (!$value$plusargs("HEX=%s", hex_file))
+        hex_file = "./docker/bin/sw_matrix_mul.hex";
+    $readmemh(hex_file, init_mem);
+    for (i = 0; i < MEM_SIZE; i = i + 1) begin
+        data_ram0[i] = init_mem[i][7:0];
+        data_ram1[i] = init_mem[i][15:8];
+        data_ram2[i] = init_mem[i][23:16];
+        data_ram3[i] = init_mem[i][31:24];
     end
 end
 

@@ -14,11 +14,11 @@ wire [31:0] Instr, PCF;
 wire [31:0] DataAdr_rv32, WriteData_rv32;
 wire [3:0]  mem_wea, wea;
 wire [2:0]  funct3;
-wire        MemWrite_rv32;
+wire        MemWrite_rv32, is_mem_accessM;
 
 // instantiate processor and memories
 riscv_pl rvpl (
-    clk, reset, interruptA, 1'b1, PCF, Instr, MemWrite_rv32, DataAdr_rv32, WriteData_rv32, wea,
+    clk, reset, interruptA, 1'b1, PCF, Instr, MemWrite_rv32, is_mem_accessM, DataAdr_rv32, WriteData_rv32, wea,
     ReadData, funct3, PC, Result, ALUResultW, WriteDataW, ReadDataW
 );
 instr_mem instrmem (clk, 1'b0, PCF, 32'b0, Instr);

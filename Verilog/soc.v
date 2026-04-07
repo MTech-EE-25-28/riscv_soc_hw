@@ -35,8 +35,9 @@ wire apb_done_w;
 wire [31:0] ReadData = (ALUResult >= 32'h0000_2000) ? cpu_rdata : dmem_rdata;
 
 // instantiate processor
+wire is_mem_access;
 riscv_pl rvpl (
-    clk, rst_n, irq_w, apb_done_w, PCF, Instr, MemWrite, DataAdr, WriteData, mem_wea,
+    clk, rst_n, irq_w, apb_done_w, PCF, Instr, MemWrite, is_mem_access, DataAdr, WriteData, mem_wea,
     ReadData, funct3, PCW, Result, ALUResult, WriteDataW, ReadDataW
 );
 
@@ -49,8 +50,8 @@ assign InstrAddr = imem_wea ? paddr : PCF;
 instr_mem instrmem (clk, imem_wea, InstrAddr, pwdata, Instr);
 data_mem  datamem  (clk, dmem_wea, DataAdr, WriteData, dmem_rdata);
 // happens at Memory stage
-assign req_addr = (DataAdr >= 32'h0000_2000) ? DataAdr : 32'hFFFF_FFFF;
-assign req_wdata = (DataAdr >= 32'h0000_2000) ? WriteData : 32'hFFFF_FFFF;
+assign req_addr  = (is_mem_access && DataAdr >= 32'h0000_2000) ? DataAdr   : 32'hFFFF_FFFF;
+assign req_wdata = (is_mem_access && DataAdr >= 32'h0000_2000) ? WriteData : 32'hFFFF_FFFF;
 
 // instantiate APB interface
 axi_interface apb_if (
