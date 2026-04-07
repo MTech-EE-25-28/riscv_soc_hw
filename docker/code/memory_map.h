@@ -21,11 +21,10 @@
 #define GPIO_GDAT  (*(volatile uint32_t *)(GPIO_BASE + 0x04))
 
 #define MM_BASE    0x00002100
-#define MM_A       (*(volatile uint32_t *)(MM_BASE + 0x00))
-#define MM_B       (*(volatile uint32_t *)(MM_BASE + 0x80))
-#define MM_C       (*(volatile uint32_t *)(MM_BASE + 0x100))
-#define MM_CTRL    (*(volatile uint32_t *)(MM_BASE + 0x180))
-#define MM_STATUS  (*(volatile uint32_t *)(MM_BASE + 0x184))
+#define MM_CTSR    (*(volatile uint32_t *)(MM_BASE + 0x0))
+#define MM_MATA    (*(volatile uint32_t *)(MM_BASE + 0x04))
+#define MM_MATB    (*(volatile uint32_t *)(MM_BASE + 0x44))
+#define MM_MATC    (*(volatile uint32_t *)(MM_BASE + 0x84))
 
 // for testing
 #define TEST_LOC (*(volatile uint32_t *)(0x00001000))

@@ -118,9 +118,9 @@ Disassembly of section .text:
 00000058 <UART_init>:
      ### 
      ### void UART_init() {
-     ###     UART_UBRR = 0x04; // Set baud rate divisor for 115200 baud
+     ###     UART_UBRR = 0x1B; // Set baud rate divisor for 115200 baud
   58:	000027b7          	lui	x15,0x2
-  5c:	00400713          	addi	x14,x0,4
+  5c:	01b00713          	addi	x14,x0,27
   60:	04e7a823          	sw	x14,80(x15) # 2050 <__ram+0x50>
      ###     UART_UCR1 = 0x07; // Enable UART, receiver, transmitter
   64:	00700713          	addi	x14,x0,7
@@ -234,24 +234,25 @@ Disassembly of section .text:
      ###     UART_init();
  140:	             f19ff0ef          	jal	x1,58 <UART_init>
      ###     while (1) {
+     ###         // GPIO_GDAT = 0x01; // Toggle GPIO pin 0
      ###         UART_UTDR = 'N';
  144:	             000027b7          	lui	x15,0x2
      ###         // while (!(UART_USR0 & 0x4));
-     ###         GPIO_GDAT ^= 0x1; // Toggle GPIO pin 0
-     ###         for (i = 0; i < 12500000; i++); // Delay
- 148:	             00bec737          	lui	x14,0xbec
+     ###         GPIO_GDAT ^= 0x01; // Toggle GPIO pin 0
+     ###         for (i = 0; i < 10000000; i++); // Delay
+ 148:	             00989737          	lui	x14,0x989
      ###         UART_UTDR = 'N';
  14c:	             04878613          	addi	x12,x15,72 # 2048 <__ram+0x48>
  150:	             04e00593          	addi	x11,x0,78
-     ###         for (i = 0; i < 12500000; i++); // Delay
- 154:	             c1f70713          	addi	x14,x14,-993 # bebc1f <__ram+0xbe9c1f>
+     ###         for (i = 0; i < 10000000; i++); // Delay
+ 154:	             67f70713          	addi	x14,x14,1663 # 98967f <__ram+0x98767f>
      ###         UART_UTDR = 'N';
  158:	/----------> 00b62023          	sw	x11,0(x12)
-     ###         GPIO_GDAT ^= 0x1; // Toggle GPIO pin 0
+     ###         GPIO_GDAT ^= 0x01; // Toggle GPIO pin 0
  15c:	|            0c47a683          	lw	x13,196(x15)
  160:	|            0016c693          	xori	x13,x13,1
  164:	|            0cd7a223          	sw	x13,196(x15)
-     ###         for (i = 0; i < 12500000; i++); // Delay
+     ###         for (i = 0; i < 10000000; i++); // Delay
  168:	|            00012623          	sw	x0,12(x2)
  16c:	|  /-------> 00c12683          	lw	x13,12(x2)
  170:	|  |  /----- 00d75a63          	bge	x14,x13,184 <main+0x54>
@@ -260,7 +261,7 @@ Disassembly of section .text:
  178:	|  |  |  |   0046f693          	andi	x13,x13,4
  17c:	|  |  |  \-- fe068ce3          	beq	x13,x0,174 <main+0x44>
  180:	\--|--|----- fd9ff06f          	jal	x0,158 <main+0x28>
-     ###         for (i = 0; i < 12500000; i++); // Delay
+     ###         for (i = 0; i < 10000000; i++); // Delay
  184:	   |  \----> 00c12683          	lw	x13,12(x2)
  188:	   |         00168693          	addi	x13,x13,1
  18c:	   |         00d12623          	sw	x13,12(x2)

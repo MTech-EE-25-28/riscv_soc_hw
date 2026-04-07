@@ -9,7 +9,7 @@ void GPIO_init() {
 }
 
 void UART_init() {
-    UART_UBRR = 0x04; // Set baud rate divisor for 115200 baud
+    UART_UBRR = 0x1B; // Set baud rate divisor for 115200 baud
     UART_UCR1 = 0x07; // Enable UART, receiver, transmitter
 }
 
@@ -18,10 +18,11 @@ int main () {
     GPIO_init();
     UART_init();
     while (1) {
+        // GPIO_GDAT = 0x01; // Toggle GPIO pin 0
         UART_UTDR = 'N';
         // while (!(UART_USR0 & 0x4));
-        GPIO_GDAT ^= 0x1; // Toggle GPIO pin 0
-        for (i = 0; i < 12500000; i++); // Delay
+        GPIO_GDAT ^= 0x01; // Toggle GPIO pin 0
+        for (i = 0; i < 10000000; i++); // Delay
         while (!(UART_USR0 & 0x4));
     }
     return 0;

@@ -53,23 +53,17 @@
 
 #endif
 
-// generate local bss
-void *memset(void *dst, int val, unsigned int n) {
-    unsigned char *p = (unsigned char *)dst;
-    for (unsigned int i = 0; i < n; i++) {
-        p[i] = (unsigned char)val;
-    }
-    return dst;
+#if defined(__linux__) || defined(__APPLE__) || defined(__unix__) // host stubs
+
+void uart_init() { }
+void uart_send_str(char *str) { _put_str(str); }
+void uart_send_byte(char c) {  }
+int uart_send_int(int num) {
+    // print_output(num);
+    return 0;
 }
 
-void *memcpy(void *dst, const void *src, unsigned int n) {
-    unsigned char *d = (unsigned char *)dst;
-    const unsigned char *s = (const unsigned char *)src;
-    for (unsigned int i = 0; i < n; i++) {
-        d[i] = s[i];
-    }
-    return dst;
-}
+#else // hardware specific functions
 
 void uart_init() {
     UART_UBRR = 0x04; // Set baud rate divisor for 115200 baud
@@ -112,6 +106,26 @@ int uart_send_int(int num) {
     return index + neg;
 }
 
+// generate local bss
+void *memset(void *dst, int val, unsigned int n) {
+    unsigned char *p = (unsigned char *)dst;
+    for (unsigned int i = 0; i < n; i++) {
+        p[i] = (unsigned char)val;
+    }
+    return dst;
+}
+
+void *memcpy(void *dst, const void *src, unsigned int n) {
+    unsigned char *d = (unsigned char *)dst;
+    const unsigned char *s = (const unsigned char *)src;
+    for (unsigned int i = 0; i < n; i++) {
+        d[i] = s[i];
+    }
+    return dst;
+}
+
+#endif
+
 // Placed in .data (SRAM) — startup copies from flash LMA to SRAM VMA.
 // .rodata (ROM-only) is NOT accessible via lbu on this Harvard-arch CPU.
 static char str_start[] = "Starting matrix multiplication...\n";
@@ -119,26 +133,32 @@ static char str_done[]  = "Matrix multiplication completed. Output:\n";
 
 int main () {
     OUT = 0; CPU_DONE = 0;
-    int A[2][2], B[2][2], C[2][2] = {0};
+    int A[4][4], B[4][4], C[4][4] = {0};
     int i, j, k;
-    A[0][0] = 1; A[0][1] = 2;
-    A[1][0] = 3; A[1][1] = 4;
-    B[0][0] = 5; B[0][1] = 6;
-    B[1][0] = 7; B[1][1] = 8;
+
+    A[0][0] =  1; A[0][1] =  2; A[0][2] =  3; A[0][3] =  4;
+    A[1][0] =  5; A[1][1] =  6; A[1][2] =  7; A[1][3] =  8;
+    A[2][0] =  9; A[2][1] = 10; A[2][2] = 11; A[2][3] = 12;
+    A[3][0] = 13; A[3][1] = 14; A[3][2] = 15; A[3][3] = 16;
+
+    B[0][0] =  1; B[0][1] =  2; B[0][2] =  3; B[0][3] =  4;
+    B[1][0] =  5; B[1][1] =  6; B[1][2] =  7; B[1][3] =  8;
+    B[2][0] =  9; B[2][1] = 10; B[2][2] = 11; B[2][3] = 12;
+    B[3][0] = 13; B[3][1] = 14; B[3][2] = 15; B[3][3] = 16;
 
     uart_init();
     uart_send_str(str_start);
-    for (i = 0; i < 2; i++) {
-        for (j = 0; j < 2; j++) {
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 4; j++) {
             C[i][j] = 0;
-            for (k = 0; k < 2; k++) {
+            for (k = 0; k < 4; k++) {
                 C[i][j] += A[i][k] * B[k][j];
             }
         }
     }
     uart_send_str(str_done);
-    for (i = 0; i < 2; i++) {
-        for (j = 0; j < 2; j++) {
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 4; j++) {
             OUT = C[i][j];
             uart_send_int(C[i][j]);
             uart_send_byte('\n');

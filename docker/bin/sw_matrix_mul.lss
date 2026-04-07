@@ -23,33 +23,33 @@ SYMBOL TABLE:
 00001010 l     O .data	00000023 str_start
 00001034 l     O .data	0000002a str_done
 00000000 l    df *ABS*	00000000 trap_handler.c
-000000a4 g     F .text	00000028 uart_send_str
-000000e8 g     F .text	000000b8 uart_send_int
+00000064 g     F .text	00000028 uart_send_str
+000000a8 g     F .text	000000b8 uart_send_int
 00000800 g       *ABS*	00000000 __flash_size
 00000000 g       .init	00000000 __trap_vector_end
 00000100 g       *ABS*	00000000 __stack_size
 00000000 g       .init	00000000 __init_start
 00000044 g       .text	00000000 __text_start
-00000068 g     F .text	00000024 memcpy
-00000334 g       .data	00000000 __rodata_end
+0000017c g     F .text	00000024 memcpy
+0000044c g       .data	00000000 __rodata_end
 00001060 g       .data	00000000 __bss_end
 000001a0 g     F .text	000000c0 trap_handler
 00001800 g       .riscv.attributes	00000000 _stack_top
-0000008c g     F .text	00000018 uart_init
+0000004c g     F .text	00000018 uart_init
 00000000 g       .init	00000000 _start
 00000000 g       .init	00000000 __trap_vector_start
-00000334 g       .data	00000000 __rodata_start
+0000044c g       .data	00000000 __rodata_start
 00002000 g       *ABS*	00000000 __ram
 0000105e g       .data	00000000 __data_end
 00000044 g       .init	00000000 __init_end
-00000334 g       .text	00000000 __text_end
+0000044c g       .text	00000000 __text_end
 00001060 g       .data	00000000 __bss_start
-0000004c g     F .text	0000001c memset
-00000260 g     F .text	000000d4 main
+00000160 g     F .text	0000001c memset
+00000260 g     F .text	000001ec main
 00001700 g       .heap	00000000 __heap_end
 00000800 g       *ABS*	00000000 __ram_size
 00001060 g       .heap	00000000 __heap_start
-000000cc g     F .text	0000001c uart_send_byte
+0000008c g     F .text	0000001c uart_send_byte
 00000048 g     F .text	00000004 _put_str
 00000000 g       *ABS*	00000000 __flash
 00000044 g     F .text	00000004 _put_value
@@ -121,177 +121,179 @@ Disassembly of section .text:
      ###     void _put_str(char *str) { }
   48:	00008067          	jalr	x0,0(x1)
 
-0000004c <memset>:
-     ### #endif
-     ### 
-     ### // generate local bss
-     ### void *memset(void *dst, int val, unsigned int n) {
-     ###     unsigned char *p = (unsigned char *)dst;
-     ###     for (unsigned int i = 0; i < n; i++) {
-  4c:	       00000793          	addi	x15,x0,0
-  50:	/--/-X 00c79463          	bne	x15,x12,58 <memset+0xc>
-     ###         p[i] = (unsigned char)val;
-     ###     }
-     ###     return dst;
+0000004c <uart_init>:
      ### }
-  54:	|  |   00008067          	jalr	x0,0(x1)
-     ###         p[i] = (unsigned char)val;
-  58:	|  \-> 00f50733          	add	x14,x10,x15
-  5c:	|      00b70023          	sb	x11,0(x14)
-     ###     for (unsigned int i = 0; i < n; i++) {
-  60:	|      00178793          	addi	x15,x15,1
-  64:	\----- fedff06f          	jal	x0,50 <memset+0x4>
-
-00000068 <memcpy>:
      ### 
-     ### void *memcpy(void *dst, const void *src, unsigned int n) {
-     ###     unsigned char *d = (unsigned char *)dst;
-     ###     const unsigned char *s = (const unsigned char *)src;
-     ###     for (unsigned int i = 0; i < n; i++) {
-  68:	       00000793          	addi	x15,x0,0
-  6c:	/--/-X 00c79463          	bne	x15,x12,74 <memcpy+0xc>
-     ###         d[i] = s[i];
-     ###     }
-     ###     return dst;
-     ### }
-  70:	|  |   00008067          	jalr	x0,0(x1)
-     ###         d[i] = s[i];
-  74:	|  \-> 00f58733          	add	x14,x11,x15
-  78:	|      00074683          	lbu	x13,0(x14)
-  7c:	|      00f50733          	add	x14,x10,x15
-     ###     for (unsigned int i = 0; i < n; i++) {
-  80:	|      00178793          	addi	x15,x15,1
-     ###         d[i] = s[i];
-  84:	|      00d70023          	sb	x13,0(x14)
-     ###     for (unsigned int i = 0; i < n; i++) {
-  88:	\----- fe5ff06f          	jal	x0,6c <memcpy+0x4>
-
-0000008c <uart_init>:
+     ### #else // hardware specific functions
      ### 
      ### void uart_init() {
      ###     UART_UBRR = 0x04; // Set baud rate divisor for 115200 baud
-  8c:	000027b7          	lui	x15,0x2
-  90:	00400713          	addi	x14,x0,4
-  94:	04e7a823          	sw	x14,80(x15) # 2050 <__ram+0x50>
+  4c:	000027b7          	lui	x15,0x2
+  50:	00400713          	addi	x14,x0,4
+  54:	04e7a823          	sw	x14,80(x15) # 2050 <__ram+0x50>
      ###     UART_UCR1 = 0x07; // Enable UART, receiver, transmitter
-  98:	00700713          	addi	x14,x0,7
-  9c:	04e7a623          	sw	x14,76(x15)
+  58:	00700713          	addi	x14,x0,7
+  5c:	04e7a623          	sw	x14,76(x15)
      ### }
-  a0:	00008067          	jalr	x0,0(x1)
+  60:	00008067          	jalr	x0,0(x1)
 
-000000a4 <uart_send_str>:
+00000064 <uart_send_str>:
      ### 
      ### void uart_send_str(char *str) {
      ###     while (*str) {
      ###         // while (!(UART_USR0 & 0x2)); // Wait until TXE (transmit buffer empty) is set
      ###         UART_UTDR = *str++; // Send the next character
-  a4:	       00002737          	lui	x14,0x2
+  64:	       00002737          	lui	x14,0x2
      ###     while (*str) {
-  a8:	/----> 00054783          	lbu	x15,0(x10)
-  ac:	|  /-- 00079463          	bne	x15,x0,b4 <uart_send_str+0x10>
+  68:	/----> 00054783          	lbu	x15,0(x10)
+  6c:	|  /-- 00079463          	bne	x15,x0,74 <uart_send_str+0x10>
      ###         while (!(UART_USR0 & 0x4)); // Wait until TC (transmission complete) is set
      ###     }
      ### }
-  b0:	|  |   00008067          	jalr	x0,0(x1)
+  70:	|  |   00008067          	jalr	x0,0(x1)
      ###         UART_UTDR = *str++; // Send the next character
-  b4:	|  \-> 00150513          	addi	x10,x10,1
-  b8:	|      04f72423          	sw	x15,72(x14) # 2048 <__ram+0x48>
+  74:	|  \-> 00150513          	addi	x10,x10,1
+  78:	|      04f72423          	sw	x15,72(x14) # 2048 <__ram+0x48>
      ###         while (!(UART_USR0 & 0x4)); // Wait until TC (transmission complete) is set
-  bc:	|  /-> 04072783          	lw	x15,64(x14)
-  c0:	|  |   0047f793          	andi	x15,x15,4
-  c4:	|  \-- fe078ce3          	beq	x15,x0,bc <uart_send_str+0x18>
-  c8:	\----- fe1ff06f          	jal	x0,a8 <uart_send_str+0x4>
+  7c:	|  /-> 04072783          	lw	x15,64(x14)
+  80:	|  |   0047f793          	andi	x15,x15,4
+  84:	|  \-- fe078ce3          	beq	x15,x0,7c <uart_send_str+0x18>
+  88:	\----- fe1ff06f          	jal	x0,68 <uart_send_str+0x4>
 
-000000cc <uart_send_byte>:
+0000008c <uart_send_byte>:
      ### 
      ### void uart_send_byte(char c) {
      ###     UART_UTDR = c;
-  cc:	    000027b7          	lui	x15,0x2
-  d0:	    04a7a423          	sw	x10,72(x15) # 2048 <__ram+0x48>
+  8c:	    000027b7          	lui	x15,0x2
+  90:	    04a7a423          	sw	x10,72(x15) # 2048 <__ram+0x48>
      ###     while (!(UART_USR0 & 0x4)); // Wait until TC is set
-  d4:	    00002737          	lui	x14,0x2
-  d8:	/-> 04072783          	lw	x15,64(x14) # 2040 <__ram+0x40>
-  dc:	|   0047f793          	andi	x15,x15,4
-  e0:	\-- fe078ce3          	beq	x15,x0,d8 <uart_send_byte+0xc>
+  94:	    00002737          	lui	x14,0x2
+  98:	/-> 04072783          	lw	x15,64(x14) # 2040 <__ram+0x40>
+  9c:	|   0047f793          	andi	x15,x15,4
+  a0:	\-- fe078ce3          	beq	x15,x0,98 <uart_send_byte+0xc>
      ### }
-  e4:	    00008067          	jalr	x0,0(x1)
+  a4:	    00008067          	jalr	x0,0(x1)
 
-000000e8 <uart_send_int>:
+000000a8 <uart_send_int>:
      ### 
      ### int uart_send_int(int num) {
-  e8:	       fc010113          	addi	x2,x2,-64
-  ec:	       02112e23          	sw	x1,60(x2)
-  f0:	       02812c23          	sw	x8,56(x2)
-  f4:	       02912a23          	sw	x9,52(x2)
-  f8:	       03212823          	sw	x18,48(x2)
-  fc:	       03312623          	sw	x19,44(x2)
- 100:	       03412423          	sw	x20,40(x2)
+  a8:	       fc010113          	addi	x2,x2,-64
+  ac:	       02112e23          	sw	x1,60(x2)
+  b0:	       02812c23          	sw	x8,56(x2)
+  b4:	       02912a23          	sw	x9,52(x2)
+  b8:	       03212823          	sw	x18,48(x2)
+  bc:	       03312623          	sw	x19,44(x2)
+  c0:	       03412423          	sw	x20,40(x2)
      ###     if (num == 0) {
- 104:	   /-- 02051863          	bne	x10,x0,134 <__stack_size+0x34>
+  c4:	   /-- 02051863          	bne	x10,x0,f4 <uart_send_int+0x4c>
      ###         uart_send_byte('0');
- 108:	   |   03000513          	addi	x10,x0,48
- 10c:	   |   fc1ff0ef          	jal	x1,cc <uart_send_byte>
+  c8:	   |   03000513          	addi	x10,x0,48
+  cc:	   |   fc1ff0ef          	jal	x1,8c <uart_send_byte>
      ###         return 1;
- 110:	   |   00100513          	addi	x10,x0,1
+  d0:	   |   00100513          	addi	x10,x0,1
      ###     }
      ###     for (int i = index - 1; i >= 0; i--) {
      ###         uart_send_byte(buffer[i]); // send directly — no rodata pointer
      ###     }
      ###     return index + neg;
      ### }
- 114:	/--|-> 03c12083          	lw	x1,60(x2)
- 118:	|  |   03812403          	lw	x8,56(x2)
- 11c:	|  |   03412483          	lw	x9,52(x2)
- 120:	|  |   03012903          	lw	x18,48(x2)
- 124:	|  |   02c12983          	lw	x19,44(x2)
- 128:	|  |   02812a03          	lw	x20,40(x2)
- 12c:	|  |   04010113          	addi	x2,x2,64
- 130:	|  |   00008067          	jalr	x0,0(x1)
- 134:	|  \-> 00050413          	addi	x8,x10,0
+  d4:	/--|-> 03c12083          	lw	x1,60(x2)
+  d8:	|  |   03812403          	lw	x8,56(x2)
+  dc:	|  |   03412483          	lw	x9,52(x2)
+  e0:	|  |   03012903          	lw	x18,48(x2)
+  e4:	|  |   02c12983          	lw	x19,44(x2)
+  e8:	|  |   02812a03          	lw	x20,40(x2)
+  ec:	|  |   04010113          	addi	x2,x2,64
+  f0:	|  |   00008067          	jalr	x0,0(x1)
+  f4:	|  \-> 00050413          	addi	x8,x10,0
      ###     int neg = 0;
- 138:	|      00000993          	addi	x19,x0,0
+  f8:	|      00000993          	addi	x19,x0,0
      ###     if (num < 0) {
- 13c:	|  /-- 00055a63          	bge	x10,x0,150 <__stack_size+0x50>
+  fc:	|  /-- 00055a63          	bge	x10,x0,110 <__stack_size+0x10>
      ###         uart_send_byte('-');
- 140:	|  |   02d00513          	addi	x10,x0,45
- 144:	|  |   f89ff0ef          	jal	x1,cc <uart_send_byte>
+ 100:	|  |   02d00513          	addi	x10,x0,45
+ 104:	|  |   f89ff0ef          	jal	x1,8c <uart_send_byte>
      ###         num = -num;
- 148:	|  |   40800433          	sub	x8,x0,x8
+ 108:	|  |   40800433          	sub	x8,x0,x8
      ###         neg = 1;
- 14c:	|  |   00100993          	addi	x19,x0,1
- 150:	|  \-> 00c10793          	addi	x15,x2,12
+ 10c:	|  |   00100993          	addi	x19,x0,1
+ 110:	|  \-> 00c10793          	addi	x15,x2,12
      ###     int index = 0;
- 154:	|      00000493          	addi	x9,x0,0
- 158:	|      00078a13          	addi	x20,x15,0
+ 114:	|      00000493          	addi	x9,x0,0
+ 118:	|      00078a13          	addi	x20,x15,0
      ###         buffer[index++] = '0' + num % 10;
- 15c:	|      00a00693          	addi	x13,x0,10
- 160:	|  /-> 02d46733          	rem	x14,x8,x13
- 164:	|  |   00048913          	addi	x18,x9,0
+ 11c:	|      00a00693          	addi	x13,x0,10
+ 120:	|  /-> 02d46733          	rem	x14,x8,x13
+ 124:	|  |   00048913          	addi	x18,x9,0
      ###     while (num > 0) {
- 168:	|  |   00178793          	addi	x15,x15,1
+ 128:	|  |   00178793          	addi	x15,x15,1
      ###         buffer[index++] = '0' + num % 10;
- 16c:	|  |   00148493          	addi	x9,x9,1
+ 12c:	|  |   00148493          	addi	x9,x9,1
      ###         num /= 10;
- 170:	|  |   02d44433          	div	x8,x8,x13
+ 130:	|  |   02d44433          	div	x8,x8,x13
      ###         buffer[index++] = '0' + num % 10;
- 174:	|  |   03070713          	addi	x14,x14,48
- 178:	|  |   fee78fa3          	sb	x14,-1(x15)
+ 134:	|  |   03070713          	addi	x14,x14,48
+ 138:	|  |   fee78fa3          	sb	x14,-1(x15)
      ###     while (num > 0) {
- 17c:	|  \-- fe0412e3          	bne	x8,x0,160 <__stack_size+0x60>
+ 13c:	|  \-- fe0412e3          	bne	x8,x0,120 <__stack_size+0x20>
      ###     for (int i = index - 1; i >= 0; i--) {
- 180:	|      fff00413          	addi	x8,x0,-1
+ 140:	|      fff00413          	addi	x8,x0,-1
      ###         uart_send_byte(buffer[i]); // send directly — no rodata pointer
- 184:	|  /-> 012a07b3          	add	x15,x20,x18
- 188:	|  |   0007c503          	lbu	x10,0(x15)
+ 144:	|  /-> 012a07b3          	add	x15,x20,x18
+ 148:	|  |   0007c503          	lbu	x10,0(x15)
      ###     for (int i = index - 1; i >= 0; i--) {
- 18c:	|  |   fff90913          	addi	x18,x18,-1
+ 14c:	|  |   fff90913          	addi	x18,x18,-1
      ###         uart_send_byte(buffer[i]); // send directly — no rodata pointer
- 190:	|  |   f3dff0ef          	jal	x1,cc <uart_send_byte>
+ 150:	|  |   f3dff0ef          	jal	x1,8c <uart_send_byte>
      ###     for (int i = index - 1; i >= 0; i--) {
- 194:	|  \-- fe8918e3          	bne	x18,x8,184 <__stack_size+0x84>
+ 154:	|  \-- fe8918e3          	bne	x18,x8,144 <__stack_size+0x44>
      ###     return index + neg;
- 198:	|      01348533          	add	x10,x9,x19
- 19c:	\----- f79ff06f          	jal	x0,114 <__stack_size+0x14>
+ 158:	|      01348533          	add	x10,x9,x19
+ 15c:	\----- f79ff06f          	jal	x0,d4 <uart_send_int+0x2c>
+
+00000160 <memset>:
+     ### 
+     ### // generate local bss
+     ### void *memset(void *dst, int val, unsigned int n) {
+     ###     unsigned char *p = (unsigned char *)dst;
+     ###     for (unsigned int i = 0; i < n; i++) {
+ 160:	       00000793          	addi	x15,x0,0
+ 164:	/--/-X 00c79463          	bne	x15,x12,16c <memset+0xc>
+     ###         p[i] = (unsigned char)val;
+     ###     }
+     ###     return dst;
+     ### }
+ 168:	|  |   00008067          	jalr	x0,0(x1)
+     ###         p[i] = (unsigned char)val;
+ 16c:	|  \-> 00f50733          	add	x14,x10,x15
+ 170:	|      00b70023          	sb	x11,0(x14)
+     ###     for (unsigned int i = 0; i < n; i++) {
+ 174:	|      00178793          	addi	x15,x15,1
+ 178:	\----- fedff06f          	jal	x0,164 <memset+0x4>
+
+0000017c <memcpy>:
+     ### 
+     ### void *memcpy(void *dst, const void *src, unsigned int n) {
+     ###     unsigned char *d = (unsigned char *)dst;
+     ###     const unsigned char *s = (const unsigned char *)src;
+     ###     for (unsigned int i = 0; i < n; i++) {
+ 17c:	       00000793          	addi	x15,x0,0
+ 180:	/--/-X 00c79463          	bne	x15,x12,188 <memcpy+0xc>
+     ###         d[i] = s[i];
+     ###     }
+     ###     return dst;
+     ### }
+ 184:	|  |   00008067          	jalr	x0,0(x1)
+     ###         d[i] = s[i];
+ 188:	|  \-> 00f58733          	add	x14,x11,x15
+ 18c:	|      00074683          	lbu	x13,0(x14)
+ 190:	|      00f50733          	add	x14,x10,x15
+     ###     for (unsigned int i = 0; i < n; i++) {
+ 194:	|      00178793          	addi	x15,x15,1
+     ###         d[i] = s[i];
+ 198:	|      00d70023          	sb	x13,0(x14)
+     ###     for (unsigned int i = 0; i < n; i++) {
+ 19c:	\----- fe5ff06f          	jal	x0,180 <memcpy+0x4>
 
 000001a0 <trap_handler>:
      ### 
@@ -394,101 +396,204 @@ Disassembly of section .text:
      ### static char str_done[]  = "Matrix multiplication completed. Output:\n";
      ### 
      ### int main () {
- 260:	fe010113          	addi	x2,x2,-32
- 264:	00112e23          	sw	x1,28(x2)
- 268:	00812c23          	sw	x8,24(x2)
- 26c:	00912a23          	sw	x9,20(x2)
+ 260:	          f2010113          	addi	x2,x2,-224
+ 264:	          0c112e23          	sw	x1,220(x2)
+ 268:	          0c812c23          	sw	x8,216(x2)
+ 26c:	          0c912a23          	sw	x9,212(x2)
      ###     OUT = 0; CPU_DONE = 0;
- 270:	00001437          	lui	x8,0x1
- 274:	00042223          	sw	x0,4(x8) # 1004 <__flash_size+0x804>
- 278:	00040423          	sb	x0,8(x8)
-     ###     A[0][0] = 1; A[0][1] = 2;
-     ###     A[1][0] = 3; A[1][1] = 4;
-     ###     B[0][0] = 5; B[0][1] = 6;
-     ###     B[1][0] = 7; B[1][1] = 8;
+ 270:	          000017b7          	lui	x15,0x1
+     ### int main () {
+ 274:	          0d212823          	sw	x18,208(x2)
+ 278:	          0d312623          	sw	x19,204(x2)
+ 27c:	          0d412423          	sw	x20,200(x2)
+     ###     OUT = 0; CPU_DONE = 0;
+ 280:	          0007a223          	sw	x0,4(x15) # 1004 <__flash_size+0x804>
+ 284:	          00078423          	sb	x0,8(x15)
+     ###     int A[4][4], B[4][4], C[4][4] = {0};
+ 288:	          04000613          	addi	x12,x0,64
+ 28c:	          00000593          	addi	x11,x0,0
+ 290:	          08010513          	addi	x10,x2,128
+ 294:	          ecdff0ef          	jal	x1,160 <memset>
+     ###     int i, j, k;
+     ### 
+     ###     A[0][0] =  1; A[0][1] =  2; A[0][2] =  3; A[0][3] =  4;
+     ###     A[1][0] =  5; A[1][1] =  6; A[1][2] =  7; A[1][3] =  8;
+ 298:	          00600e93          	addi	x29,x0,6
+ 29c:	          00700e13          	addi	x28,x0,7
+ 2a0:	          00800313          	addi	x6,x0,8
+     ###     A[2][0] =  9; A[2][1] = 10; A[2][2] = 11; A[2][3] = 12;
+     ###     A[3][0] = 13; A[3][1] = 14; A[3][2] = 15; A[3][3] = 16;
+ 2a4:	          01000793          	addi	x15,x0,16
+     ###     A[0][0] =  1; A[0][1] =  2; A[0][2] =  3; A[0][3] =  4;
+ 2a8:	          00200393          	addi	x7,x0,2
+ 2ac:	          00300293          	addi	x5,x0,3
+ 2b0:	          00400f93          	addi	x31,x0,4
+     ###     A[1][0] =  5; A[1][1] =  6; A[1][2] =  7; A[1][3] =  8;
+ 2b4:	          00500f13          	addi	x30,x0,5
+     ###     A[2][0] =  9; A[2][1] = 10; A[2][2] = 11; A[2][3] = 12;
+ 2b8:	          00900893          	addi	x17,x0,9
+ 2bc:	          00a00813          	addi	x16,x0,10
+ 2c0:	          00b00513          	addi	x10,x0,11
+ 2c4:	          00c00593          	addi	x11,x0,12
+     ###     A[3][0] = 13; A[3][1] = 14; A[3][2] = 15; A[3][3] = 16;
+ 2c8:	          00d00613          	addi	x12,x0,13
+ 2cc:	          00e00693          	addi	x13,x0,14
+ 2d0:	          00f00713          	addi	x14,x0,15
+     ###     A[0][0] =  1; A[0][1] =  2; A[0][2] =  3; A[0][3] =  4;
+ 2d4:	          00100413          	addi	x8,x0,1
+     ###     A[1][0] =  5; A[1][1] =  6; A[1][2] =  7; A[1][3] =  8;
+ 2d8:	          01d12a23          	sw	x29,20(x2)
+ 2dc:	          01c12c23          	sw	x28,24(x2)
+ 2e0:	          00612e23          	sw	x6,28(x2)
+     ###     A[3][0] = 13; A[3][1] = 14; A[3][2] = 15; A[3][3] = 16;
+ 2e4:	          02f12e23          	sw	x15,60(x2)
+     ### 
+     ###     B[0][0] =  1; B[0][1] =  2; B[0][2] =  3; B[0][3] =  4;
+     ###     B[1][0] =  5; B[1][1] =  6; B[1][2] =  7; B[1][3] =  8;
+ 2e8:	          05d12a23          	sw	x29,84(x2)
+ 2ec:	          05c12c23          	sw	x28,88(x2)
+ 2f0:	          04612e23          	sw	x6,92(x2)
+     ###     B[2][0] =  9; B[2][1] = 10; B[2][2] = 11; B[2][3] = 12;
+     ###     B[3][0] = 13; B[3][1] = 14; B[3][2] = 15; B[3][3] = 16;
+ 2f4:	          06f12e23          	sw	x15,124(x2)
+     ###     A[0][0] =  1; A[0][1] =  2; A[0][2] =  3; A[0][3] =  4;
+ 2f8:	          00712223          	sw	x7,4(x2)
+ 2fc:	          00512423          	sw	x5,8(x2)
+ 300:	          01f12623          	sw	x31,12(x2)
+     ###     A[1][0] =  5; A[1][1] =  6; A[1][2] =  7; A[1][3] =  8;
+ 304:	          01e12823          	sw	x30,16(x2)
+     ###     A[2][0] =  9; A[2][1] = 10; A[2][2] = 11; A[2][3] = 12;
+ 308:	          03112023          	sw	x17,32(x2)
+ 30c:	          03012223          	sw	x16,36(x2)
+ 310:	          02a12423          	sw	x10,40(x2)
+ 314:	          02b12623          	sw	x11,44(x2)
+     ###     A[3][0] = 13; A[3][1] = 14; A[3][2] = 15; A[3][3] = 16;
+ 318:	          02c12823          	sw	x12,48(x2)
+ 31c:	          02d12a23          	sw	x13,52(x2)
+ 320:	          02e12c23          	sw	x14,56(x2)
+     ###     B[0][0] =  1; B[0][1] =  2; B[0][2] =  3; B[0][3] =  4;
+ 324:	          04712223          	sw	x7,68(x2)
+ 328:	          04512423          	sw	x5,72(x2)
+ 32c:	          05f12623          	sw	x31,76(x2)
+     ###     B[1][0] =  5; B[1][1] =  6; B[1][2] =  7; B[1][3] =  8;
+ 330:	          05e12823          	sw	x30,80(x2)
+     ###     B[2][0] =  9; B[2][1] = 10; B[2][2] = 11; B[2][3] = 12;
+ 334:	          07112023          	sw	x17,96(x2)
+ 338:	          07012223          	sw	x16,100(x2)
+ 33c:	          06a12423          	sw	x10,104(x2)
+ 340:	          06b12623          	sw	x11,108(x2)
+     ###     B[3][0] = 13; B[3][1] = 14; B[3][2] = 15; B[3][3] = 16;
+ 344:	          06c12823          	sw	x12,112(x2)
+ 348:	          06d12a23          	sw	x13,116(x2)
+ 34c:	          06e12c23          	sw	x14,120(x2)
+     ###     A[0][0] =  1; A[0][1] =  2; A[0][2] =  3; A[0][3] =  4;
+ 350:	          00812023          	sw	x8,0(x2)
+     ###     B[0][0] =  1; B[0][1] =  2; B[0][2] =  3; B[0][3] =  4;
+ 354:	          04812023          	sw	x8,64(x2)
      ### 
      ###     uart_init();
- 27c:	e11ff0ef          	jal	x1,8c <uart_init>
      ###     uart_send_str(str_start);
- 280:	00001537          	lui	x10,0x1
- 284:	01050493          	addi	x9,x10,16 # 1010 <str_start>
- 288:	01050513          	addi	x10,x10,16
- 28c:	e19ff0ef          	jal	x1,a4 <uart_send_str>
-     ###     for (i = 0; i < 2; i++) {
-     ###         for (j = 0; j < 2; j++) {
+ 358:	          000014b7          	lui	x9,0x1
+     ###     uart_init();
+ 35c:	          cf1ff0ef          	jal	x1,4c <uart_init>
+     ###     uart_send_str(str_start);
+ 360:	          01048513          	addi	x10,x9,16 # 1010 <str_start>
+ 364:	          d01ff0ef          	jal	x1,64 <uart_send_str>
+ 368:	          00000793          	addi	x15,x0,0
+     ###     for (i = 0; i < 4; i++) {
+     ###         for (j = 0; j < 4; j++) {
      ###             C[i][j] = 0;
-     ###             for (k = 0; k < 2; k++) {
+     ###             for (k = 0; k < 4; k++) {
+ 36c:	          00400313          	addi	x6,x0,4
+     ###         for (j = 0; j < 4; j++) {
+ 370:	          01000e13          	addi	x28,x0,16
+     ###     for (i = 0; i < 4; i++) {
+ 374:	          04000e93          	addi	x29,x0,64
+     ###         for (j = 0; j < 4; j++) {
+ 378:	/-------> 08010693          	addi	x13,x2,128
+     ### int main () {
+ 37c:	|         00000713          	addi	x14,x0,0
+ 380:	|         00f688b3          	add	x17,x13,x15
+     ###             for (k = 0; k < 4; k++) {
+ 384:	|  /----> 04010693          	addi	x13,x2,64
+ 388:	|  |      00e685b3          	add	x11,x13,x14
+ 38c:	|  |      00f10533          	add	x10,x2,x15
+     ### int main () {
+ 390:	|  |      00000693          	addi	x13,x0,0
+     ###             for (k = 0; k < 4; k++) {
+ 394:	|  |      00000613          	addi	x12,x0,0
      ###                 C[i][j] += A[i][k] * B[k][j];
- 290:	01600793          	addi	x15,x0,22
- 294:	00f12223          	sw	x15,4(x2)
- 298:	02b00793          	addi	x15,x0,43
- 29c:	00f12423          	sw	x15,8(x2)
+ 398:	|  |  /-> 00052803          	lw	x16,0(x10)
+ 39c:	|  |  |   0005af03          	lw	x30,0(x11)
+     ###             for (k = 0; k < 4; k++) {
+ 3a0:	|  |  |   00160613          	addi	x12,x12,1
+ 3a4:	|  |  |   00450513          	addi	x10,x10,4
+     ###                 C[i][j] += A[i][k] * B[k][j];
+ 3a8:	|  |  |   03e80833          	mul	x16,x16,x30
+     ###             for (k = 0; k < 4; k++) {
+ 3ac:	|  |  |   01058593          	addi	x11,x11,16
+     ###                 C[i][j] += A[i][k] * B[k][j];
+ 3b0:	|  |  |   010686b3          	add	x13,x13,x16
+     ###             for (k = 0; k < 4; k++) {
+ 3b4:	|  |  \-- fe6612e3          	bne	x12,x6,398 <main+0x138>
+ 3b8:	|  |      00e88633          	add	x12,x17,x14
+ 3bc:	|  |      00d62023          	sw	x13,0(x12)
+     ###         for (j = 0; j < 4; j++) {
+ 3c0:	|  |      00470713          	addi	x14,x14,4
+ 3c4:	|  |      08010413          	addi	x8,x2,128
+ 3c8:	|  \----- fbc71ee3          	bne	x14,x28,384 <main+0x124>
+     ###     for (i = 0; i < 4; i++) {
+ 3cc:	|         01078793          	addi	x15,x15,16
+ 3d0:	\-------- fbd794e3          	bne	x15,x29,378 <main+0x118>
      ###             }
      ###         }
      ###     }
      ###     uart_send_str(str_done);
- 2a0:	02448513          	addi	x10,x9,36
-     ###                 C[i][j] += A[i][k] * B[k][j];
- 2a4:	03200793          	addi	x15,x0,50
- 2a8:	00f12623          	sw	x15,12(x2)
-     ###     uart_send_str(str_done);
- 2ac:	df9ff0ef          	jal	x1,a4 <uart_send_str>
-     ###     for (i = 0; i < 2; i++) {
-     ###         for (j = 0; j < 2; j++) {
+ 3d4:	          01048513          	addi	x10,x9,16
+ 3d8:	          02450513          	addi	x10,x10,36
+ 3dc:	          c89ff0ef          	jal	x1,64 <uart_send_str>
+     ###     for (i = 0; i < 4; i++) {
+     ###         for (j = 0; j < 4; j++) {
      ###             OUT = C[i][j];
- 2b0:	01300793          	addi	x15,x0,19
- 2b4:	00f42223          	sw	x15,4(x8)
+ 3e0:	          000014b7          	lui	x9,0x1
+     ###         for (j = 0; j < 4; j++) {
+ 3e4:	          00400a13          	addi	x20,x0,4
+     ###     uart_send_str(str_start);
+ 3e8:	   /----> 00040993          	addi	x19,x8,0
+     ###         for (j = 0; j < 4; j++) {
+ 3ec:	   |      00000913          	addi	x18,x0,0
+     ###             OUT = C[i][j];
+ 3f0:	   |  /-> 0009a503          	lw	x10,0(x19)
+     ###         for (j = 0; j < 4; j++) {
+ 3f4:	   |  |   00190913          	addi	x18,x18,1
+ 3f8:	   |  |   00498993          	addi	x19,x19,4
+     ###             OUT = C[i][j];
+ 3fc:	   |  |   00a4a223          	sw	x10,4(x9) # 1004 <__flash_size+0x804>
      ###             uart_send_int(C[i][j]);
- 2b8:	01300513          	addi	x10,x0,19
- 2bc:	e2dff0ef          	jal	x1,e8 <uart_send_int>
+ 400:	   |  |   ca9ff0ef          	jal	x1,a8 <uart_send_int>
      ###             uart_send_byte('\n');
- 2c0:	00a00513          	addi	x10,x0,10
- 2c4:	e09ff0ef          	jal	x1,cc <uart_send_byte>
-     ###             OUT = C[i][j];
- 2c8:	00412503          	lw	x10,4(x2)
+ 404:	   |  |   00a00513          	addi	x10,x0,10
+ 408:	   |  |   c85ff0ef          	jal	x1,8c <uart_send_byte>
      ###             _put_value(OUT);
- 2cc:	00442783          	lw	x15,4(x8)
-     ###             OUT = C[i][j];
- 2d0:	00a42223          	sw	x10,4(x8)
-     ###             uart_send_int(C[i][j]);
- 2d4:	e15ff0ef          	jal	x1,e8 <uart_send_int>
-     ###             uart_send_byte('\n');
- 2d8:	00a00513          	addi	x10,x0,10
- 2dc:	df1ff0ef          	jal	x1,cc <uart_send_byte>
-     ###             OUT = C[i][j];
- 2e0:	00812503          	lw	x10,8(x2)
-     ###             _put_value(OUT);
- 2e4:	00442783          	lw	x15,4(x8)
-     ###             OUT = C[i][j];
- 2e8:	00a42223          	sw	x10,4(x8)
-     ###             uart_send_int(C[i][j]);
- 2ec:	dfdff0ef          	jal	x1,e8 <uart_send_int>
-     ###             uart_send_byte('\n');
- 2f0:	00a00513          	addi	x10,x0,10
- 2f4:	dd9ff0ef          	jal	x1,cc <uart_send_byte>
-     ###             OUT = C[i][j];
- 2f8:	00c12503          	lw	x10,12(x2)
-     ###             _put_value(OUT);
- 2fc:	00442783          	lw	x15,4(x8)
-     ###             OUT = C[i][j];
- 300:	00a42223          	sw	x10,4(x8)
-     ###             uart_send_int(C[i][j]);
- 304:	de5ff0ef          	jal	x1,e8 <uart_send_int>
-     ###             uart_send_byte('\n');
- 308:	00a00513          	addi	x10,x0,10
- 30c:	dc1ff0ef          	jal	x1,cc <uart_send_byte>
-     ###             _put_value(OUT);
- 310:	00442783          	lw	x15,4(x8)
+ 40c:	   |  |   0044a783          	lw	x15,4(x9)
+     ###         for (j = 0; j < 4; j++) {
+ 410:	   |  \-- ff4910e3          	bne	x18,x20,3f0 <main+0x190>
+     ###     for (i = 0; i < 4; i++) {
+ 414:	   |      01040413          	addi	x8,x8,16
+ 418:	   |      0c010793          	addi	x15,x2,192
+ 41c:	   \----- fc8796e3          	bne	x15,x8,3e8 <main+0x188>
      ###         }
      ###     }
      ###     CPU_DONE = 1;
+ 420:	          00100793          	addi	x15,x0,1
+ 424:	          00f48423          	sb	x15,8(x9)
      ###     return 0;
- 314:	00000513          	addi	x10,x0,0
-     ###     CPU_DONE = 1;
- 318:	00100793          	addi	x15,x0,1
- 31c:	00f40423          	sb	x15,8(x8)
- 320:	01c12083          	lw	x1,28(x2)
- 324:	01812403          	lw	x8,24(x2)
- 328:	01412483          	lw	x9,20(x2)
- 32c:	02010113          	addi	x2,x2,32
- 330:	00008067          	jalr	x0,0(x1)
+ 428:	          0dc12083          	lw	x1,220(x2)
+ 42c:	          0d812403          	lw	x8,216(x2)
+ 430:	          0d412483          	lw	x9,212(x2)
+ 434:	          0d012903          	lw	x18,208(x2)
+ 438:	          0cc12983          	lw	x19,204(x2)
+ 43c:	          0c812a03          	lw	x20,200(x2)
+ 440:	          00000513          	addi	x10,x0,0
+ 444:	          0e010113          	addi	x2,x2,224
+ 448:	          00008067          	jalr	x0,0(x1)
