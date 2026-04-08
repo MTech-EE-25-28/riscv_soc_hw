@@ -7,6 +7,8 @@ reg pclk, presetn;
 wire pwm_out0, pwm_out1;
 wire [31:0] gpio_pad;
 wire tx, rx;
+wire [3:0] qspi_io;
+wire qspi_sck, qspi_cs_n;
 assign rx = tx;
 
 soc_top dut (
@@ -14,7 +16,8 @@ soc_top dut (
     .pclk(pclk), .presetn(presetn),
     .pwm_out0(pwm_out0), .pwm_out1(pwm_out1),
     .gpio_pad(gpio_pad),
-    .rx(rx), .tx(tx)
+    .rx(rx), .tx(tx),
+    .qspi_io(qspi_io), .qspi_sck(qspi_sck), .qspi_cs_n(qspi_cs_n)
 );
 
 always #10 clk = ~clk;

@@ -10,14 +10,16 @@ wire        MemWrite, pwm_out0, pwm_out1;
 // peripheral interfaces
 wire [31:0] gpio_pad;
 wire        tx, rx;
+wire [3:0]  qspi_io;
+wire        qspi_sck, qspi_cs_n;
+
 assign rx = tx; // UART loopback: tx idles high, so rx never floats
 
 soc dut (
     clk, reset, pclk, presetn,
     PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData, MemWrite,
-    pwm_out0, pwm_out1, gpio_pad, rx, tx
+    pwm_out0, pwm_out1, gpio_pad, rx, tx, qspi_io, qspi_sck, qspi_cs_n
 );
-
 
 always #10 clk = ~clk; // 50MHz clock
 always #10 pclk = ~pclk; // APB/peripheral clock (same frequency)

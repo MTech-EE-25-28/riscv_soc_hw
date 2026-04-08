@@ -9,7 +9,10 @@ module soc_top (
     output pwm_out0, pwm_out1,
     inout [31:0] gpio_pad,
     input rx,
-    output tx
+    output tx,
+    inout [3:0] qspi_io,
+    output qspi_sck,
+    output qspi_cs_n
 );
 
 wire [31:0] PC, Result, ALUResult, DataAdr, WriteData_M;
@@ -24,7 +27,7 @@ soc soc_u (
     .MemWrite(MemWrite),
     .pwm_out0(pwm_out0), .pwm_out1(pwm_out1),
     .gpio_pad(gpio_pad),
-    .rx(rx), .tx(tx)
+    .rx(rx), .tx(tx), .qspi_io(qspi_io), .qspi_sck(qspi_sck), .qspi_cs_n(qspi_cs_n)
 );
 
 endmodule

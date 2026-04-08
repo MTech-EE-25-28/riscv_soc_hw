@@ -2,7 +2,9 @@
 // QSPI CSR - Fully APB3 Compatible
 // ================================================================
 
-module qspi_csr (
+module qspi_csr #(
+    parameter BASE_ADDR = 32'h0000_2000
+) (
     input  wire        pclk,
     input  wire        presetn,
 
@@ -41,6 +43,19 @@ module qspi_csr (
 
     input  wire        done_in
 );
+    // ------------------------------------------------------------
+    // Local Parameters
+    // ------------------------------------------------------------
+    localparam QSPI_CSR_ADDR    = BASE_ADDR;         // BASE + 0x00
+    localparam QSPI_OPCODE_ADDR = BASE_ADDR + 8'h04; // BASE + 0x04
+    localparam QSPI_ADDR_ADDR   = BASE_ADDR + 8'h08; // BASE + 0x08
+    localparam QSPI_DONE_ADDR   = BASE_ADDR + 8'h0C; // BASE + 0x0C
+    localparam QSPI_XLEN_ADDR   = BASE_ADDR + 8'h10; // BASE + 0x10
+    localparam QSPI_CLKDIV_ADDR = BASE_ADDR + 8'h14; // BASE + 0x14
+    localparam QSPI_TXBUF_STAT = BASE_ADDR + 8'h18;  // BASE + 0x18
+    localparam QSPI_RXBUF_STAT = BASE_ADDR + 8'h1C;  // BASE + 0x1C
+    localparam QSPI_TXDATA_BUF = BASE_ADDR + 8'h20;  // BASE + 0x20
+    localparam QSPI_RXDATA_BUF = BASE_ADDR + 8'h24;  // BASE + 0x24
 
     // ------------------------------------------------------------
     // Internal registers
@@ -106,7 +121,7 @@ module qspi_csr (
             if (psel && penable && pwrite) begin
                 case (addr_latched)
 
-                    8'h00: begin
+                    QSPI_CSR_ADDR: begin
                         enable     <= pwdata[0];
                         quad       <= pwdata[1];
                         cont_read  <= pwdata[2];
@@ -116,18 +131,18 @@ module qspi_csr (
                             start <= 1'b1;   // 1-cycle pulse
                     end
 
-                    8'h04: opcode   <= pwdata[7:0];
-                    8'h08: addr     <= pwdata[23:0];
-                    8'h10: xfer_len <= pwdata[15:0];
+                    QSPI_OPCODE_ADDR: opcode   <= pwdata[7:0];
+                    QSPI_ADDR_ADDR  : addr     <= pwdata[23:0];
+                    QSPI_XLEN_ADDR  : xfer_len <= pwdata[15:0];
 
-                    8'h20: begin
+                    QSPI_TXDATA_BUF: begin
                         if (!tx_full) begin
                             tx_data_out <= pwdata;
                             tx_wr       <= 1'b1;
                         end
                     end
 
-                    8'h24: begin
+                    QSPI_RXDATA_BUF: begin
                         if (!rx_empty)
                             rx_rd <= 1'b1;
                     end
@@ -144,20 +159,20 @@ module qspi_csr (
     always @(*) begin
         case (addr_latched)
 
-            8'h00: prdata_r = {23'd0, clk_div, auto_wren, cont_read, quad, enable};
-            8'h04: prdata_r = {24'd0, opcode};
-            8'h08: prdata_r = {8'd0, addr};
+            QSPI_CSR_ADDR   : prdata_r = {23'd0, clk_div, auto_wren, cont_read, quad, enable};
+            QSPI_OPCODE_ADDR: prdata_r = {24'd0, opcode};
+            QSPI_ADDR_ADDR  : prdata_r = {8'd0, addr};
 
-            8'h0C: prdata_r = {31'd0, done_latch};
+            QSPI_DONE_ADDR  : prdata_r = {31'd0, done_latch};
 
-            8'h10: prdata_r = {16'd0, xfer_len};
-            8'h14: prdata_r = {28'd0, clk_div};
+            QSPI_XLEN_ADDR  : prdata_r = {16'd0, xfer_len};
+            QSPI_CLKDIV_ADDR: prdata_r = {28'd0, clk_div};
 
-            8'h18: prdata_r = {30'd0, tx_empty, tx_full};
-            8'h1C: prdata_r = {30'd0, rx_empty, rx_full};
+            QSPI_TXBUF_STAT : prdata_r = {30'd0, tx_empty, tx_full};
+            QSPI_RXBUF_STAT : prdata_r = {30'd0, rx_empty, rx_full};
 
-            8'h20: prdata_r = tx_data_out;
-            8'h24: prdata_r = rx_data_in;
+            QSPI_TXDATA_BUF : prdata_r = tx_data_out;
+            QSPI_RXDATA_BUF : prdata_r = rx_data_in;
 
             default: prdata_r = 32'd0;
         endcase

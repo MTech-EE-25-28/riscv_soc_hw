@@ -24,7 +24,10 @@ module memory_controller (
     output wire        pwm_out1,
     inout  wire [31:0] gpio_pad,
     input  wire        rx,
-    output wire        tx
+    output wire        tx,
+    inout  wire [3:0]  qspi_io,
+    output wire        qspi_sck,
+    output wire        qspi_cs_n
 );
 
 // --------------------------------------------------
@@ -120,7 +123,10 @@ apb_interface apb_if (
     .pwm_out1(pwm_out1),
     .gpio_pad(gpio_pad),
     .rx(rx),
-    .tx(tx)
+    .tx(tx),
+    .qspi_io(qspi_io),
+    .qspi_sck(qspi_sck),
+    .qspi_cs_n(qspi_cs_n)
 );
 
 endmodule

@@ -29,7 +29,10 @@ module apb_interface (
     output wire        pwm_out0, pwm_out1,
     inout  wire [31:0] gpio_pad,
     input  wire        rx,
-    output wire        tx
+    output wire        tx,
+    inout  wire [3:0]  qspi_io,
+    output wire        qspi_sck,
+    output wire        qspi_cs_n
 );
 
 localparam  IDLE  = 2'b00,
@@ -37,15 +40,18 @@ localparam  IDLE  = 2'b00,
             READ  = 2'b10,
             WAIT  = 2'b11;
 
-// Internal wires for timer slave responses — avoids driving the module's own input ports
-wire        timer_pready_w, timer_pslverr_w;
-wire [31:0] timer_prdata_w;
-wire        timer_irq_w;
+// Internal wires for matrix multiplication accelerator slave responses
+wire        mm_pready_w, mm_pslverr_w;
+wire [31:0] mm_prdata_w;
+wire        mm_irq_w;
 
-timer timer_u (
-    clk, resetn, pclk, presetn, psel[2], penable, pwrite, paddr, pwdata,
-    timer_prdata_w, timer_pready_w, timer_pslverr_w,
-    timer_irq_w, pwm_out0, pwm_out1
+apb_systolic #(.BASE_ADDR(32'h0000_2100)) mm_u (
+    .clk(clk), .resetn(resetn),
+    .pclk(pclk), .presetn(presetn),
+    .psel(psel[4]), .penable(penable), .pwrite(pwrite),
+    .paddr(paddr), .pwdata(pwdata),
+    .prdata(mm_prdata_w), .pready(mm_pready_w), .pslverr(mm_pslverr_w),
+    .irq(mm_irq_w)
 );
 
 // Internal wires for GPIO slave responses
@@ -63,6 +69,17 @@ gpio gpio_u (
     .gpio_pad(gpio_pad)
 );
 
+// Internal wires for timer slave responses — avoids driving the module's own input ports
+wire        timer_pready_w, timer_pslverr_w;
+wire [31:0] timer_prdata_w;
+wire        timer_irq_w;
+
+timer timer_u (
+    clk, resetn, pclk, presetn, psel[2], penable, pwrite, paddr, pwdata,
+    timer_prdata_w, timer_pready_w, timer_pslverr_w,
+    timer_irq_w, pwm_out0, pwm_out1
+);
+
 // Internal wire for UART slave responses
 wire        uart_pready_w, uart_pslverr_w;
 wire [31:0] uart_prdata_w;
@@ -75,18 +92,19 @@ uart_top uart_u (
     .rx(rx), .tx(tx)
 );
 
-// Internal wires for matrix multiplication accelerator slave responses
-wire        mm_pready_w, mm_pslverr_w;
-wire [31:0] mm_prdata_w;
-wire        mm_irq_w;
+// Internal wire for QSPI slave responses
+wire        qspi_pready_w, qspi_pslverr_w;
+wire [31:0] qspi_prdata_w;
+wire        qspi_irq_w;
 
-apb_systolic #(.BASE_ADDR(32'h0000_2100)) mm_u (
+qspi_top qspi_u (
     .clk(clk), .resetn(resetn),
     .pclk(pclk), .presetn(presetn),
-    .psel(psel[4]), .penable(penable), .pwrite(pwrite),
-    .paddr(paddr), .pwdata(pwdata),
-    .prdata(mm_prdata_w), .pready(mm_pready_w), .pslverr(mm_pslverr_w),
-    .irq(mm_irq_w)
+    .psel(psel[0]), .penable(penable), .pwrite(pwrite),
+    .paddr(paddr[7:0]), .pwdata(pwdata),
+    .prdata(qspi_prdata_w), .pready(qspi_pready_w), .pslverr(qspi_pslverr_w),
+    .io(qspi_io), .sck(qspi_sck), .cs_n(qspi_cs_n),
+    .irq_done(qspi_irq_w)
 );
 
 // Mux read data and ready from the addressed peripheral
