@@ -27,10 +27,14 @@ module apb_interface (
     output wire  [4:0] irq,
     // Pads
     output wire        pwm_out0, pwm_out1,
-    inout  wire [31:0] gpio_pad,
+    input  wire [31:0] gpio_in,
+    output wire [31:0] gpio_out,
+    output wire [31:0] gpio_oe,
     input  wire        rx,
     output wire        tx,
-    inout  wire [3:0]  qspi_io,
+    input  wire [3:0]  qspi_io_in,
+    output wire [3:0]  qspi_io_out,
+    output wire        qspi_io_oe,
     output wire        qspi_sck,
     output wire        qspi_cs_n
 );
@@ -66,7 +70,9 @@ gpio gpio_u (
     .paddr(paddr), .pwdata(pwdata),
     .prdata(gpio_prdata_w), .pready(gpio_pready_w), .pslverr(gpio_pslverr_w),
     .irq(gpio_irq_w),
-    .gpio_pad(gpio_pad)
+    .gpio_in(gpio_in),
+    .gpio_out(gpio_out),
+    .gpio_oe(gpio_oe)
 );
 
 // Internal wires for timer slave responses — avoids driving the module's own input ports
@@ -103,7 +109,8 @@ qspi_top qspi_u (
     .psel(psel[0]), .penable(penable), .pwrite(pwrite),
     .paddr(paddr[7:0]), .pwdata(pwdata),
     .prdata(qspi_prdata_w), .pready(qspi_pready_w), .pslverr(qspi_pslverr_w),
-    .io(qspi_io), .sck(qspi_sck), .cs_n(qspi_cs_n),
+    .io_in(qspi_io_in), .io_out(qspi_io_out), .io_oe(qspi_io_oe),
+    .sck(qspi_sck), .cs_n(qspi_cs_n),
     .irq_done(qspi_irq_w)
 );
 

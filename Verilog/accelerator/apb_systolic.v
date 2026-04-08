@@ -26,6 +26,7 @@ localparam MM_MATA = BASE_ADDR + 32'h4; // BASE + 0x04
 localparam MM_MATB = BASE_ADDR + 32'h44; // BASE + 0x44
 localparam MM_MATC = BASE_ADDR + 32'h84; // BASE + 0x84
 
+integer i; // for reset loop
 reg start, done;
 reg [31:0] MATA [15:0], MATB [15:0], MATC [15:0];
 
@@ -116,7 +117,7 @@ assign pready = (psel && penable) ? 1'b1 : 1'b0;
 always @(posedge clk or negedge resetn) begin
     if (!resetn) begin
         start <= 1'b0;
-        for (int i = 0; i < 16; i = i + 1) begin
+        for (i = 0; i < 16; i = i + 1) begin
             MATA[i] <= 32'b0;
             MATB[i] <= 32'b0;
         end
@@ -165,7 +166,7 @@ always @(posedge clk or negedge resetn) begin
         A1 <= 32'b0; A2 <= 32'b0; A3 <= 32'b0; A4 <= 32'b0;
         B1 <= 32'b0; B2 <= 32'b0; B3 <= 32'b0; B4 <= 32'b0;
         done <= 1'b0; irq <= 1'b0; compute_cycle <= 4'b0;
-        for (int i = 0; i < 16; i = i + 1) MATC[i] <= 32'b0;
+        for (i = 0; i < 16; i = i + 1) MATC[i] <= 32'b0;
     end else if (!start) begin
         done <= 1'b0; irq <= 1'b0; compute_cycle <= 4'b0;
     end else if (start && !done) begin

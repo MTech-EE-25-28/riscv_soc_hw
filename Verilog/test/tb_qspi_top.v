@@ -30,7 +30,10 @@ module tb_qspi_top;
     //--------------------------------------------
     wire       qspi_sck;
     wire       qspi_cs_n;
-    wire [3:0] qspi_io;
+    // Split QSPI ports (qspi_top.v now uses in/out/oe instead of inout)
+    wire [3:0] qspi_io_out;
+    wire       qspi_io_oe;
+    wire [3:0] qspi_io_in;
 
     //--------------------------------------------
     // DUT
@@ -50,7 +53,9 @@ module tb_qspi_top;
         .pready    (),
         .pslverr   (),
 
-        .io        (qspi_io),
+        .io_in     (qspi_io_in),
+        .io_out    (qspi_io_out),
+        .io_oe     (qspi_io_oe),
         .cs_n      (qspi_cs_n),
         .sck       (qspi_sck),
 
@@ -97,9 +102,9 @@ module tb_qspi_top;
     endtask
 
     //--------------------------------------------
-    // SIMPLE FLASH STUB
+    // SIMPLE FLASH STUB — drive 0 into DUT's input port (simulates empty flash)
     //--------------------------------------------
-    assign qspi_io = 4'b0000;
+    assign qspi_io_in = 4'b0000;
 
     //--------------------------------------------
     // CONTROL WORD HELPER

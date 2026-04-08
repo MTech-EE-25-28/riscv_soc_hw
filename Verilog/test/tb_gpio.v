@@ -12,6 +12,11 @@ reg         psel, penable, pwrite;
 reg  [31:0] paddr, pwdata;
 wire [31:0] prdata;
 wire        pready, pslverr, irq;
+
+// Split GPIO ports (gpio.v now uses in/out/oe instead of inout)
+wire [31:0] gpio_in_w, gpio_out_w, gpio_oe_w;
+
+// Simulated bidirectional pad — models IOBUF tristate behaviour in TB
 wire [31:0] gpio_pad;
 
 // TB-side tristate drive onto gpio_pad
@@ -20,10 +25,15 @@ reg  [31:0] gpio_drive_en;
 
 genvar i;
 generate
-    for (i = 0; i < 32; i = i + 1) begin : TB_GPIO_DRIVE
+    for (i = 0; i < 32; i = i + 1) begin : GPIO_PAD_MODEL
+        // TB drives pad when gpio_drive_en[i]=1
         assign gpio_pad[i] = gpio_drive_en[i] ? gpio_drive[i] : 1'bz;
+        // DUT drives pad when gpio_oe_w[i]=1 (output direction)
+        assign gpio_pad[i] = gpio_oe_w[i] ? gpio_out_w[i] : 1'bz;
     end
 endgenerate
+// Pad value feeds back into DUT's input port
+assign gpio_in_w = gpio_pad;
 
 // DUT instantiation
 gpio dut (
@@ -33,7 +43,7 @@ gpio dut (
     .paddr(paddr),   .pwdata(pwdata),
     .prdata(prdata), .pready(pready),   .pslverr(pslverr),
     .irq(irq),
-    .gpio_pad(gpio_pad)
+    .gpio_in(gpio_in_w), .gpio_out(gpio_out_w), .gpio_oe(gpio_oe_w)
 );
 
 always #10 clk = ~clk; // 50 MHz

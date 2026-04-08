@@ -25,8 +25,10 @@ module gpio #(
     // Interrupt
     output reg         irq,
 
-    // GPIO pads
-    inout  wire [31:0] gpio_pad
+    // GPIO pads (split for synthesis)
+    input  wire [31:0] gpio_in,
+    output wire [31:0] gpio_out,
+    output wire [31:0] gpio_oe
 );
 
 localparam GDIR_ADDR = BASE_ADDR;           // BASE + 0x00
@@ -35,13 +37,9 @@ localparam GDAT_ADDR = BASE_ADDR + 32'h4;   // BASE + 0x04
 reg [31:0] GDIR; // direction: 1=output
 reg [31:0] GDAT; // output data
 
-// Tristate drive: output when GDIR[i]=1, Hi-Z when input
-genvar i;
-generate
-    for (i = 0; i < 32; i = i + 1) begin : GPIO_TRISTATE
-        assign gpio_pad[i] = GDIR[i] ? GDAT[i] : 1'bz;
-    end
-endgenerate
+// Drive signals — IOBUFs instantiated in soc_top
+assign gpio_out = GDAT;
+assign gpio_oe  = GDIR;
 
 always @(posedge clk) begin // apb write
     if (!resetn) begin
@@ -59,7 +57,7 @@ always @(*) begin // apb read
     if (psel && penable && !pwrite) begin
         case (paddr)
             GDIR_ADDR: prdata = GDIR;
-            GDAT_ADDR: prdata = gpio_pad; // read pin state, not output register
+            GDAT_ADDR: prdata = gpio_in;  // read pin state, not output register
             default:   prdata = 32'b0;
         endcase
     end else begin

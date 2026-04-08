@@ -16,10 +16,10 @@ module qspi_top (
     output wire        pready,
     output wire        pslverr,
 
-    // -----------------------------
-    // QSPI IOs
-    // -----------------------------
-    inout  wire [3:0]  io,
+    // QSPI IOs (split for synthesis)
+    input  wire [3:0]  io_in,
+    output wire [3:0]  io_out,
+    output wire        io_oe,
     output wire        sck,
     output wire        cs_n,
 
@@ -243,7 +243,9 @@ module qspi_top (
         .sck_rise(sck_rise),
         .sck_fall(sck_fall),
 
-        .io(io),
+        .io_in(io_in),
+        .io_out(io_out),
+        .io_oe(io_oe),
 
         .data_req(shifter_data_req),
 

@@ -16,8 +16,10 @@
     input  wire        sck_rise,
     input  wire        sck_fall,
 
-    // IO bus
-    inout  wire [3:0]  io,
+    // IO bus (split for synthesis — IOBUFs live in soc_top)
+    input  wire [3:0]  io_in,
+    output reg  [3:0]  io_out,
+    output reg         io_oe,
 
     // TX streaming
     output reg         data_req,
@@ -34,11 +36,6 @@
     //----------------------------------------------------
     // IO driving
     //----------------------------------------------------
-    reg [3:0] io_out;
-    reg       io_oe;
-
-    assign io = io_oe ? io_out : 4'bz;
-    wire [3:0] io_in = io;
 
     //----------------------------------------------------
     // Shift registers
@@ -85,7 +82,7 @@
                 shreg       <= chunk_data;
                 cycles_left <= chunk_cycles;
                 chunk_cycles_latched <= chunk_cycles;
-                
+
                 busy       <= 1;
                 half_cycle <= 0;
                 rxbuf      <= 0;

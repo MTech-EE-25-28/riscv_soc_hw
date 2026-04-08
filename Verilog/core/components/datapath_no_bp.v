@@ -191,7 +191,7 @@ wire MemWriteM_safe = MemWriteM && !memMisAlignStoreM;
 // -------------------------------------------------------------------------
 // Writeback stage
 pl_reg_w plw (
-    clk, reset, PCSrcTrap, 1'b0, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM,
+    clk, reset, PCSrcTrap, MemStall, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM,
     ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W, excDecW, tretW, memMisAlignLoadW, memMisAlignStoreW
 );
 
