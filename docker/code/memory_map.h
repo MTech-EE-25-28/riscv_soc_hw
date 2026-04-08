@@ -21,10 +21,10 @@
 #define GPIO_GDAT  (*(volatile uint32_t *)(GPIO_BASE + 0x04))
 
 #define MM_BASE    0x00002100
-#define MM_CTSR    (*(volatile uint32_t *)(MM_BASE + 0x0))
-#define MM_MATA    (*(volatile uint32_t *)(MM_BASE + 0x04))
-#define MM_MATB    (*(volatile uint32_t *)(MM_BASE + 0x44))
-#define MM_MATC    (*(volatile uint32_t *)(MM_BASE + 0x84))
+#define MM_CTSR    (*(volatile uint32_t *)(MM_BASE + 0x00)) // value
+#define MM_MATA_PTR  ((volatile uint32_t *)(MM_BASE + 0x04)) // pointer
+#define MM_MATB_PTR  ((volatile uint32_t *)(MM_BASE + 0x44))
+#define MM_MATC_PTR  ((volatile uint32_t *)(MM_BASE + 0x84))
 
 // for testing
 #define TEST_LOC (*(volatile uint32_t *)(0x00001000))

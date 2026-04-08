@@ -91,7 +91,7 @@ assign req_wdata = periph_sel ? WriteData : 32'hFFFF_FFFF;
 // --------------------------------------------------
 // AXI/APB Interface instance
 // --------------------------------------------------
-axi_interface apb_if (
+apb_interface apb_if (
     .clk(clk),
     .resetn(resetn),
 

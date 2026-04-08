@@ -1,7 +1,7 @@
 
 // AXI APB Interface for CPU-Peripheral Communication
 // master
-module axi_interface (
+module apb_interface (
     input  wire        clk, resetn,
 
     // APB Interface
@@ -75,12 +75,28 @@ uart_top uart_u (
     .rx(rx), .tx(tx)
 );
 
+// Internal wires for matrix multiplication accelerator slave responses
+wire        mm_pready_w, mm_pslverr_w;
+wire [31:0] mm_prdata_w;
+wire        mm_irq_w;
+
+apb_systolic #(.BASE_ADDR(32'h0000_2100)) mm_u (
+    .clk(clk), .resetn(resetn),
+    .pclk(pclk), .presetn(presetn),
+    .psel(psel[4]), .penable(penable), .pwrite(pwrite),
+    .paddr(paddr), .pwdata(pwdata),
+    .prdata(mm_prdata_w), .pready(mm_pready_w), .pslverr(mm_pslverr_w),
+    .irq(mm_irq_w)
+);
+
 // Mux read data and ready from the addressed peripheral
 wire        pready_int = psel[2] ? timer_pready_w :
                          psel[3] ? gpio_pready_w  :
+                         psel[4] ? mm_pready_w    :
                          psel[1] ? uart_pready_w  : pready;
 wire [31:0] prdata_int = psel[2] ? timer_prdata_w :
                          psel[3] ? gpio_prdata_w  :
+                         psel[4] ? mm_prdata_w    :
                          psel[1] ? uart_prdata_w  : prdata;
 
 // irq[4]=matrixmul, irq[3]=timer, irq[2]=gpio, irq[1]=uart, irq[0]=qspi

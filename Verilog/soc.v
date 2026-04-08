@@ -35,23 +35,23 @@ wire [31:0] ReadData = (ALUResult >= 32'h0000_2000) ? cpu_rdata : dmem_rdata;
 // instantiate processor
 wire is_mem_access;
 riscv_pl rvpl (
-    .clk(clk), 
+    .clk(clk),
     .reset(rst_n),
-    .interruptA(irq_w), 
-    .apb_done(apb_done_w), 
-    .PC(PCF), 
-    .Instr(Instr), 
-    .MemWriteM(MemWrite), 
-    .is_mem_accessM(is_mem_access), 
-    .Mem_WrAddr(DataAdr), 
-    .Mem_WrData(WriteData), 
+    .interruptA(irq_w),
+    .apb_done(apb_done_w),
+    .PC(PCF),
+    .Instr(Instr),
+    .MemWriteM(MemWrite),
+    .is_mem_accessM(is_mem_access),
+    .Mem_WrAddr(DataAdr),
+    .Mem_WrData(WriteData),
     .wea(mem_wea),
-    .ReadData(ReadData), 
-    .funct3(funct3), 
-    .PCW(PCW), 
-    .Result(Result), 
-    .ALUResultW(ALUResult), 
-    .WriteDataW(WriteDataW), 
+    .ReadData(ReadData),
+    .funct3(funct3),
+    .PCW(PCW),
+    .Result(Result),
+    .ALUResultW(ALUResult),
+    .WriteDataW(WriteDataW),
     .ReadDataW(ReadDataW)
 );
 

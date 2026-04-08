@@ -219,7 +219,7 @@ always @(posedge clk or negedge resetn) begin
                 MATC[13] <= C42[31:0]; // MATC[27] <= C42[63:32];
                 MATC[14] <= C43[31:0]; // MATC[29] <= C43[63:32];
                 MATC[15] <= C44[31:0]; // MATC[31] <= C44[63:32];
-                done <= 1'b1; irq <= 1'b1;
+                done <= 1'b1; // irq <= 1'b1;
             end
             default: begin
                 A1<=0; A2<=0; A3<=0; A4<=0;

@@ -228,11 +228,14 @@ assign is_mem_accessM = MemWriteM || (ResultSrcM == 2'b01);
 
 // -------------------------------------------------------------------------
 // Writeback stage
-// WB must NOT stall on MemStall — it must always drain so that instructions
-// already past the peripheral access (e.g. lui x14 ahead of a lw x15,64(x14))
-// retire and write their results to the register file.  Only F/D/E/M are held.
+// WB is stalled during MemStall so that the W-stage instruction that provided
+// a forwarded WriteData value (ForwardBE) stays visible until the stall releases.
+// Without this, W-stage drains one cycle into the stall, breaking ForwardBE and
+// causing the stale RD2E register-file read (captured before the forwarding source
+// was written) to be used as WriteDataM for the next store — producing off-by-one
+// WriteData values in back-to-back peripheral stores.
 pl_reg_w plw (
-    clk, reset, PCSrcTrap, 1'b0, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM,
+    clk, reset, PCSrcTrap, MemStall, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM,
     ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W, excDecW, tretW, memMisAlignLoadW, memMisAlignStoreW
 );
 
