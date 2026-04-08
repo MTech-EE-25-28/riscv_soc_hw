@@ -65,8 +65,13 @@ int uart_send_int(int num) {
 
 #else // hardware specific functions
 
+void gpio_init () {
+    GPIO_GDIR = 0x0F; // Set GPIO pin 0-3 as output
+    GPIO_GDAT = 0x00; // Set GPIO pin 0-3 low
+}
+
 void uart_init() {
-    UART_UBRR = 0x04; // Set baud rate divisor for 115200 baud
+    UART_UBRR = 0x1B; // Set baud rate divisor: 50MHz / (27 * 16) = 115,740 ~= 115200 baud
     UART_UCR1 = 0x07; // Enable UART, receiver, transmitter
 }
 
@@ -79,6 +84,7 @@ void uart_send_str(char *str) {
 }
 
 void uart_send_byte(char c) {
+    for (int i = 0; i < 250000; i++);
     UART_UTDR = c;
     while (!(UART_USR0 & 0x4)); // Wait until TC is set
 }
@@ -135,7 +141,9 @@ int main () {
     OUT = 0; CPU_DONE = 0;
     int i;
 
+    gpio_init();
     uart_init();
+    for (i = 0; i < 10000000; i++);
     uart_send_str(str_start);
 
     volatile uint32_t *mata_ptr = MM_MATA_PTR;
@@ -150,6 +158,7 @@ int main () {
     MM_CTSR = 0x00; // ensure control register is clear before starting
     MM_CTSR = 0x01; // start computation
     while (!(MM_CTSR & 0x2)); // wait for computation to complete
+    for (i = 0; i < 10000000; i++);
     uart_send_str(str_done);
     for (i = 0; i < 16; i++) {
         int val = matc_ptr[i]; // single APB read; cache before uart calls corrupt APB state
@@ -159,5 +168,11 @@ int main () {
         _put_value(val);
     }
     CPU_DONE = 1;
+    while (1) {
+        UART_UTDR = 'X';
+        GPIO_GDAT ^= 0x0F; // Toggle GPIO pin 0-3
+        for (volatile int j = 0; j < 10000000; j++); // approx 1s
+        while (!(UART_USR0 & 0x4));
+    }
     return 0;
 }

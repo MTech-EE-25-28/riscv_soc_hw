@@ -9,7 +9,7 @@ void GPIO_init() {
 }
 
 void UART_init() {
-    UART_UBRR = 0x1B; // Set baud rate divisor for 115200 baud
+    UART_UBRR = 0x1B; // Set baud rate divisor for 128000 baud
     UART_UCR1 = 0x07; // Enable UART, receiver, transmitter
 }
 

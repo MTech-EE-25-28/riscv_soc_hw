@@ -13,8 +13,8 @@ void __attribute__((interrupt("machine"))) trap_handler (void) {
         uint32_t id = mcause & 0x1F;
         // switch case needs jump table to be loaded into dmem
         if (id == 16) { // QSPI — read received byte to clear RX interrupt flag
-            (void) QSPI_DATA;
-            QSPI_STATUS = 0;
+            (void) QSPI_RXDATA_BUF;
+            QSPI_CSR_ADDR = 0;
             TEST_LOC = 1;
         } else if (id == 17) { // UART — read received byte to drain RX FIFO
             (void) UART_URDR;
