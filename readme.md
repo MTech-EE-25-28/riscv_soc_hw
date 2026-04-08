@@ -45,7 +45,7 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 - Run `tests.sh` to run all the testbenches sequentially. This will run the testbenches without waveforms.
 
     ```
-    ./tests.sh
+        ./tests.sh
     ```
 
 ## TODOs
@@ -64,11 +64,24 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
     - [x] Implement MRET instruction
     - [x] Implement trap handler to handle exceptions and interrupts
 - [x] AXI-Lite to AXI Full
-- [x] UART, SPI Integeration with AXI
+- [x] UART, SPI Integeration with APB
 - [x] GPIO Peripheral
-- [ ] Matrix Multiplier
+- [x] Matrix Multiplier
     - [x] Design and implement systolic array matrix multiplier
-    - [ ] Integrate with CPU using AXI Full
+    - [x] Integrate with CPU using APB
+- [ ] Test Matrix Multiplier with UART transfer in FPGA
+- [ ] Bootloader Interface to load program from flash to imem, dmem
+- [ ] Synthesize and implement on ASIC
+
+## Future Work
+
+- bootloader code to load program from flash to imem, dmem
+- Sky130 ASIC Flow with compiled memory for ROM and RAM
+- Use AXI-APB bridge instead of direct APB interface
+- Update Linker to support vectored interrupts
+- Implement F extension (floating point unit)
+- Implement A extension (atomic instructions)
+- Implement OS support (S-mode, U-mode, cache, clint, plic)
 
 ### References
 
