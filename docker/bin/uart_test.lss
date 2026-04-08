@@ -1,0 +1,475 @@
+
+.temp.file.elf:     file format elf32-littleriscv
+
+SYMBOL TABLE:
+00000000 l    d  .init	00000000 .init
+00000044 l    d  .text	00000000 .text
+00001000 l    d  .data	00000000 .data
+00001010 l    d  .heap	00000000 .heap
+00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
+00000000 l    d  .comment	00000000 .comment
+00000000 l    d  .debug_line	00000000 .debug_line
+00000000 l    d  .debug_line_str	00000000 .debug_line_str
+00000000 l    d  .debug_info	00000000 .debug_info
+00000000 l    d  .debug_abbrev	00000000 .debug_abbrev
+00000000 l    d  .debug_aranges	00000000 .debug_aranges
+00000000 l    d  .debug_str	00000000 .debug_str
+00000000 l    d  .debug_loclists	00000000 .debug_loclists
+00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
+00000000 l    d  .debug_macro	00000000 .debug_macro
+00000000 l    d  .debug_frame	00000000 .debug_frame
+00000000 l    df *ABS*	00000000 .temp.start.o
+00000000 l    df *ABS*	00000000 uart_test.c
+00000000 l    df *ABS*	00000000 trap_handler.c
+00000070 g     F .text	00000028 uart_send_str
+000000e0 g     F .text	000000b8 uart_send_int
+00000800 g       *ABS*	00000000 __flash_size
+00000000 g       .init	00000000 __trap_vector_end
+00000100 g       *ABS*	00000000 __stack_size
+00000000 g       .init	00000000 __init_start
+00000044 g       .text	00000000 __text_start
+000001b4 g     F .text	00000024 memcpy
+00000344 g       .text	00000000 __rodata_end
+00001010 g       .heap	00000000 __bss_end
+000001d8 g     F .text	000000c0 trap_handler
+00001800 g       .riscv.attributes	00000000 _stack_top
+00000058 g     F .text	00000018 uart_init
+00000000 g       .init	00000000 _start
+00000000 g       .init	00000000 __trap_vector_start
+00000344 g       .text	00000000 __rodata_start
+00002000 g       *ABS*	00000000 __ram
+00001010 g       .data	00000000 __data_end
+00000044 g       .init	00000000 __init_end
+00000344 g       .text	00000000 __text_end
+00001010 g       .heap	00000000 __bss_start
+00000198 g     F .text	0000001c memset
+00000298 g     F .text	000000ac main
+00001700 g       .heap	00000000 __heap_end
+00000800 g       *ABS*	00000000 __ram_size
+00001010 g       .heap	00000000 __heap_start
+00000098 g     F .text	00000048 uart_send_byte
+00000000 g       *ABS*	00000000 __flash
+00001010 g       .data	00000000 __data_start
+00000044 g     F .text	00000014 gpio_init
+
+
+
+Disassembly of section .init:
+
+00000000 <__init_start>:
+     ### .section .init
+     ### .globl _start
+     ### 
+     ### _start:
+     ###     la sp, _stack_top
+   0:	       00002117          	auipc	x2,0x2
+   4:	       80010113          	addi	x2,x2,-2048 # 1800 <_stack_top>
+     ### 
+     ###     # install trap handler into mtvec (direct mode, bit[1:0]=0)
+     ###     la t0, trap_handler
+   8:	       00000297          	auipc	x5,0x0
+   c:	       1d028293          	addi	x5,x5,464 # 1d8 <trap_handler>
+     ###     csrw mtvec, t0
+  10:	       30529073          	csrrw	x0,mtvec,x5
+     ### 
+     ###     # enable machine-mode interrupts (MIE bit in mstatus)
+     ###     li t0, 0x8
+  14:	       00800293          	addi	x5,x0,8
+     ###     csrs mstatus, t0
+  18:	       3002a073          	csrrs	x0,mstatus,x5
+     ### 
+     ###     # zero .bss
+     ###     la t0, __bss_start
+  1c:	       00001297          	auipc	x5,0x1
+  20:	       ff428293          	addi	x5,x5,-12 # 1010 <__bss_end>
+     ###     la t1, __bss_end
+  24:	       00001317          	auipc	x6,0x1
+  28:	       fec30313          	addi	x6,x6,-20 # 1010 <__bss_end>
+     ### 
+     ### 1:
+     ###     bge t0, t1, 2f
+  2c:	/--/-X 0062d863          	bge	x5,x6,3c <__init_start+0x3c>
+     ###     sw zero, 0(t0)
+  30:	|  |   0002a023          	sw	x0,0(x5)
+     ###     addi t0, t0, 4
+  34:	|  |   00428293          	addi	x5,x5,4
+     ###     j 1b
+  38:	|  \-- ff5ff06f          	jal	x0,2c <__init_start+0x2c>
+     ### 
+     ### 2:
+     ###     call main
+  3c:	\----> 25c000ef          	jal	x1,298 <main>
+     ### 
+     ### 3:  j 3b
+  40:	   /-- 0000006f          	jal	x0,40 <__init_start+0x40>
+
+Disassembly of section .text:
+
+00000044 <gpio_init>:
+     ### }
+     ### 
+     ### #else // hardware specific functions
+     ### 
+     ### void gpio_init () {
+     ###     GPIO_GDIR = 0x0F; // Set GPIO pin 0-3 as output
+  44:	000027b7          	lui	x15,0x2
+  48:	00f00713          	addi	x14,x0,15
+  4c:	0ce7a023          	sw	x14,192(x15) # 20c0 <__ram+0xc0>
+     ###     GPIO_GDAT = 0x00; // Set GPIO pin 0-3 low
+  50:	0c07a223          	sw	x0,196(x15)
+     ### }
+  54:	00008067          	jalr	x0,0(x1)
+
+00000058 <uart_init>:
+     ### 
+     ### void uart_init() {
+     ###     UART_UBRR = 0x1B; // Set baud rate divisor: 50MHz / (27 * 16) = 115,740 ~= 115200 baud
+  58:	000027b7          	lui	x15,0x2
+  5c:	01b00713          	addi	x14,x0,27
+  60:	04e7a823          	sw	x14,80(x15) # 2050 <__ram+0x50>
+     ###     UART_UCR1 = 0x07; // Enable UART, receiver, transmitter
+  64:	00700713          	addi	x14,x0,7
+  68:	04e7a623          	sw	x14,76(x15)
+     ### }
+  6c:	00008067          	jalr	x0,0(x1)
+
+00000070 <uart_send_str>:
+     ### 
+     ### void uart_send_str(char *str) {
+     ###     while (*str) {
+     ###         // while (!(UART_USR0 & 0x2)); // Wait until TXE (transmit buffer empty) is set
+     ###         UART_UTDR = *str++; // Send the next character
+  70:	       00002737          	lui	x14,0x2
+     ###     while (*str) {
+  74:	/----> 00054783          	lbu	x15,0(x10)
+  78:	|  /-- 00079463          	bne	x15,x0,80 <uart_send_str+0x10>
+     ###         while (!(UART_USR0 & 0x4)); // Wait until TC (transmission complete) is set
+     ###     }
+     ### }
+  7c:	|  |   00008067          	jalr	x0,0(x1)
+     ###         UART_UTDR = *str++; // Send the next character
+  80:	|  \-> 00150513          	addi	x10,x10,1
+  84:	|      04f72423          	sw	x15,72(x14) # 2048 <__ram+0x48>
+     ###         while (!(UART_USR0 & 0x4)); // Wait until TC (transmission complete) is set
+  88:	|  /-> 04072783          	lw	x15,64(x14)
+  8c:	|  |   0047f793          	andi	x15,x15,4
+  90:	|  \-- fe078ce3          	beq	x15,x0,88 <uart_send_str+0x18>
+  94:	\----- fe1ff06f          	jal	x0,74 <uart_send_str+0x4>
+
+00000098 <uart_send_byte>:
+     ### 
+     ### void uart_send_byte(char c) {
+  98:	          ff010113          	addi	x2,x2,-16
+     ###     for (volatile int i = 0; i < 250000; i++);
+  9c:	          0003d7b7          	lui	x15,0x3d
+  a0:	          00012623          	sw	x0,12(x2)
+  a4:	          08f78793          	addi	x15,x15,143 # 3d08f <__ram+0x3b08f>
+  a8:	/-------> 00c12703          	lw	x14,12(x2)
+  ac:	|  /----- 02e7d263          	bge	x15,x14,d0 <uart_send_byte+0x38>
+     ###     UART_UTDR = c;
+  b0:	|  |      000027b7          	lui	x15,0x2
+  b4:	|  |      04a7a423          	sw	x10,72(x15) # 2048 <__ram+0x48>
+     ###     while (!(UART_USR0 & 0x4)); // Wait until TC is set
+  b8:	|  |      00002737          	lui	x14,0x2
+  bc:	|  |  /-> 04072783          	lw	x15,64(x14) # 2040 <__ram+0x40>
+  c0:	|  |  |   0047f793          	andi	x15,x15,4
+  c4:	|  |  \-- fe078ce3          	beq	x15,x0,bc <uart_send_byte+0x24>
+     ### }
+  c8:	|  |      01010113          	addi	x2,x2,16
+  cc:	|  |      00008067          	jalr	x0,0(x1)
+     ###     for (volatile int i = 0; i < 250000; i++);
+  d0:	|  \----> 00c12703          	lw	x14,12(x2)
+  d4:	|         00170713          	addi	x14,x14,1
+  d8:	|         00e12623          	sw	x14,12(x2)
+  dc:	\-------- fcdff06f          	jal	x0,a8 <uart_send_byte+0x10>
+
+000000e0 <uart_send_int>:
+     ### 
+     ### int uart_send_int(int num) {
+  e0:	       fc010113          	addi	x2,x2,-64
+  e4:	       02112e23          	sw	x1,60(x2)
+  e8:	       02812c23          	sw	x8,56(x2)
+  ec:	       02912a23          	sw	x9,52(x2)
+  f0:	       03212823          	sw	x18,48(x2)
+  f4:	       03312623          	sw	x19,44(x2)
+  f8:	       03412423          	sw	x20,40(x2)
+     ###     if (num == 0) {
+  fc:	   /-- 02051863          	bne	x10,x0,12c <__stack_size+0x2c>
+     ###         uart_send_byte('0');
+ 100:	   |   03000513          	addi	x10,x0,48
+ 104:	   |   f95ff0ef          	jal	x1,98 <uart_send_byte>
+     ###         return 1;
+ 108:	   |   00100513          	addi	x10,x0,1
+     ###     }
+     ###     for (int i = index - 1; i >= 0; i--) {
+     ###         uart_send_byte(buffer[i]); // send directly — no rodata pointer
+     ###     }
+     ###     return index + neg;
+     ### }
+ 10c:	/--|-> 03c12083          	lw	x1,60(x2)
+ 110:	|  |   03812403          	lw	x8,56(x2)
+ 114:	|  |   03412483          	lw	x9,52(x2)
+ 118:	|  |   03012903          	lw	x18,48(x2)
+ 11c:	|  |   02c12983          	lw	x19,44(x2)
+ 120:	|  |   02812a03          	lw	x20,40(x2)
+ 124:	|  |   04010113          	addi	x2,x2,64
+ 128:	|  |   00008067          	jalr	x0,0(x1)
+ 12c:	|  \-> 00050413          	addi	x8,x10,0
+     ###     int neg = 0;
+ 130:	|      00000993          	addi	x19,x0,0
+     ###     if (num < 0) {
+ 134:	|  /-- 00055a63          	bge	x10,x0,148 <__stack_size+0x48>
+     ###         uart_send_byte('-');
+ 138:	|  |   02d00513          	addi	x10,x0,45
+ 13c:	|  |   f5dff0ef          	jal	x1,98 <uart_send_byte>
+     ###         num = -num;
+ 140:	|  |   40800433          	sub	x8,x0,x8
+     ###         neg = 1;
+ 144:	|  |   00100993          	addi	x19,x0,1
+ 148:	|  \-> 00c10793          	addi	x15,x2,12
+     ###     int index = 0;
+ 14c:	|      00000493          	addi	x9,x0,0
+ 150:	|      00078a13          	addi	x20,x15,0
+     ###         buffer[index++] = '0' + num % 10;
+ 154:	|      00a00693          	addi	x13,x0,10
+ 158:	|  /-> 02d46733          	rem	x14,x8,x13
+ 15c:	|  |   00048913          	addi	x18,x9,0
+     ###     while (num > 0) {
+ 160:	|  |   00178793          	addi	x15,x15,1
+     ###         buffer[index++] = '0' + num % 10;
+ 164:	|  |   00148493          	addi	x9,x9,1
+     ###         num /= 10;
+ 168:	|  |   02d44433          	div	x8,x8,x13
+     ###         buffer[index++] = '0' + num % 10;
+ 16c:	|  |   03070713          	addi	x14,x14,48
+ 170:	|  |   fee78fa3          	sb	x14,-1(x15)
+     ###     while (num > 0) {
+ 174:	|  \-- fe0412e3          	bne	x8,x0,158 <__stack_size+0x58>
+     ###     for (int i = index - 1; i >= 0; i--) {
+ 178:	|      fff00413          	addi	x8,x0,-1
+     ###         uart_send_byte(buffer[i]); // send directly — no rodata pointer
+ 17c:	|  /-> 012a07b3          	add	x15,x20,x18
+ 180:	|  |   0007c503          	lbu	x10,0(x15)
+     ###     for (int i = index - 1; i >= 0; i--) {
+ 184:	|  |   fff90913          	addi	x18,x18,-1
+     ###         uart_send_byte(buffer[i]); // send directly — no rodata pointer
+ 188:	|  |   f11ff0ef          	jal	x1,98 <uart_send_byte>
+     ###     for (int i = index - 1; i >= 0; i--) {
+ 18c:	|  \-- fe8918e3          	bne	x18,x8,17c <__stack_size+0x7c>
+     ###     return index + neg;
+ 190:	|      01348533          	add	x10,x9,x19
+ 194:	\----- f79ff06f          	jal	x0,10c <__stack_size+0xc>
+
+00000198 <memset>:
+     ### 
+     ### // generate local bss
+     ### void *memset(void *dst, int val, unsigned int n) {
+     ###     unsigned char *p = (unsigned char *)dst;
+     ###     for (unsigned int i = 0; i < n; i++) {
+ 198:	       00000793          	addi	x15,x0,0
+ 19c:	/--/-X 00c79463          	bne	x15,x12,1a4 <memset+0xc>
+     ###         p[i] = (unsigned char)val;
+     ###     }
+     ###     return dst;
+     ### }
+ 1a0:	|  |   00008067          	jalr	x0,0(x1)
+     ###         p[i] = (unsigned char)val;
+ 1a4:	|  \-> 00f50733          	add	x14,x10,x15
+ 1a8:	|      00b70023          	sb	x11,0(x14)
+     ###     for (unsigned int i = 0; i < n; i++) {
+ 1ac:	|      00178793          	addi	x15,x15,1
+ 1b0:	\----- fedff06f          	jal	x0,19c <memset+0x4>
+
+000001b4 <memcpy>:
+     ### 
+     ### void *memcpy(void *dst, const void *src, unsigned int n) {
+     ###     unsigned char *d = (unsigned char *)dst;
+     ###     const unsigned char *s = (const unsigned char *)src;
+     ###     for (unsigned int i = 0; i < n; i++) {
+ 1b4:	       00000793          	addi	x15,x0,0
+ 1b8:	/--/-X 00c79463          	bne	x15,x12,1c0 <memcpy+0xc>
+     ###         d[i] = s[i];
+     ###     }
+     ###     return dst;
+     ### }
+ 1bc:	|  |   00008067          	jalr	x0,0(x1)
+     ###         d[i] = s[i];
+ 1c0:	|  \-> 00f58733          	add	x14,x11,x15
+ 1c4:	|      00074683          	lbu	x13,0(x14)
+ 1c8:	|      00f50733          	add	x14,x10,x15
+     ###     for (unsigned int i = 0; i < n; i++) {
+ 1cc:	|      00178793          	addi	x15,x15,1
+     ###         d[i] = s[i];
+ 1d0:	|      00d70023          	sb	x13,0(x14)
+     ###     for (unsigned int i = 0; i < n; i++) {
+ 1d4:	\----- fe5ff06f          	jal	x0,1b8 <memcpy+0x4>
+
+000001d8 <trap_handler>:
+     ### 
+     ### // trap handler for RISC-V SoC
+     ### #include <stdint.h>
+     ### #include "memory_map.h"
+     ### // for now it is in direct mode
+     ### void __attribute__((interrupt("machine"))) trap_handler (void) {
+ 1d8:	             ff010113          	addi	x2,x2,-16
+ 1dc:	             00d12623          	sw	x13,12(x2)
+ 1e0:	             00e12423          	sw	x14,8(x2)
+ 1e4:	             00f12223          	sw	x15,4(x2)
+     ###     uint32_t mepc, mcause;
+     ###     asm volatile ("csrr %0, mcause" : "=r"(mcause));
+ 1e8:	             342027f3          	csrrs	x15,mcause,x0
+     ### 
+     ###     if (mcause & 0x80000000) {
+ 1ec:	/----------- 0807d263          	bge	x15,x0,270 <trap_handler+0x98>
+     ###         // Interrupt
+     ###         // mepc already points to the interrupted instruction
+     ###         uint32_t id = mcause & 0x1F;
+ 1f0:	|            01f7f793          	andi	x15,x15,31
+     ###         // switch case needs jump table to be loaded into dmem
+     ###         if (id == 16) { // QSPI — read received byte to clear RX interrupt flag
+ 1f4:	|            01000713          	addi	x14,x0,16
+ 1f8:	|        /-- 00e79e63          	bne	x15,x14,214 <trap_handler+0x3c>
+     ###             (void) QSPI_RXDATA_BUF;
+ 1fc:	|        |   000027b7          	lui	x15,0x2
+ 200:	|        |   0247a703          	lw	x14,36(x15) # 2024 <__ram+0x24>
+     ###             QSPI_CSR_ADDR = 0;
+ 204:	|        |   0007a023          	sw	x0,0(x15)
+     ###             TEST_LOC = 1;
+     ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
+     ###             // TIMER_CTRL = 0;
+     ###             TEST_LOC = 108;
+     ###         } else if (id == 20) { // Matrix Mul ignored
+     ###             TEST_LOC = 1;
+ 208:	|  /-----|-> 000017b7          	lui	x15,0x1
+ 20c:	|  |     |   00100713          	addi	x14,x0,1
+ 210:	|  |  /--|-- 03c0006f          	jal	x0,24c <trap_handler+0x74>
+     ###         } else if (id == 17) { // UART — read received byte to drain RX FIFO
+ 214:	|  |  |  \-> 01100713          	addi	x14,x0,17
+ 218:	|  |  |  /-- 00e79863          	bne	x15,x14,228 <trap_handler+0x50>
+     ###             (void) UART_URDR;
+ 21c:	|  |  |  |   000027b7          	lui	x15,0x2
+ 220:	|  |  |  |   0447a783          	lw	x15,68(x15) # 2044 <__ram+0x44>
+     ###             TEST_LOC = 1;
+ 224:	|  +--|--|-- fe5ff06f          	jal	x0,208 <trap_handler+0x30>
+     ###         } else if (id == 18) { // GPIO — read pin state to clear edge-detect flag
+ 228:	|  |  |  \-> 01200713          	addi	x14,x0,18
+ 22c:	|  |  |  /-- 00e79863          	bne	x15,x14,23c <trap_handler+0x64>
+     ###             (void) GPIO_GDAT;
+ 230:	|  |  |  |   000027b7          	lui	x15,0x2
+ 234:	|  |  |  |   0c47a783          	lw	x15,196(x15) # 20c4 <__ram+0xc4>
+     ###             TEST_LOC = 1;
+ 238:	|  +--|--|-- fd1ff06f          	jal	x0,208 <trap_handler+0x30>
+     ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
+ 23c:	|  |  |  \-> 01300713          	addi	x14,x0,19
+ 240:	|  |  |  /-- 00e79a63          	bne	x15,x14,254 <trap_handler+0x7c>
+     ###             TEST_LOC = 108;
+ 244:	|  |  |  |   000017b7          	lui	x15,0x1
+ 248:	|  |  |  |   06c00713          	addi	x14,x0,108
+     ###             TEST_LOC = 1;
+ 24c:	|  |  \--|-> 00e7a023          	sw	x14,0(x15) # 1000 <__flash_size+0x800>
+ 250:	|  |  /--|-- 00c0006f          	jal	x0,25c <trap_handler+0x84>
+     ###         } else if (id == 20) { // Matrix Mul ignored
+ 254:	|  |  |  \-> 01400713          	addi	x14,x0,20
+ 258:	|  \--|----- fae788e3          	beq	x15,x14,208 <trap_handler+0x30>
+     ###         // Log cause to UART for debug visibility
+     ###         UART_UBRR = 0x04;
+     ###         UART_UCR1 = 0x07;
+     ###         UART_UTDR = mcause;
+     ###     }
+ 25c:	|     >----> 00c12683          	lw	x13,12(x2)
+ 260:	|     |      00812703          	lw	x14,8(x2)
+ 264:	|     |      00412783          	lw	x15,4(x2)
+ 268:	|     |      01010113          	addi	x2,x2,16
+ 26c:	|     |      30200073          	mret
+     ###         asm volatile ("csrr %0, mepc" : "=r"(mepc));
+ 270:	\-----|----> 34102773          	csrrs	x14,mepc,x0
+     ###         mepc += 4; // put mepc on the next instruction
+ 274:	      |      00470713          	addi	x14,x14,4
+     ###         asm volatile ("csrw mepc, %0" : : "r"(mepc));
+ 278:	      |      34171073          	csrrw	x0,mepc,x14
+     ###         UART_UBRR = 0x04;
+ 27c:	      |      00002737          	lui	x14,0x2
+ 280:	      |      00400693          	addi	x13,x0,4
+ 284:	      |      04d72823          	sw	x13,80(x14) # 2050 <__ram+0x50>
+     ###         UART_UCR1 = 0x07;
+ 288:	      |      00700693          	addi	x13,x0,7
+ 28c:	      |      04d72623          	sw	x13,76(x14)
+     ###         UART_UTDR = mcause;
+ 290:	      |      04f72423          	sw	x15,72(x14)
+ 294:	      \----- fc9ff06f          	jal	x0,25c <trap_handler+0x84>
+
+00000298 <main>:
+     ### #endif
+     ### 
+     ### // static char str_start[] = "Starting matrix multiplication...\n";
+     ### // static char str_done[]  = "Matrix multiplication completed. Output:\n";
+     ### 
+     ### int main () {
+ 298:	                   fe010113          	addi	x2,x2,-32
+ 29c:	                   00112e23          	sw	x1,28(x2)
+ 2a0:	                   00812c23          	sw	x8,24(x2)
+ 2a4:	                   00912a23          	sw	x9,20(x2)
+     ###     volatile int i = 0;
+ 2a8:	                   00012623          	sw	x0,12(x2)
+     ###     gpio_init();
+ 2ac:	                   d99ff0ef          	jal	x1,44 <gpio_init>
+     ###     uart_init();
+ 2b0:	                   da9ff0ef          	jal	x1,58 <uart_init>
+     ###     for (i = 0; i < 10000000; i++);
+ 2b4:	                   009897b7          	lui	x15,0x989
+ 2b8:	                   00012623          	sw	x0,12(x2)
+ 2bc:	                   67f78793          	addi	x15,x15,1663 # 98967f <__ram+0x98767f>
+ 2c0:	/----------------> 00c12703          	lw	x14,12(x2)
+ 2c4:	|  /-------------- 06e7d063          	bge	x15,x14,324 <main+0x8c>
+     ###     char ch;
+     ###     for (ch = 'a'; ch <= 'z'; ch++) {
+ 2c8:	|  |               06100413          	addi	x8,x0,97
+ 2cc:	|  |               07b00493          	addi	x9,x0,123
+     ###         uart_send_byte(ch);
+ 2d0:	|  |           /-> 00040513          	addi	x10,x8,0
+     ###     for (ch = 'a'; ch <= 'z'; ch++) {
+ 2d4:	|  |           |   00140413          	addi	x8,x8,1
+ 2d8:	|  |           |   0ff47413          	andi	x8,x8,255
+     ###         uart_send_byte(ch);
+ 2dc:	|  |           |   dbdff0ef          	jal	x1,98 <uart_send_byte>
+     ###     for (ch = 'a'; ch <= 'z'; ch++) {
+ 2e0:	|  |           \-- fe9418e3          	bne	x8,x9,2d0 <main+0x38>
+     ###     }
+     ### 
+     ###     while (1) {
+     ###         UART_UTDR = 'w';
+ 2e4:	|  |               000027b7          	lui	x15,0x2
+     ###         // while (!(UART_USR0 & 0x4));
+     ###         GPIO_GDAT ^= 0x0F; // Toggle GPIO pin 0
+     ###         for (i = 0; i < 5000000; i++); // Delay
+ 2e8:	|  |               004c5737          	lui	x14,0x4c5
+     ###         UART_UTDR = 'w';
+ 2ec:	|  |               04878613          	addi	x12,x15,72 # 2048 <__ram+0x48>
+ 2f0:	|  |               07700593          	addi	x11,x0,119
+     ###         for (i = 0; i < 5000000; i++); // Delay
+ 2f4:	|  |               b3f70713          	addi	x14,x14,-1217 # 4c4b3f <__ram+0x4c2b3f>
+     ###         UART_UTDR = 'w';
+ 2f8:	|  |     /-------> 00b62023          	sw	x11,0(x12)
+     ###         GPIO_GDAT ^= 0x0F; // Toggle GPIO pin 0
+ 2fc:	|  |     |         0c47a683          	lw	x13,196(x15)
+ 300:	|  |     |         00f6c693          	xori	x13,x13,15
+ 304:	|  |     |         0cd7a223          	sw	x13,196(x15)
+     ###         for (i = 0; i < 5000000; i++); // Delay
+ 308:	|  |     |         00012623          	sw	x0,12(x2)
+ 30c:	|  |  /--|-------> 00c12683          	lw	x13,12(x2)
+ 310:	|  |  |  |  /----- 02d75263          	bge	x14,x13,334 <main+0x9c>
+     ###         while (!(UART_USR0 & 0x4));
+ 314:	|  |  |  |  |  /-> 0407a683          	lw	x13,64(x15)
+ 318:	|  |  |  |  |  |   0046f693          	andi	x13,x13,4
+ 31c:	|  |  |  |  |  \-- fe068ce3          	beq	x13,x0,314 <main+0x7c>
+ 320:	|  |  |  \--|----- fd9ff06f          	jal	x0,2f8 <main+0x60>
+     ###     for (i = 0; i < 10000000; i++);
+ 324:	|  \--|-----|----> 00c12703          	lw	x14,12(x2)
+ 328:	|     |     |      00170713          	addi	x14,x14,1
+ 32c:	|     |     |      00e12623          	sw	x14,12(x2)
+ 330:	\-----|-----|----- f91ff06f          	jal	x0,2c0 <main+0x28>
+     ###         for (i = 0; i < 5000000; i++); // Delay
+ 334:	      |     \----> 00c12683          	lw	x13,12(x2)
+ 338:	      |            00168693          	addi	x13,x13,1
+ 33c:	      |            00d12623          	sw	x13,12(x2)
+ 340:	      \----------- fcdff06f          	jal	x0,30c <main+0x74>
