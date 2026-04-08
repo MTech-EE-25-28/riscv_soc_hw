@@ -1,23 +1,3 @@
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company:
-// Engineer:
-//
-// Create Date: 04.04.2026 15:29:57
-// Design Name:
-// Module Name: UART_module
-// Project Name:
-// Target Devices:
-// Tool Versions:
-// Description:
-//
-// Dependencies:
-//
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//
-//////////////////////////////////////////////////////////////////////////////////
 
 module UART_module (
     input wire clk,
@@ -186,6 +166,7 @@ module UART_module (
                         tx <= 1'b1;
                         if (tx_s_tick_cnt == 15) begin
                             tx_state <= TX_IDLE;
+                            tx_s_tick_cnt <= 0;
                         end else tx_s_tick_cnt <= tx_s_tick_cnt + 1;
                     end
                 endcase

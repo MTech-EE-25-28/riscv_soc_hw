@@ -11,7 +11,7 @@ module qspi_csr #(
     input  wire        psel,
     input  wire        penable,
     input  wire        pwrite,
-    input  wire [7:0]  paddr,
+    input  wire [31:0] paddr,
     input  wire [31:0] pwdata,
     output wire [31:0] prdata,
     output reg         pready,
@@ -61,7 +61,7 @@ module qspi_csr #(
     // Internal registers
     // ------------------------------------------------------------
     reg        done_latch;
-    reg [7:0]  addr_latched;     // APB address latched in SETUP phase
+    reg [31:0] addr_latched;     // APB address latched in SETUP phase
     reg [31:0] prdata_r;         // read data register
 
     assign pslverr = 1'b0;       // no error support
@@ -71,7 +71,7 @@ module qspi_csr #(
     // ------------------------------------------------------------
     always @(posedge pclk or negedge presetn) begin
         if (!presetn) begin
-            addr_latched <= 8'h00;
+            addr_latched <= 'h00;
         end else if (psel && !penable) begin
             addr_latched <= paddr;   // latch address only in SETUP phase
         end

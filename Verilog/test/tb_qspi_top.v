@@ -21,8 +21,8 @@ module tb_qspi_top;
     //--------------------------------------------
     // APB
     //--------------------------------------------
-    reg        psel, penable, pwrite;
-    reg [31:0] paddr, pwdata;
+    reg         psel, penable, pwrite;
+    reg  [31:0] paddr, pwdata;
     wire [31:0] prdata;
     wire done;
     //--------------------------------------------
@@ -47,7 +47,7 @@ module tb_qspi_top;
         .psel      (psel),
         .penable   (penable),
         .pwrite    (pwrite),
-        .paddr     (paddr[7:0]),
+        .paddr     (paddr),
         .pwdata    (pwdata),
         .prdata    (prdata),
         .pready    (),
@@ -131,8 +131,8 @@ module tb_qspi_top;
         //----------------------------------------
         $display("\n--- TEST WREN (06h) ---");
 
-        apb_write(32'h04, 32'h06);              // opcode
-        apb_write(32'h00, CTRL(4'd2,0));        // start + enable
+        apb_write(32'h0000_2004, 32'h06);              // opcode
+        apb_write(32'h0000_2000, CTRL(4'd2,0));        // start + enable
 
         wait_done();
 
@@ -141,55 +141,61 @@ module tb_qspi_top;
         //----------------------------------------
         $display("\n--- TEST RDSR (05h) ---");
 
-        apb_write(32'h04, 32'h05);
-        apb_write(32'h10, 32'h1);               // length = 1
-        apb_write(32'h00, CTRL(4'd2,0));
+        apb_write(32'h0000_2004, 32'h05);
+        apb_write(32'h0000_2010, 32'h1);               // length = 1
+        apb_write(32'h0000_2000, CTRL(4'd2,0));
 
         //$finish;
         wait_done();
-        apb_read(32'h0C);
+        apb_read(32'h0000_200C);
 
         //----------------------------------------
         // 3) READ ID (9Fh)
         //----------------------------------------
         $display("\n--- TEST RDID (9Fh) ---");
 
-        apb_write(32'h04, 32'h9F);
-        apb_write(32'h00, CTRL(4'd2,0));
+        apb_write(32'h0000_2004, 32'h9F);
+        apb_write(32'h0000_2000, CTRL(4'd2,0));
 
         wait_done();
-        apb_read(32'h0C);
+        apb_read(32'h0000_200C);
 
         //----------------------------------------
         // 4) QUAD READ (6Bh)
         //----------------------------------------
         $display("\n--- TEST QUAD READ (6Bh) ---");
 
-        apb_write(32'h04, 32'h6B);
-        apb_write(32'h08, 32'h00000000);        // addr
-        apb_write(32'h10, 32'h4);               // length
-        apb_write(32'h00, CTRL(4'd2,1));        // quad enable
+        apb_write(32'h0000_2004, 32'h6B);
+        apb_write(32'h0000_2008, 32'h00000000);        // addr
+        apb_write(32'h0000_2010, 32'h4);               // length
+        apb_write(32'h0000_2000, CTRL(4'd2,1));        // quad enable
 
         wait_done();
-        apb_read(32'h0C);
+        apb_read(32'h0000_200C);
 
         //----------------------------------------
         // 5) QUAD WRITE (32h)
         //----------------------------------------
         $display("\n--- TEST QUAD WRITE (32h) ---");
 
-        apb_write(32'h04, 32'h32);
-        apb_write(32'h08, 32'h00000000);
-        apb_write(32'h10, 32'h4);
+        apb_write(32'h0000_2004, 32'h32);
+        apb_write(32'h0000_2008, 32'h00000000);
+        apb_write(32'h0000_2010, 32'h4);
 
-        apb_write(32'h20, 32'hAABBCCDD);
+        apb_write(32'h0000_2020, 32'hAABBCCDD);
 
-        apb_write(32'h00, CTRL(4'd2,1));
+        apb_write(32'h0000_2000, CTRL(4'd2,1));
 
         wait_done();
 
         $display("\nALL TESTS DONE\n");
         #100;
+        $finish;
+    end
+
+    initial begin
+        #100000;
+        $display("Simulation timeout");
         $finish;
     end
 

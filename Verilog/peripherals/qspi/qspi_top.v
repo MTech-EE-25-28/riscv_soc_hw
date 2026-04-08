@@ -10,7 +10,7 @@ module qspi_top (
     input  wire        psel,
     input  wire        penable,
     input  wire        pwrite,
-    input  wire [7:0]  paddr,
+    input  wire [31:0] paddr,
     input  wire [31:0] pwdata,
     output wire [31:0] prdata,
     output wire        pready,
