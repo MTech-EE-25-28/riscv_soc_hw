@@ -1,4 +1,3 @@
-
 // AXI APB Interface for CPU-Peripheral Communication
 // master
 module apb_interface (
@@ -81,9 +80,12 @@ wire [31:0] timer_prdata_w;
 wire        timer_irq_w;
 
 timer timer_u (
-    clk, resetn, pclk, presetn, psel[2], penable, pwrite, paddr, pwdata,
-    timer_prdata_w, timer_pready_w, timer_pslverr_w,
-    timer_irq_w, pwm_out0, pwm_out1
+    .clk(clk), .resetn(resetn),
+    .pclk(pclk), .presetn(presetn),
+    .psel(psel[2]), .penable(penable), .pwrite(pwrite),
+    .paddr(paddr), .pwdata(pwdata),
+    .prdata(timer_prdata_w), .pready(timer_pready_w), .pslverr(timer_pslverr_w),
+    .irq(timer_irq_w), .pwm_out0(pwm_out0), .pwm_out1(pwm_out1)
 );
 
 // Internal wire for UART slave responses
@@ -107,7 +109,7 @@ qspi_top qspi_u (
     .clk(clk), .resetn(resetn),
     .pclk(pclk), .presetn(presetn),
     .psel(psel[0]), .penable(penable), .pwrite(pwrite),
-    .paddr(paddr[7:0]), .pwdata(pwdata),
+    .paddr(paddr), .pwdata(pwdata),
     .prdata(qspi_prdata_w), .pready(qspi_pready_w), .pslverr(qspi_pslverr_w),
     .io_in(qspi_io_in), .io_out(qspi_io_out), .io_oe(qspi_io_oe),
     .sck(qspi_sck), .cs_n(qspi_cs_n),
@@ -115,22 +117,34 @@ qspi_top qspi_u (
 );
 
 // Mux read data and ready from the addressed peripheral
-wire        pready_int = psel[2] ? timer_pready_w :
+wire        pready_int = psel[0] ? qspi_pready_w :
+                         psel[1] ? uart_pready_w :
+                         psel[2] ? timer_pready_w :
                          psel[3] ? gpio_pready_w  :
-                         psel[4] ? mm_pready_w    :
-                         psel[1] ? uart_pready_w  : pready;
-wire [31:0] prdata_int = psel[2] ? timer_prdata_w :
+                         psel[4] ? mm_pready_w    : 1'b1;
+
+wire [31:0] prdata_int = psel[0] ? qspi_prdata_w :
+                         psel[1] ? uart_prdata_w :
+                         psel[2] ? timer_prdata_w :
                          psel[3] ? gpio_prdata_w  :
-                         psel[4] ? mm_prdata_w    :
-                         psel[1] ? uart_prdata_w  : prdata;
+                         psel[4] ? mm_prdata_w    : 32'b0;
 
 // irq[4]=matrixmul, irq[3]=timer, irq[2]=gpio, irq[1]=uart, irq[0]=qspi
-assign irq = {1'b0, timer_irq_w, gpio_irq_w, 2'b00};
+assign irq = {1'b0, timer_irq_w, gpio_irq_w, 1'b0, 1'b0};
 
 reg [1:0] state;
 reg [4:0] periph_sel; // 4-matrixmul, 3-timer, 2-gpio, 1-uart, 0-qspi
+reg [4:0] periph_sel_r;
+reg       txn_done_r; // one-cycle lockout after WAIT to prevent re-trigger on stale DataAdr
 
-assign apb_done = (state == WAIT);
+// Register apb_done to break the long combo path:
+//   state reg → (state==WAIT) → apb_done → hazard_unit → MemStall → pipeline enables
+// In post-implementation timing this path doesn't close at 50 MHz.
+// Registering adds 1 extra stall cycle (20 ns) per peripheral access — negligible vs baud periods.
+// apb_done_reg goes high in the IDLE cycle after WAIT, same cycle as txn_done_r=1,
+// so both signals are perfectly synchronised and the pipeline releases cleanly.
+reg apb_done_reg;
+assign apb_done = apb_done_reg;
 
 // address decoder for peripheral selection
 always @(*) begin
@@ -153,14 +167,19 @@ end
 // 4-matrixmul, 3-timer, 2-gpio, 1-uart, 0-qspi
 always @(posedge clk) begin
     if (!resetn) begin
-        paddr  <= 32'hFFFF_FFFF; psel  <= 5'b0; penable <= 1'b0;
+        paddr  <= 32'b0; psel  <= 5'b0; penable <= 1'b0;
         pwrite <= 1'b0;  pwdata <= 32'b0; state <= IDLE;
         cpu_rdata <= 32'b0;
+        periph_sel_r <= 5'b0;
+        txn_done_r   <= 1'b0;
+        apb_done_reg <= 1'b0;
     end else begin
+        txn_done_r   <= (state == WAIT); // high for exactly 1 cycle after WAIT→IDLE
+        apb_done_reg <= (state == WAIT); // registered apb_done: high in IDLE cycle after WAIT
         case (state)
             IDLE: begin
-                // ph_stall (from hazard unit) freezes the pipeline combinationally the moment
-                if (|periph_sel) begin
+                if (|periph_sel && !txn_done_r) begin
+                    periph_sel_r <= periph_sel;
                     paddr   <= cpu_paddr;
                     pwdata  <= cpu_wdata;
                     psel    <= periph_sel;
@@ -175,8 +194,6 @@ always @(posedge clk) begin
             WRITE: begin
                 penable <= 1'b1;
                 if (pready_int) begin
-                    penable <= 1'b0;
-                    psel    <= 5'b0;
                     state   <= WAIT;
                 end
             end
@@ -184,8 +201,6 @@ always @(posedge clk) begin
                 penable <= 1'b1;
                 if (pready_int) begin
                     cpu_rdata <= prdata_int;
-                    penable   <= 1'b0;
-                    psel      <= 5'b0;
                     state     <= WAIT;
                 end
             end
@@ -195,6 +210,8 @@ always @(posedge clk) begin
             // carries the NEW address, so no re-trigger on the old address.
             WAIT: begin
                 state <= IDLE;
+                penable   <= 1'b0;
+                psel      <= 5'b0;
             end
         endcase
     end

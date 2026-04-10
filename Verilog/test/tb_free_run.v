@@ -1,4 +1,5 @@
-
+`timescale 1ns/1ps
+// Testbench for free running the SoC without any specific test program
 module tb_free_run;
 
 

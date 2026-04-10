@@ -10,7 +10,7 @@
 *.gz
 *.fdb_latexmk
 *.fls
-
+*.*.fst
 tb_free_run.vcd
 tb_soc_mm.vcd
 tb_soc_top.vcd
