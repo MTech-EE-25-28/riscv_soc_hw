@@ -44,7 +44,7 @@ module UART_module (
 
     reg [15:0] BRR_reg;
     always @(posedge clk or posedge reset) begin
-        if (reset) BRR_reg <= 16'd0;
+        if (reset) BRR_reg <= 16'd27; // Default to 115200 baud at 50 MHz
         else if (BRR_en) BRR_reg <= BRR_in;
     end
 
@@ -84,6 +84,7 @@ module UART_module (
             if (TDR_en) begin
                 TDR_reg <= TDR_in;
                 txe_flag <= 1'b0;
+                tc_flag <= 1'b0;
             end else if (load_tdr_to_shift) begin
                 txe_flag <= 1'b1; // Instant update when loaded to shift reg
             end
@@ -101,7 +102,7 @@ module UART_module (
     end
 
     // --- RX Path Registers & Flags ---
-//    wire temp_ne_pulse; // Driven by RX FSM
+    //    wire temp_ne_pulse; // Driven by RX FSM
     reg temp_ne_flag;
 
     // ==========================================
