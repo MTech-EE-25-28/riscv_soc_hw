@@ -140,7 +140,7 @@ Disassembly of section .text:
 00000060 <uart_init>:
      ### 
      ### void uart_init() {
-     ###     UART_UBRR = 0x1B; // Set baud rate divisor: 50MHz / (27 * 16) = 115,740 ~= 115200 baud
+     ###     UART_UBRR = 0x1B; // Set baud rate divisor: 50MHz / (27 * 16) = 115,200 baud
   60:	000027b7          	lui	x15,0x2
   64:	01b00713          	addi	x14,x0,27
   68:	04e7a823          	sw	x14,80(x15) # 2050 <__ram+0x50>
@@ -176,7 +176,7 @@ Disassembly of section .text:
 000000a0 <uart_send_byte>:
      ### 
      ### void uart_send_byte(char c) {
-     ###     for (int i = 0; i < 250000; i++);
+     ###     // for (int i = 0; i < 250000; i++);
      ###     UART_UTDR = c;
   a0:	    000027b7          	lui	x15,0x2
   a4:	    04a7a423          	sw	x10,72(x15) # 2048 <__ram+0x48>
@@ -377,7 +377,7 @@ Disassembly of section .text:
  230:	|  |  |  \-> 01400713          	addi	x14,x0,20
  234:	|  \--|----- fae788e3          	beq	x15,x14,1e4 <trap_handler+0x30>
      ###         // Log cause to UART for debug visibility
-     ###         UART_UBRR = 0x04;
+     ###         UART_UBRR = 0x1B;
      ###         UART_UCR1 = 0x07;
      ###         UART_UTDR = mcause;
      ###     }
@@ -392,9 +392,9 @@ Disassembly of section .text:
  250:	      |      00470713          	addi	x14,x14,4
      ###         asm volatile ("csrw mepc, %0" : : "r"(mepc));
  254:	      |      34171073          	csrrw	x0,mepc,x14
-     ###         UART_UBRR = 0x04;
+     ###         UART_UBRR = 0x1B;
  258:	      |      00002737          	lui	x14,0x2
- 25c:	      |      00400693          	addi	x13,x0,4
+ 25c:	      |      01b00693          	addi	x13,x0,27
  260:	      |      04d72823          	sw	x13,80(x14) # 2050 <__ram+0x50>
      ###         UART_UCR1 = 0x07;
  264:	      |      00700693          	addi	x13,x0,7
@@ -470,6 +470,7 @@ Disassembly of section .text:
      ###     uart_send_str(str_done);
  2f0:	             01048513          	addi	x10,x9,16
  2f4:	             02450513          	addi	x10,x10,36
+     ###     for (i = 0; i < 10000000; i++);
      ###     for (i = 0; i < 16; i++) {
  2f8:	             000024b7          	lui	x9,0x2
      ###     uart_send_str(str_done);
@@ -495,6 +496,7 @@ Disassembly of section .text:
  324:	         \-- fe9414e3          	bne	x8,x9,30c <main+0x98>
      ###         _put_value(val);
      ###     }
+     ###     for (i = 0; i < 10000000; i++);
      ###     CPU_DONE = 1;
  328:	             00100793          	addi	x15,x0,1
  32c:	             00f90423          	sb	x15,8(x18)

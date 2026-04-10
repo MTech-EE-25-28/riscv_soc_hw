@@ -36,7 +36,7 @@ void __attribute__((interrupt("machine"))) trap_handler (void) {
         mepc += 4; // put mepc on the next instruction
         asm volatile ("csrw mepc, %0" : : "r"(mepc));
         // Log cause to UART for debug visibility
-        UART_UBRR = 0x04;
+        UART_UBRR = 0x1B;
         UART_UCR1 = 0x07;
         UART_UTDR = mcause;
     }
