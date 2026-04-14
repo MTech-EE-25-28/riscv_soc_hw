@@ -20,7 +20,8 @@ module soc_io (
     output wire [3:0]  qspi_io_out,
     output wire        qspi_io_oe,
     output wire        qspi_sck,
-    output wire        qspi_cs_n
+    output wire        qspi_cs_n,
+    output wire        cpu_resetn_w
 );
 
 wire [31:0] WriteData;
@@ -33,8 +34,6 @@ wire [31:0] PCF, dmem_rdata, cpu_rdata;
 
 // apb_done: 1-cycle pulse from axi_interface (state==WAIT) that overrides
 wire apb_done_w;
-// cpu_resetn: held low by bootloader until IMEM is loaded; released to run
-wire cpu_resetn_w;
 
 // ReadData mux: peripheral addresses use APB cpu_rdata, SRAM uses dmem_rdata.
 // Use WB-stage address (ALUResultW=ALUResult) so the mux is correct when the

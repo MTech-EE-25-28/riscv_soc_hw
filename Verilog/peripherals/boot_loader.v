@@ -1,144 +1,126 @@
-// Bootloader module for receiving program instructions over UART and writing to memory
+// =============================================================================
+//  boot_loader.v
+//
+//  UART bootloader FSM.  On power-on (boot_select=1):
+//    1. Configures uart_top: BRR → CR (no parity, 8-bit, RE+TE+UE).
+//    2. Sends HANDSHAKE_BYTE (0xAA) over TX, waits for TC.
+//    3. Waits for ACK_BYTE (0x55) on RX.
+//    4. Receives a byte-stream, packs every 4 bytes (MSB-first) into a
+//       32-bit word, pulses write_data_en for one cycle, then sends 'X'
+//       (0x58) over TX to acknowledge the word.
+//    5. After IDLE_THRESHOLD consecutive SR-idle polls with no new byte,
+//       asserts cpu_resetn to release the CPU.
+//
+//  APB register map (offset from UART_BASE_ADDR):
+//    0x00  SR   read-only   SR[3]=RXIDLE  SR[2]=TC  SR[1]=RXNE  SR[0]=TXE
+//    0x04  RDR  read-only   received byte in [7:0]
+//    0x08  TDR  write-only  byte to transmit in [7:0]
+//    0x0C  CR   write-once  {2'b00, PS, PCE, M, RE, TE, UE}
+//    0x10  BRR  write-once  baud-rate divisor
+// =============================================================================
 module boot_loader #(
     parameter UART_BASE_ADDR  = 32'h0000_2040,
-    parameter UART_baud_rate  = 32'd27,         // BRR=27 for correct baud
-    parameter UART_parity_sel = 1'b0,           // 0=even, 1=odd  -> CR[5]
-    parameter UART_parity_en  = 1'b0,           // parity enable  -> CR[4]
-    parameter HANDSHAKE_BYTE  = 8'hAA,          // byte sent to signal sender to start
-    parameter ACK_BYTE        = 8'h55           // expected ack byte from sender
+    parameter UART_baud_rate  = 32'd27,   // BRR: 1 bit = 27 × 16 clocks at 50 MHz
+    parameter UART_parity_sel = 1'b0,     // CR[5] PS:  0=even, 1=odd
+    parameter UART_parity_en  = 1'b0,     // CR[4] PCE: 0=disabled
+    parameter HANDSHAKE_BYTE  = 8'hAA,    // sent to host to start transfer
+    parameter ACK_BYTE        = 8'h55     // expected reply from host
 )(
-    input         clk, resetn,   // MCU-wide reset, active-low
-    input         boot_select,   // activate UART path when high
-    output reg    cpu_resetn,    // CPU reset; active-low during boot, high when done
+    input         clk,
+    input         resetn,       // system reset, active-low
+    input         boot_select,  // start boot when high
 
-    // APB master interface (connects to uart_top)
-    input      [31:0] prdata,  // prdata from uart_top
-    output reg [31:0] paddr,    // APB address
-    output reg [31:0] pwdata,  // APB write data
+    output reg    cpu_resetn,   // holds CPU in reset (0) during boot
+
+    // APB master port → uart_top
+    input      [31:0] prdata,
+    output reg [31:0] paddr,
+    output reg [31:0] pwdata,
     output reg        psel,
     output reg        penable,
-    input             pready,    // ignored (uart_top always-ready)
+    input             pready,
     output reg        pwrite,
-    input             pslverr,   // ignored
-    output reg        presetn,   // APB reset to uart_top (active-low)
+    input             pslverr,
+    output reg        presetn,  // APB reset to uart_top, active-low
 
-    // Word-ready interface to memory controller
-    output reg [31:0] out_send_data,  // packed 32-bit instruction word
-    output reg [31:0] out_send_addr,  // address for the current out_send_data
-    output            write_data_en  // 1-cycle pulse when out_send_data is valid
-
-    // Handshake status (informational; 1 = received ack matched ACK_BYTE)
-    //output reg        ack_ok
+    // Word output to memory controller
+    output reg [31:0] out_send_data,  // complete 32-bit word (valid when write_data_en=1)
+    output reg [31:0] out_send_addr,  // word address (word 0 at 0x0000_0000)
+    output            write_data_en   // 1-cycle pulse when out_send_data is valid
 );
 
-    // ----------------------------------------------------------
+    // -------------------------------------------------------------------------
     //  State encoding
-    // ----------------------------------------------------------
-    localparam IDLE             = 4'b0000;
-    localparam UART_BRR_set     = 4'b1001;
-    localparam UART_control_reg = 4'b1010;
-    localparam UART_send_byte   = 4'b1100;  // NEW: write HANDSHAKE_BYTE to TDR
-    localparam UART_poll_tc     = 4'b1101;  // NEW: poll SR[2] (TC) until TX done
-    localparam UART_recv_ack    = 4'b1110;  // NEW: receive and verify ack byte
-    localparam UART_receive     = 4'b1011;
-    localparam finished         = 4'b1111;
+    // -------------------------------------------------------------------------
+    localparam [3:0]
+        IDLE              = 4'b0000,
+        UART_BRR_set      = 4'b1001,  // write BRR
+        UART_control_reg  = 4'b1010,  // write CR
+        UART_send_byte    = 4'b1100,  // write HANDSHAKE_BYTE to TDR
+        UART_poll_tc      = 4'b1101,  // wait for TC (handshake TX complete)
+        UART_recv_ack     = 4'b1110,  // wait for ACK_BYTE from host
+        UART_receive      = 4'b1011,  // receive bytes → pack into words
+        UART_send_word_ack = 4'b0001, // write 'X' to TDR after each word
+        UART_poll_word_tc  = 4'b0010, // wait for TC ('X' TX complete)
+        FINISHED          = 4'b1111;  // boot done, release CPU
 
-    // ----------------------------------------------------------
-    //  APB address offsets (relative to UART_BASE_ADDR)
-    // ----------------------------------------------------------
-    localparam SR_addr          = 8'h00; // {24'd0, SR[7:0]}         read-only
-    localparam RDR_addr         = 8'h04; // {23'd0, RDR[8:0]}        read-only
-    localparam transfer_addr    = 8'h08; // TDR - written for handshake TX
-    localparam control_reg_addr = 8'h0c; // CR  - written once
-    localparam baud_rate_addr   = 8'h10; // BRR - written once
+    // -------------------------------------------------------------------------
+    //  APB offsets
+    // -------------------------------------------------------------------------
+    localparam SR_ADDR   = 8'h00;
+    localparam RDR_ADDR  = 8'h04;
+    localparam TDR_ADDR  = 8'h08;
+    localparam CR_ADDR   = 8'h0C;
+    localparam BRR_ADDR  = 8'h10;
 
-    // ----------------------------------------------------------
-    //  SR bit positions (from UART_module SR_out assignment):
-    //    SR[7] = ne_flag   SR[6] = fe_flag  SR[5] = pe_flag
-    //    SR[4] = owe_flag  SR[3] = idle_flag (RXIDLE)
-    //    SR[2] = tc_flag   SR[1] = rxne_flag SR[0] = txe_flag
-    // ----------------------------------------------------------
+    localparam [10:0] WORD_COUNT = 10'd1535;  // finish after receiving this many words
 
-    // ----------------------------------------------------------
-    //  Idle threshold
-    //  At BRR=27: 1 bit = 27 clocks, 1 frame (11 bits) = 297 clocks.
-    //  Wait 300 consecutive SR-idle cycles before declaring done.
-    // ----------------------------------------------------------
-    localparam [8:0] IDLE_THRESHOLD = 9'd300;
-
-    // ----------------------------------------------------------
+    // -------------------------------------------------------------------------
     //  Registers
-    // ----------------------------------------------------------
+    // -------------------------------------------------------------------------
     reg [3:0] curr_state, next_state;
 
-    reg        mem_send_fully_loaded; // 1-cycle flag after 4th byte latched
-    reg [1:0]  counter;               // byte counter within a 32-bit word (0-3)
-    reg [8:0]  counter_2;             // idle-cycle counter (widened for BRR=27)
-    reg        reading_rdr;           // 1 = current cycle address is RDR_addr
-                                      //   (shared by UART_recv_ack & UART_receive)
+    reg        mem_send_fully_loaded;
+    reg [1:0]  counter;     // byte index within current word (0-3)
+    reg [10:0] word_cnt;    // number of complete words received
+    reg        reading_rdr; // 1 = next prdata holds RDR byte
 
-    // Handshake ack registers
-    reg [7:0]  ack_recv;              // latched ack byte from sender
-    reg        ack_received;          // set for one cycle when ack RDR is read
-
+    reg [7:0]  ack_recv;
+    reg        ack_received;
     reg        ack_ok;
-    // ----------------------------------------------------------
-    //  write_data_en : combinational pulse tied to the flag
-    // ----------------------------------------------------------
+
     assign write_data_en = mem_send_fully_loaded;
 
-    // ----------------------------------------------------------
-    //  Next-state logic (combinational)
-    // ----------------------------------------------------------
-    //
-    //  UART_poll_tc  : prdata[2] = SR[2] = TC (Transmission Complete).
-    //                  Wait until TC is asserted before expecting an ack.
-    //
-    //  UART_recv_ack : ack_received is set (for one cycle) in the
-    //                  sequential block when Phase B completes.
-    //
-    //  UART_receive  : Idle detection only valid when reading SR
-    //                  (~reading_rdr). SR[3] = RXIDLE; counter_2 must
-    //                  reach IDLE_THRESHOLD before transitioning to done.
-    // ----------------------------------------------------------
+    // -------------------------------------------------------------------------
+    //  Next-state logic
+    // -------------------------------------------------------------------------
     always @(*) begin
         case (curr_state)
-            IDLE             : next_state = boot_select ? UART_BRR_set : IDLE;
+            IDLE             : next_state = boot_select  ? UART_BRR_set     : IDLE;
             UART_BRR_set     : next_state = UART_control_reg;
-            UART_control_reg : next_state = UART_send_byte;      // -> handshake TX
-
-            // Send HANDSHAKE_BYTE: one-cycle APB write to TDR then move on
+            UART_control_reg : next_state = UART_send_byte;
             UART_send_byte   : next_state = UART_poll_tc;
-
-            // Stay here until TC (SR[2]) goes high -> TX frame fully sent
-            UART_poll_tc     : next_state = prdata[2] ? UART_recv_ack
-                                                         : UART_poll_tc;
-
-            // Wait until Phase B completes and ack_received pulses high
-            UART_recv_ack    : next_state = ack_received ? UART_receive
-                                                         : UART_recv_ack;
-
-            UART_receive     : next_state =
-                                  (!reading_rdr &&
-                                   prdata[3]  &&
-                                   counter_2 >= IDLE_THRESHOLD)
-                                  ? finished : UART_receive;
-
-            finished         : next_state = (~resetn) ? IDLE : finished;
-            default          : next_state = IDLE;
+            UART_poll_tc     : next_state = prdata[2]   ? UART_recv_ack     : UART_poll_tc;
+            UART_recv_ack    : next_state = ack_received ? UART_receive      : UART_recv_ack;
+            UART_receive     : next_state = (mem_send_fully_loaded && word_cnt >= WORD_COUNT) ? FINISHED :
+                                            mem_send_fully_loaded            ? UART_send_word_ack : UART_receive;
+            UART_send_word_ack : next_state = UART_poll_word_tc;
+            UART_poll_word_tc  : next_state = prdata[2] ? UART_receive       : UART_poll_word_tc;
+            FINISHED           : next_state = (~resetn) ? IDLE               : FINISHED;
+            default            : next_state = IDLE;
         endcase
     end
 
-    // ----------------------------------------------------------
+    // -------------------------------------------------------------------------
     //  Sequential logic
-    // ----------------------------------------------------------
+    // -------------------------------------------------------------------------
     always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
-            cpu_resetn            <= 1'b0;   // hold CPU in reset (active-low)
-            presetn               <= 1'b0;   // assert APB reset to uart_top
+            cpu_resetn            <= 1'b0;
+            presetn               <= 1'b0;
             curr_state            <= IDLE;
             counter               <= 2'b00;
-            counter_2             <= 9'd0;
+            word_cnt              <= 10'd0;
             mem_send_fully_loaded <= 1'b0;
             reading_rdr           <= 1'b0;
             ack_recv              <= 8'h00;
@@ -150,278 +132,159 @@ module boot_loader #(
             pwdata                <= 32'd0;
             paddr                 <= 32'hFFFF_FFFF;
             out_send_data         <= 32'd0;
-            out_send_addr         <= 32'hFFFF_FFFC; // pre-decremented: first word → addr 0
-        end
-        else begin
-            curr_state <= next_state;
-            mem_send_fully_loaded <= 1'b0;
+            out_send_addr         <= 32'hFFFF_FFFC; // pre-decremented; first +4 → 0x0
+        end else begin
+            curr_state            <= next_state;
+            mem_send_fully_loaded <= 1'b0; // default: cleared every cycle
+
             case (curr_state)
 
-                // --------------------------------------------------
-                //  IDLE - release APB reset, quiesce bus
-                // --------------------------------------------------
+                // -------------------------------------------------------------
                 IDLE : begin
-                    presetn               <= 1'b1;
-                    pwrite               <= 1'b0;
-                    penable               <= 1'b0;
-                    psel                  <= 1'b0;
-                    pwdata              <= 32'd0;
-                    paddr                <= 32'hFFFF_FFFF;
-                    counter               <= 2'b00;
-                    counter_2             <= 9'd0;
-                    mem_send_fully_loaded <= 1'b0;
-                    reading_rdr           <= 1'b0;
-                    ack_recv              <= 8'h00;
-                    ack_received          <= 1'b0;
-                    ack_ok                <= 1'b0;
-                    out_send_data         <= 32'd0;
-                    out_send_addr         <= 32'hFFFF_FFFC; // pre-decremented: first word → addr 0
+                    presetn      <= 1'b1;
+                    pwrite       <= 1'b0;
+                    penable      <= 1'b0;
+                    psel         <= 1'b0;
+                    pwdata       <= 32'd0;
+                    paddr        <= 32'hFFFF_FFFF;
+                    counter      <= 2'b00;
+                    word_cnt     <= 10'd0;
+                    reading_rdr  <= 1'b0;
+                    ack_recv     <= 8'h00;
+                    ack_received <= 1'b0;
+                    ack_ok       <= 1'b0;
+                    out_send_data <= 32'd0;
+                    out_send_addr <= 32'hFFFF_FFFC;
                 end
 
-                // --------------------------------------------------
-                //  UART_BRR_set - write baud-rate register (BRR)
-                //  APB WRITE  paddr = BASE + 0x10
-                //             pwdata = UART_baud_rate (=27 default)
-                // --------------------------------------------------
+                // -------------------------------------------------------------
                 UART_BRR_set : begin
                     pwrite  <= 1'b1;
-                    penable  <= 1'b1;
-                    psel     <= 1'b1;
-                    pwdata <= UART_baud_rate;
-                    paddr   <= UART_BASE_ADDR + baud_rate_addr;
+                    penable <= 1'b1;
+                    psel    <= 1'b1;
+                    pwdata  <= UART_baud_rate;
+                    paddr   <= UART_BASE_ADDR + BRR_ADDR;
                 end
 
-                // --------------------------------------------------
-                //  UART_control_reg - write control register (CR)
-                //  APB WRITE  paddr = BASE + 0x0C
-                //
-                //  pwdata[7:0]:
-                //    [7:6] = 2'b00          interrupts disabled
-                //    [5]   = UART_parity_sel PS  (0=even, 1=odd)
-                //    [4]   = UART_parity_en  PCE (parity control enable)
-                //    [3]   = 1'b0            M   (8-bit word length)
-                //    [2]   = 1'b1            RE  (receiver enable)
-                //    [1]   = 1'b1            TE  (transmitter enable) <-- CHANGED
-                //    [0]   = 1'b1            UE  (UART enable)
-                //
-                //  TE must be 1 so the UART can send the handshake byte.
-                //  With PS=1, PCE=1 => 8'b0011_0111 = 0x37
-                // --------------------------------------------------
+                // -------------------------------------------------------------
+                // CR: {2'b00, PS, PCE, M=0, RE=1, TE=1, UE=1}
+                // -------------------------------------------------------------
                 UART_control_reg : begin
                     pwrite  <= 1'b1;
-                    penable  <= 1'b1;
-                    psel     <= 1'b1;
-                    pwdata <= {24'h00_0000,
-                                 2'b00,
-                                 UART_parity_sel,
-                                 UART_parity_en,
-                                 4'b0111};   // M=0, RE=1, TE=1, UE=1
-                    paddr   <= UART_BASE_ADDR + control_reg_addr;
+                    penable <= 1'b1;
+                    psel    <= 1'b1;
+                    pwdata  <= {24'd0, 2'b00, UART_parity_sel, UART_parity_en, 4'b0111};
+                    paddr   <= UART_BASE_ADDR + CR_ADDR;
                 end
 
-                // --------------------------------------------------
-                //  UART_send_byte (NEW)
-                //
-                //  Issue one APB WRITE to TDR with HANDSHAKE_BYTE.
-                //  This tells the sender on the other end to begin
-                //  its data transfer.
-                //
-                //  TDR offset = 0x08.  TDR is 9-bit; MSB = 0 for
-                //  8-bit word mode (M=0).
-                //  pwdata = {23'd0, 1'b0, HANDSHAKE_BYTE}
-                // --------------------------------------------------
+                // -------------------------------------------------------------
+                // Write HANDSHAKE_BYTE to TDR
+                // -------------------------------------------------------------
                 UART_send_byte : begin
                     pwrite  <= 1'b1;
-                    penable  <= 1'b1;
-                    psel     <= 1'b1;
-                    pwdata <= {23'd0, 1'b0, HANDSHAKE_BYTE};
-                    paddr   <= UART_BASE_ADDR + transfer_addr;
-                    // Next state: UART_poll_tc (next_state already set combinationally)
-                end
-
-                // --------------------------------------------------
-                //  UART_poll_tc (NEW)
-                //
-                //  Poll SR continuously; wait until TC (SR[2]) = 1,
-                //  indicating the HANDSHAKE_BYTE frame has been fully
-                //  shifted out onto the TX line.
-                //
-                //  prdata holds SR from the PREVIOUS cycle's read,
-                //  so the first SR sample arrives on the cycle after
-                //  entering this state.  TC will only assert after many
-                //  baud-clock cycles, so the one-cycle pipeline delay
-                //  is inconsequential.
-                //
-                //  pwrite = 0 (read-only).
-                //  paddr  = SR_addr held constant throughout.
-                // --------------------------------------------------
-                UART_poll_tc : begin
-                    pwrite <= 1'b0;
                     penable <= 1'b1;
                     psel    <= 1'b1;
-                    paddr  <= UART_BASE_ADDR + SR_addr;
-                    // next_state transitions to UART_recv_ack when
-                    // prdata[2] (TC) is seen by the combinational block.
+                    pwdata  <= {24'd0, HANDSHAKE_BYTE};
+                    paddr   <= UART_BASE_ADDR + TDR_ADDR;
                 end
 
-                // --------------------------------------------------
-                //  UART_recv_ack (NEW)
-                //
-                //  Wait for the remote sender to echo back one ack byte.
-                //  Uses the same two-phase (reading_rdr) mechanism as
-                //  UART_receive.
-                //
-                //  Phase A (reading_rdr == 0):
-                //    Read SR at 0x00.  If RXNE (SR[1]) is asserted,
-                //    switch to Phase B.
-                //
-                //  Phase B (reading_rdr == 1):
-                //    Read RDR at 0x04.  Latch prdata[7:0] into
-                //    ack_recv, compare with ACK_BYTE, set ack_ok.
-                //    Pulse ack_received high for one cycle so that
-                //    next_state (combinational) advances to UART_receive.
-                //
-                //  After ack_received pulses, clear it so subsequent
-                //  re-entries to this state (after a resetn) start
-                //  fresh.
-                // --------------------------------------------------
+                // -------------------------------------------------------------
+                // Poll SR until TC (SR[2]) = 1
+                // -------------------------------------------------------------
+                UART_poll_tc : begin
+                    pwrite  <= 1'b0;
+                    penable <= 1'b1;
+                    psel    <= 1'b1;
+                    paddr   <= UART_BASE_ADDR + SR_ADDR;
+                end
+
+                // -------------------------------------------------------------
+                // Two-phase: read SR (Phase A) then RDR (Phase B) for ack byte
+                // -------------------------------------------------------------
                 UART_recv_ack : begin
-                    pwrite      <= 1'b0;
+                    pwrite       <= 1'b0;
                     penable      <= 1'b1;
                     psel         <= 1'b1;
-                    ack_received <= 1'b0; // clear unless Phase B completes below
+                    ack_received <= 1'b0;
 
-                    if (reading_rdr) begin
-                        // -----------------------------------------------
-                        //  Phase B: prdata now holds the fresh RDR byte
-                        // -----------------------------------------------
+                    if (reading_rdr) begin   // Phase B: prdata = RDR
                         reading_rdr  <= 1'b0;
-
-                        // Latch ack and verify
                         ack_recv     <= prdata[7:0];
                         ack_ok       <= (prdata[7:0] == ACK_BYTE);
-
-                        // Pulse ack_received so next_state sees UART_receive
                         ack_received <= 1'b1;
-
-                        // Return address to SR for UART_receive's first cycle
-                        paddr <= UART_BASE_ADDR + SR_addr;
-                    end
-                    else begin
-                        // -----------------------------------------------
-                        //  Phase A: read SR this cycle
-                        //  prdata holds last cycle's SR result
-                        // -----------------------------------------------
-                        if (prdata[1]) begin  // SR[1] = RXNE: ack byte ready
+                        paddr        <= UART_BASE_ADDR + SR_ADDR;
+                    end else begin           // Phase A: prdata = SR
+                        if (prdata[1]) begin // RXNE set
                             reading_rdr <= 1'b1;
-                            paddr      <= UART_BASE_ADDR + RDR_addr; // Phase B
-                        end
-                        else begin
-                            paddr <= UART_BASE_ADDR + SR_addr; // keep polling SR
-                        end
+                            paddr       <= UART_BASE_ADDR + RDR_ADDR;
+                        end else
+                            paddr <= UART_BASE_ADDR + SR_ADDR;
                     end
-                end // UART_recv_ack
+                end
 
-                // --------------------------------------------------
-                //  UART_receive - poll for bytes, pack into 32-bit words
-                //
-                //  Two-phase APB-read cycle per byte:
-                //
-                //  Phase A (reading_rdr == 0)  :  read SR at 0x00
-                //    prdata = {24'd0, SR[7:0]}
-                //    SR[1] = RXNE  - new byte in RDR
-                //    SR[3] = RXIDLE - RX line idle (no activity)
-                //
-                //    -> If RXNE=1: set reading_rdr, next cycle read RDR
-                //    -> Accumulate idle counter on SR[3]; reset on activity
-                //    -> Clear mem_send_fully_loaded (was high only last cycle)
-                //
-                //  Phase B (reading_rdr == 1)  :  read RDR at 0x04
-                //    prdata = {23'd0, RDR[8:0]}
-                //    prdata[7:0] = received byte (8-bit mode)
-                //
-                //    -> Latch into out_send_data slice based on counter
-                //    -> After 4th byte: set mem_send_fully_loaded (one cycle)
-                //       write_data_en pulses high; out_send_data is complete
-                //    -> Clear reading_rdr; return to Phase A (SR read)
-                //
-                //  pwrite stays 0 throughout; memory controller uses
-                //  out_send_data / write_data_en directly.
-                // --------------------------------------------------
+                // -------------------------------------------------------------
+                // Two-phase: read SR (Phase A) then RDR (Phase B) for each byte.
+                // Every 4th byte completes a word → pulse write_data_en.
+                // -------------------------------------------------------------
                 UART_receive : begin
-                    pwrite <= 1'b0;  // bootloader never writes in receive phase
+                    pwrite  <= 1'b0;
                     penable <= 1'b1;
                     psel    <= 1'b1;
 
-                    if (reading_rdr) begin
-                        // -----------------------------------------------
-                        //  Phase B: prdata now holds the fresh RDR byte
-                        // -----------------------------------------------
+                    if (reading_rdr) begin   // Phase B: prdata = RDR
                         reading_rdr <= 1'b0;
-                        counter_2   <= 9'd0; // activity detected - reset idle ctr
+                        paddr       <= UART_BASE_ADDR + SR_ADDR;
 
-                        // Latch byte into the correct word slice
                         case (counter)
-                            2'b00 : begin
-                                out_send_data[31:24] <= prdata[7:0];
-                                counter              <= 2'b01;
-                                mem_send_fully_loaded <= 1'b0;
-                            end
-
-                            2'b01 : begin
-                                out_send_data[23:16] <= prdata[7:0];
-                                counter              <= 2'b10;
-                            end
-
-                            2'b10 : begin
-                                out_send_data[15:8]  <= prdata[7:0];
-                                counter              <= 2'b11;
-                            end
-
-                            2'b11 : begin
-                                // 4th byte: complete the word and pulse write_data_en
+                            2'b00: begin out_send_data[31:24] <= prdata[7:0]; counter <= 2'b01; end
+                            2'b01: begin out_send_data[23:16] <= prdata[7:0]; counter <= 2'b10; end
+                            2'b10: begin out_send_data[15:8]  <= prdata[7:0]; counter <= 2'b11; end
+                            2'b11: begin
                                 out_send_data[7:0]    <= prdata[7:0];
-                                out_send_addr         <= out_send_addr + 'd4; // for writing to memory
-                                mem_send_fully_loaded <= 1'b1; // write_data_en goes HIGH
-                                counter               <= 2'b00; // reset for next word
+                                out_send_addr         <= out_send_addr + 'd4;
+                                mem_send_fully_loaded <= 1'b1;
+                                word_cnt              <= word_cnt + 10'd1;
+                                counter               <= 2'b00;
                             end
                         endcase
-
-                        // Return to SR read next cycle
-                        paddr <= UART_BASE_ADDR + SR_addr;
-                    end
-                    else begin
-                        // -----------------------------------------------
-                        //  Phase A: read SR this cycle
-                        //  prdata holds last cycle's SR result
-                        // -----------------------------------------------
-
-                        // Clear the one-cycle write_data_en pulse
-                        mem_send_fully_loaded <= 1'b0;
-
-                        // Idle counter: increment while RX line is idle
-                        if (prdata[3])       // SR[3] = RXIDLE
-                            counter_2 <= counter_2 + 1;
-                        else
-                            counter_2 <= 9'd0;
-
-                        // RXNE check: if new byte ready, switch to RDR read
-                        if (prdata[1]) begin // SR[1] = RXNE
+                    end else begin           // Phase A: prdata = SR
+                        if (prdata[1]) begin // RXNE set
                             reading_rdr <= 1'b1;
-                            paddr      <= UART_BASE_ADDR + RDR_addr; // Phase B address
-                        end
-                        else begin
-                            paddr <= UART_BASE_ADDR + SR_addr; // stay on SR
-                        end
+                            paddr       <= UART_BASE_ADDR + RDR_ADDR;
+                        end else
+                            paddr <= UART_BASE_ADDR + SR_ADDR;
                     end
-                end // UART_receive
-
-                // --------------------------------------------------
-                //  finished - release CPU from reset
-                // --------------------------------------------------
-                finished : begin
-                    cpu_resetn <= 1'b1; // de-assert CPU reset (active-low design)
                 end
+
+                // -------------------------------------------------------------
+                // Send 'X' (0x58) to acknowledge the received word
+                // -------------------------------------------------------------
+                UART_send_word_ack : begin
+                    pwrite      <= 1'b1;
+                    penable     <= 1'b1;
+                    psel        <= 1'b1;
+                    pwdata      <= {24'd0, 8'h58};
+                    paddr       <= UART_BASE_ADDR + TDR_ADDR;
+                    reading_rdr <= 1'b0;
+                end
+
+                // -------------------------------------------------------------
+                // Wait for TC before returning to UART_receive
+                // -------------------------------------------------------------
+                UART_poll_word_tc : begin
+                    pwrite  <= 1'b0;
+                    penable <= 1'b1;
+                    psel    <= 1'b1;
+                    paddr   <= UART_BASE_ADDR + SR_ADDR;
+                end
+
+                // -------------------------------------------------------------
+                // Boot complete — release CPU
+                // -------------------------------------------------------------
+                FINISHED : begin
+                    cpu_resetn <= 1'b1;
+                end
+
             endcase
         end
     end

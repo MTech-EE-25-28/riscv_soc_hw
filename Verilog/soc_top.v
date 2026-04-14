@@ -12,7 +12,8 @@ module soc_top (
     output tx,
     inout [3:0] qspi_io,
     output qspi_sck,
-    output qspi_cs_n
+    output qspi_cs_n,
+    output cpu_resetn_w
 );
 
 wire [31:0] PC, Result, ALUResult, DataAdr, WriteData_M;
@@ -58,7 +59,7 @@ soc_io soc_u (
     .gpio_in(gpio_in_w), .gpio_out(gpio_out_w), .gpio_oe(gpio_oe_w),
     .rx(rx), .tx(tx),
     .qspi_io_in(qspi_io_in_w), .qspi_io_out(qspi_io_out_w), .qspi_io_oe(qspi_io_oe_w),
-    .qspi_sck(qspi_sck), .qspi_cs_n(qspi_cs_n)
+    .qspi_sck(qspi_sck), .qspi_cs_n(qspi_cs_n), .cpu_resetn_w(cpu_resetn_w)
 );
 
 endmodule

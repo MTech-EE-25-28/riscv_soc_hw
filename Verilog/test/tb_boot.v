@@ -33,12 +33,12 @@ wire [31:0] gpio_pad;
 wire        tx;     // SoC → TB (bootloader handshake byte)
 reg         rx;     // TB → SoC (ack + image bytes)
 wire [3:0]  qspi_io;
-wire        qspi_sck, qspi_cs_n;
+wire        qspi_sck, qspi_cs_n, cpu_resetn;
 
 soc dut (
     clk, reset, pclk, presetn,
     PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData, MemWrite,
-    pwm_out0, pwm_out1, gpio_pad, rx, tx, qspi_io, qspi_sck, qspi_cs_n
+    pwm_out0, pwm_out1, gpio_pad, rx, tx, qspi_io, qspi_sck, qspi_cs_n, cpu_resetn
 );
 
 always #10 clk  = ~clk;
@@ -66,34 +66,69 @@ localparam integer BOOT_WORDS = 120;
 localparam string  BOOT_HEX_FILE = "./docker/bin/sum.hex";
 
 // ----------------------------------------------------------------
-// recv_uart_byte
-//   Receives one frame from SoC TX and checks it against `expected`.
-//   Samples each data bit at its centre (1.5 bit-periods from negedge).
+// Parallel UART decoder for the SoC TX line.
+// No parity (10-bit frame: 1 start + 8 data + 1 stop).
+// Runs continuously in the background, independent of the main
+// initial block so timing can never be missed.
+// rx_byte_valid pulses high for exactly 1 clock when a byte is ready.
 // ----------------------------------------------------------------
-task recv_uart_byte;
-    input [7:0] expected;
-    reg   [7:0] received;
-    integer     i;
-    begin
-        // Wait for falling edge of start bit
-        @(negedge tx);
-        // Advance to centre of first data bit (1½ bit periods = 648 clocks)
-        repeat(BIT_CLKS + BIT_CLKS/2) @(posedge clk);
-        // Sample 8 data bits, LSB first
-        for (i = 0; i < 8; i = i + 1) begin
-            received[i] = tx;
-            repeat(BIT_CLKS) @(posedge clk);
-        end
-        // (parity bit follows; we are now at its centre – advance past it)
-        // repeat(BIT_CLKS) @(posedge clk);
-        // Report
-        if (received === expected)
-            $display("[BOOT] t=%0t  Received handshake 0x%02X  OK", $time, received);
-        else
-            $display("[BOOT] t=%0t  ERROR: expected 0x%02X, received 0x%02X",
-                     $time, expected, received);
+reg [7:0]  rx_decoded_byte;
+reg        rx_byte_valid;
+
+reg [9:0]  urx_timer;       // bit-period countdown (max = BIT_CLKS+BIT_CLKS/2 = 648)
+reg [2:0]  urx_bit_cnt;     // 0-7
+reg [7:0]  urx_shift;
+reg [1:0]  urx_state;
+reg        tx_d;            // delayed tx for falling-edge detection
+
+localparam URX_IDLE = 2'd0, URX_DATA = 2'd1, URX_STOP = 2'd2;
+
+always @(posedge clk or negedge reset) begin
+    if (!reset) begin
+        urx_state       <= URX_IDLE;
+        tx_d            <= 1'b1;
+        rx_byte_valid   <= 1'b0;
+        rx_decoded_byte <= 8'h0;
+        urx_timer       <= 10'd0;
+        urx_bit_cnt     <= 3'd0;
+        urx_shift       <= 8'd0;
+    end else begin
+        tx_d          <= tx;
+        rx_byte_valid <= 1'b0;    // default: no new byte
+        case (urx_state)
+            URX_IDLE: begin
+                // Detect falling edge of tx → start bit
+                if (tx_d && !tx) begin
+                    // 1.5 bit-periods from falling edge → centre of bit 0
+                    urx_timer   <= BIT_CLKS + BIT_CLKS/2 - 1;
+                    urx_bit_cnt <= 3'd0;
+                    urx_shift   <= 8'd0;
+                    urx_state   <= URX_DATA;
+                end
+            end
+            URX_DATA: begin
+                if (urx_timer == 10'd0) begin
+                    urx_shift[urx_bit_cnt] <= tx;
+                    urx_timer              <= BIT_CLKS - 1;
+                    if (urx_bit_cnt == 3'd7)
+                        urx_state <= URX_STOP;
+                    else
+                        urx_bit_cnt <= urx_bit_cnt + 1;
+                end else
+                    urx_timer <= urx_timer - 1;
+            end
+            URX_STOP: begin
+                if (urx_timer == 10'd0) begin
+                    // Reached centre of stop bit – byte is complete
+                    rx_decoded_byte <= urx_shift;
+                    rx_byte_valid   <= 1'b1;
+                    urx_state       <= URX_IDLE;
+                end else
+                    urx_timer <= urx_timer - 1;
+            end
+        endcase
     end
-endtask
+end
 
 // ----------------------------------------------------------------
 // send_uart_byte
@@ -142,7 +177,11 @@ initial begin
     // Step 1 – receive HANDSHAKE_BYTE (0xAA) from bootloader TX
     // -----------------------------------------------------------
     $display("[BOOT] t=%0t  Waiting for handshake byte 0xAA from SoC...", $time);
-    recv_uart_byte(8'hAA);
+    @(posedge rx_byte_valid);
+    if (rx_decoded_byte === 8'hAA)
+        $display("[BOOT] t=%0t  Received handshake 0x%02X  OK", $time, rx_decoded_byte);
+    else
+        $display("[BOOT] t=%0t  ERROR: expected 0xAA, received 0x%02X", $time, rx_decoded_byte);
 
     // -----------------------------------------------------------
     // Step 2 – send ACK_BYTE (0x55) to bootloader
@@ -166,8 +205,13 @@ initial begin
         send_uart_byte(boot_mem[w][23:16]);
         send_uart_byte(boot_mem[w][15:8]);
         send_uart_byte(boot_mem[w][7:0]);
+        // Wait for 'X' ACK from bootloader confirming word was written to memory
+        @(posedge rx_byte_valid);
+        if (rx_decoded_byte !== 8'h58)
+            $display("[BOOT] t=%0t  WARN: expected 'X' (0x58), got 0x%02X at word %0d",
+                     $time, rx_decoded_byte, w);
     end
-    $display("[BOOT] t=%0t  All %0d bytes sent.  Waiting for bootloader idle...",
+    $display("[BOOT] t=%0t  All %0d words sent and acknowledged.",
              $time, BOOT_WORDS * 4);
 
     // -----------------------------------------------------------

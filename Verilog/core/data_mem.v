@@ -14,12 +14,12 @@ module data_mem #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 32, MEM_SIZE = 2048) (
 // uninitialized in hardware because Vivado cannot trace through the copy loop.
 reg [DATA_WIDTH-1:0] data_ram [0:MEM_SIZE-1];
 
-initial begin
-    string hex_file;
-    if (!$value$plusargs("HEX=%s", hex_file))
-        hex_file = "./docker/bin/sw_matrix_mul.hex";
-    $readmemh(hex_file, data_ram);
-end
+// initial begin
+//     string hex_file;
+//     if (!$value$plusargs("HEX=%s", hex_file))
+//         hex_file = "./docker/bin/sw_matrix_mul.hex";
+//     $readmemh(hex_file, data_ram);
+// end
 
 // word-aligned address
 wire [ADDR_WIDTH-1:0] word_addr = addr[ADDR_WIDTH-1:2];
