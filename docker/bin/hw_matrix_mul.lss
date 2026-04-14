@@ -176,10 +176,10 @@ Disassembly of section .text:
 000000a0 <uart_send_byte>:
      ### 
      ### void uart_send_byte(char c) {
-     ###     // for (int i = 0; i < 250000; i++);
      ###     UART_UTDR = c;
   a0:	    000027b7          	lui	x15,0x2
   a4:	    04a7a423          	sw	x10,72(x15) # 2048 <__ram+0x48>
+     ###     for (int i = 0; i < 2500; i++);
      ###     while (!(UART_USR0 & 0x4)); // Wait until TC is set
   a8:	    00002737          	lui	x14,0x2
   ac:	/-> 04072783          	lw	x15,64(x14) # 2040 <__ram+0x40>

@@ -320,11 +320,11 @@ Disassembly of section .text:
      ###         if (id == 16) { // QSPI — read received byte to clear RX interrupt flag
  1bc:	|            01000713          	addi	x14,x0,16
  1c0:	|        /-- 00e79e63          	bne	x15,x14,1dc <trap_handler+0x3c>
-     ###             (void) QSPI_DATA;
+     ###             (void) QSPI_RXDATA_BUF;
  1c4:	|        |   000027b7          	lui	x15,0x2
- 1c8:	|        |   0047a703          	lw	x14,4(x15) # 2004 <__ram+0x4>
-     ###             QSPI_STATUS = 0;
- 1cc:	|        |   0007a423          	sw	x0,8(x15)
+ 1c8:	|        |   0247a703          	lw	x14,36(x15) # 2024 <__ram+0x24>
+     ###             QSPI_CSR_ADDR = 0;
+ 1cc:	|        |   0007a023          	sw	x0,0(x15)
      ###             TEST_LOC = 1;
      ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
      ###             // TIMER_CTRL = 0;
@@ -363,7 +363,7 @@ Disassembly of section .text:
  21c:	|  |  |  \-> 01400713          	addi	x14,x0,20
  220:	|  \--|----- fae788e3          	beq	x15,x14,1d0 <trap_handler+0x30>
      ###         // Log cause to UART for debug visibility
-     ###         UART_UBRR = 0x04;
+     ###         UART_UBRR = 0x1B;
      ###         UART_UCR1 = 0x07;
      ###         UART_UTDR = mcause;
      ###     }
@@ -378,9 +378,9 @@ Disassembly of section .text:
  23c:	      |      00470713          	addi	x14,x14,4
      ###         asm volatile ("csrw mepc, %0" : : "r"(mepc));
  240:	      |      34171073          	csrrw	x0,mepc,x14
-     ###         UART_UBRR = 0x04;
+     ###         UART_UBRR = 0x1B;
  244:	      |      00002737          	lui	x14,0x2
- 248:	      |      00400693          	addi	x13,x0,4
+ 248:	      |      01b00693          	addi	x13,x0,27
  24c:	      |      04d72823          	sw	x13,80(x14) # 2050 <__ram+0x50>
      ###         UART_UCR1 = 0x07;
  250:	      |      00700693          	addi	x13,x0,7

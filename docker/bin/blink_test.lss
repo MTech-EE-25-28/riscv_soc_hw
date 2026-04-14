@@ -118,7 +118,7 @@ Disassembly of section .text:
 00000058 <UART_init>:
      ### 
      ### void UART_init() {
-     ###     UART_UBRR = 0x1B; // Set baud rate divisor for 115200 baud
+     ###     UART_UBRR = 0x1B; // Set baud rate divisor for 128000 baud
   58:	000027b7          	lui	x15,0x2
   5c:	01b00713          	addi	x14,x0,27
   60:	04e7a823          	sw	x14,80(x15) # 2050 <__ram+0x50>
@@ -153,11 +153,11 @@ Disassembly of section .text:
      ###         if (id == 16) { // QSPI — read received byte to clear RX interrupt flag
   8c:	|            01000713          	addi	x14,x0,16
   90:	|        /-- 00e79e63          	bne	x15,x14,ac <trap_handler+0x3c>
-     ###             (void) QSPI_DATA;
+     ###             (void) QSPI_RXDATA_BUF;
   94:	|        |   000027b7          	lui	x15,0x2
-  98:	|        |   0047a703          	lw	x14,4(x15) # 2004 <__ram+0x4>
-     ###             QSPI_STATUS = 0;
-  9c:	|        |   0007a423          	sw	x0,8(x15)
+  98:	|        |   0247a703          	lw	x14,36(x15) # 2024 <__ram+0x24>
+     ###             QSPI_CSR_ADDR = 0;
+  9c:	|        |   0007a023          	sw	x0,0(x15)
      ###             TEST_LOC = 1;
      ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
      ###             // TIMER_CTRL = 0;
@@ -196,7 +196,7 @@ Disassembly of section .text:
   ec:	|  |  |  \-> 01400713          	addi	x14,x0,20
   f0:	|  \--|----- fae788e3          	beq	x15,x14,a0 <trap_handler+0x30>
      ###         // Log cause to UART for debug visibility
-     ###         UART_UBRR = 0x04;
+     ###         UART_UBRR = 0x1B;
      ###         UART_UCR1 = 0x07;
      ###         UART_UTDR = mcause;
      ###     }
@@ -211,9 +211,9 @@ Disassembly of section .text:
  10c:	      |      00470713          	addi	x14,x14,4
      ###         asm volatile ("csrw mepc, %0" : : "r"(mepc));
  110:	      |      34171073          	csrrw	x0,mepc,x14
-     ###         UART_UBRR = 0x04;
+     ###         UART_UBRR = 0x1B;
  114:	      |      00002737          	lui	x14,0x2
- 118:	      |      00400693          	addi	x13,x0,4
+ 118:	      |      01b00693          	addi	x13,x0,27
  11c:	      |      04d72823          	sw	x13,80(x14) # 2050 <__ram+0x50>
      ###         UART_UCR1 = 0x07;
  120:	      |      00700693          	addi	x13,x0,7

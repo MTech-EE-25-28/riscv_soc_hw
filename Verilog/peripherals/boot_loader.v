@@ -73,7 +73,7 @@ module boot_loader #(
     localparam CR_ADDR   = 8'h0C;
     localparam BRR_ADDR  = 8'h10;
 
-    localparam [10:0] WORD_COUNT = 10'd1535;  // finish after receiving this many words
+    localparam [10:0] WORD_COUNT = 11'd1535;  // finish after receiving this many words
 
     // -------------------------------------------------------------------------
     //  Registers
