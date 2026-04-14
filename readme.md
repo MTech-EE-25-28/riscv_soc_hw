@@ -70,7 +70,7 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
     - [x] Design and implement systolic array matrix multiplier
     - [x] Integrate with CPU using APB
 - [x] Test Matrix Multiplier with UART transfer in FPGA
-- [ ] Bootloader Interface to load program from flash to imem, dmem
+- [x] Bootloader Interface to load program from flash to imem, dmem
 - [ ] Synthesize and implement on ASIC
 
 ## Future Work
