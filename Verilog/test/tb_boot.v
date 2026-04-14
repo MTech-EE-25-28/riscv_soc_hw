@@ -233,6 +233,10 @@ end
 integer skip_1 = 0, skip_2 = 0;
 
 always @(negedge clk) begin
+    // Important
+    // for simulation, change the boot_loader.v to wait for only required words,
+    // else it won't turn on the cpu_resetn and the testbench will wait indefinitely for the result.
+    // Important
     if (MemWrite && reset) begin
         if (DataAdr == 32'h0000_1004) begin
             // skip_1 = skip_1 + 1;
