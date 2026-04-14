@@ -2,8 +2,10 @@
 .temp.file.elf:     file format elf32-littleriscv
 
 SYMBOL TABLE:
-00000a00 l    d  .init	00000000 .init
-00000a30 l    d  .text	00000000 .text
+00000000 l    d  .init	00000000 .init
+00000044 l    d  .text	00000000 .text
+00001000 l    d  .data	00000000 .data
+00001010 l    d  .heap	00000000 .heap
 00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
 00000000 l    d  .comment	00000000 .comment
 00000000 l    d  .debug_line	00000000 .debug_line
@@ -17,87 +19,208 @@ SYMBOL TABLE:
 00000000 l    d  .debug_macro	00000000 .debug_macro
 00000000 l    d  .debug_frame	00000000 .debug_frame
 00000000 l    df *ABS*	00000000 .temp.start.o
+00000000 l    df *ABS*	00000000 trap_handler.c
 00000000 l    df *ABS*	00000000 sum.c
 00000800 g       *ABS*	00000000 __flash_size
+00000000 g       .init	00000000 __trap_vector_end
 00000100 g       *ABS*	00000000 __stack_size
-00001000 g       .text	00000000 __bss_end
-00001700 g       .text	00000000 _stack_top
-00000a00 g       .init	00000000 _start
+00000000 g       .init	00000000 __init_start
+00000044 g       .text	00000000 __text_start
+00000144 g       .text	00000000 __rodata_end
+00001010 g       .heap	00000000 __bss_end
+00000044 g     F .text	000000c0 trap_handler
+00001800 g       .riscv.attributes	00000000 _stack_top
+00000000 g       .init	00000000 _start
+00000000 g       .init	00000000 __trap_vector_start
+00000144 g       .text	00000000 __rodata_start
 00002000 g       *ABS*	00000000 __ram
-00001000 g       .text	00000000 __bss_start
-00000a30 g     F .text	00000040 main
+00001010 g       .data	00000000 __data_end
+00000044 g       .init	00000000 __init_end
+00000144 g       .text	00000000 __text_end
+00001010 g       .heap	00000000 __bss_start
+00000104 g     F .text	00000040 main
+00001700 g       .heap	00000000 __heap_end
 00000800 g       *ABS*	00000000 __ram_size
+00001010 g       .heap	00000000 __heap_start
 00000000 g       *ABS*	00000000 __flash
+00001010 g       .data	00000000 __data_start
 
 
 
 Disassembly of section .init:
 
-00000a00 <_start>:
+00000000 <__init_start>:
      ### .section .init
      ### .globl _start
      ### 
      ### _start:
      ###     la sp, _stack_top
- a00:	       00001117          	auipc	x2,0x1
- a04:	       d0010113          	addi	x2,x2,-768 # 1700 <_stack_top>
+   0:	       00002117          	auipc	x2,0x2
+   4:	       80010113          	addi	x2,x2,-2048 # 1800 <_stack_top>
+     ### 
+     ###     # install trap handler into mtvec (direct mode, bit[1:0]=0)
+     ###     la t0, trap_handler
+   8:	       00000297          	auipc	x5,0x0
+   c:	       03c28293          	addi	x5,x5,60 # 44 <__init_end>
+     ###     csrw mtvec, t0
+  10:	       30529073          	csrrw	x0,mtvec,x5
+     ### 
+     ###     # enable machine-mode interrupts (MIE bit in mstatus)
+     ###     li t0, 0x8
+  14:	       00800293          	addi	x5,x0,8
+     ###     csrs mstatus, t0
+  18:	       3002a073          	csrrs	x0,mstatus,x5
      ### 
      ###     # zero .bss
      ###     la t0, __bss_start
- a08:	       00000297          	auipc	x5,0x0
- a0c:	       5f828293          	addi	x5,x5,1528 # 1000 <__bss_end>
+  1c:	       00001297          	auipc	x5,0x1
+  20:	       ff428293          	addi	x5,x5,-12 # 1010 <__bss_end>
      ###     la t1, __bss_end
- a10:	       00000317          	auipc	x6,0x0
- a14:	       5f030313          	addi	x6,x6,1520 # 1000 <__bss_end>
+  24:	       00001317          	auipc	x6,0x1
+  28:	       fec30313          	addi	x6,x6,-20 # 1010 <__bss_end>
      ### 
      ### 1:
      ###     bge t0, t1, 2f
- a18:	/--/-X 0062d863          	bge	x5,x6,a28 <_start+0x28>
+  2c:	/--/-X 0062d863          	bge	x5,x6,3c <__init_start+0x3c>
      ###     sw zero, 0(t0)
- a1c:	|  |   0002a023          	sw	x0,0(x5)
+  30:	|  |   0002a023          	sw	x0,0(x5)
      ###     addi t0, t0, 4
- a20:	|  |   00428293          	addi	x5,x5,4
+  34:	|  |   00428293          	addi	x5,x5,4
      ###     j 1b
- a24:	|  \-- ff5ff06f          	jal	x0,a18 <_start+0x18>
+  38:	|  \-- ff5ff06f          	jal	x0,2c <__init_start+0x2c>
      ### 
      ### 2:
      ###     call main
- a28:	\----> 008000ef          	jal	x1,a30 <main>
+  3c:	\----> 0c8000ef          	jal	x1,104 <main>
      ### 
      ### 3:  j 3b
- a2c:	   /-- 0000006f          	jal	x0,a2c <_start+0x2c>
+  40:	   /-- 0000006f          	jal	x0,40 <__init_start+0x40>
 
 Disassembly of section .text:
 
-00000a30 <main>:
+00000044 <trap_handler>:
+     ### 
+     ### // trap handler for RISC-V SoC
+     ### #include <stdint.h>
+     ### #include "memory_map.h"
+     ### // for now it is in direct mode
+     ### void __attribute__((interrupt("machine"))) trap_handler (void) {
+  44:	             ff010113          	addi	x2,x2,-16
+  48:	             00d12623          	sw	x13,12(x2)
+  4c:	             00e12423          	sw	x14,8(x2)
+  50:	             00f12223          	sw	x15,4(x2)
+     ###     uint32_t mepc, mcause;
+     ###     asm volatile ("csrr %0, mcause" : "=r"(mcause));
+  54:	             342027f3          	csrrs	x15,mcause,x0
+     ### 
+     ###     if (mcause & 0x80000000) {
+  58:	/----------- 0807d263          	bge	x15,x0,dc <trap_handler+0x98>
+     ###         // Interrupt
+     ###         // mepc already points to the interrupted instruction
+     ###         uint32_t id = mcause & 0x1F;
+  5c:	|            01f7f793          	andi	x15,x15,31
+     ###         // switch case needs jump table to be loaded into dmem
+     ###         if (id == 16) { // QSPI — read received byte to clear RX interrupt flag
+  60:	|            01000713          	addi	x14,x0,16
+  64:	|        /-- 00e79e63          	bne	x15,x14,80 <trap_handler+0x3c>
+     ###             (void) QSPI_RXDATA_BUF;
+  68:	|        |   000027b7          	lui	x15,0x2
+  6c:	|        |   0247a703          	lw	x14,36(x15) # 2024 <__ram+0x24>
+     ###             QSPI_CSR_ADDR = 0;
+  70:	|        |   0007a023          	sw	x0,0(x15)
+     ###             TEST_LOC = 1;
+     ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
+     ###             // TIMER_CTRL = 0;
+     ###             TEST_LOC = 108;
+     ###         } else if (id == 20) { // Matrix Mul ignored
+     ###             TEST_LOC = 1;
+  74:	|  /-----|-> 000017b7          	lui	x15,0x1
+  78:	|  |     |   00100713          	addi	x14,x0,1
+  7c:	|  |  /--|-- 03c0006f          	jal	x0,b8 <trap_handler+0x74>
+     ###         } else if (id == 17) { // UART — read received byte to drain RX FIFO
+  80:	|  |  |  \-> 01100713          	addi	x14,x0,17
+  84:	|  |  |  /-- 00e79863          	bne	x15,x14,94 <trap_handler+0x50>
+     ###             (void) UART_URDR;
+  88:	|  |  |  |   000027b7          	lui	x15,0x2
+  8c:	|  |  |  |   0447a783          	lw	x15,68(x15) # 2044 <__ram+0x44>
+     ###             TEST_LOC = 1;
+  90:	|  +--|--|-- fe5ff06f          	jal	x0,74 <trap_handler+0x30>
+     ###         } else if (id == 18) { // GPIO — read pin state to clear edge-detect flag
+  94:	|  |  |  \-> 01200713          	addi	x14,x0,18
+  98:	|  |  |  /-- 00e79863          	bne	x15,x14,a8 <trap_handler+0x64>
+     ###             (void) GPIO_GDAT;
+  9c:	|  |  |  |   000027b7          	lui	x15,0x2
+  a0:	|  |  |  |   0c47a783          	lw	x15,196(x15) # 20c4 <__ram+0xc4>
+     ###             TEST_LOC = 1;
+  a4:	|  +--|--|-- fd1ff06f          	jal	x0,74 <trap_handler+0x30>
+     ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
+  a8:	|  |  |  \-> 01300713          	addi	x14,x0,19
+  ac:	|  |  |  /-- 00e79a63          	bne	x15,x14,c0 <trap_handler+0x7c>
+     ###             TEST_LOC = 108;
+  b0:	|  |  |  |   000017b7          	lui	x15,0x1
+  b4:	|  |  |  |   06c00713          	addi	x14,x0,108
+     ###             TEST_LOC = 1;
+  b8:	|  |  \--|-> 00e7a023          	sw	x14,0(x15) # 1000 <__flash_size+0x800>
+  bc:	|  |  /--|-- 00c0006f          	jal	x0,c8 <trap_handler+0x84>
+     ###         } else if (id == 20) { // Matrix Mul ignored
+  c0:	|  |  |  \-> 01400713          	addi	x14,x0,20
+  c4:	|  \--|----- fae788e3          	beq	x15,x14,74 <trap_handler+0x30>
+     ###         // Log cause to UART for debug visibility
+     ###         UART_UBRR = 0x1B;
+     ###         UART_UCR1 = 0x07;
+     ###         UART_UTDR = mcause;
+     ###     }
+  c8:	|     >----> 00c12683          	lw	x13,12(x2)
+  cc:	|     |      00812703          	lw	x14,8(x2)
+  d0:	|     |      00412783          	lw	x15,4(x2)
+  d4:	|     |      01010113          	addi	x2,x2,16
+  d8:	|     |      30200073          	mret
+     ###         asm volatile ("csrr %0, mepc" : "=r"(mepc));
+  dc:	\-----|----> 34102773          	csrrs	x14,mepc,x0
+     ###         mepc += 4; // put mepc on the next instruction
+  e0:	      |      00470713          	addi	x14,x14,4
+     ###         asm volatile ("csrw mepc, %0" : : "r"(mepc));
+  e4:	      |      34171073          	csrrw	x0,mepc,x14
+     ###         UART_UBRR = 0x1B;
+  e8:	      |      00002737          	lui	x14,0x2
+  ec:	      |      01b00693          	addi	x13,x0,27
+  f0:	      |      04d72823          	sw	x13,80(x14) # 2050 <__ram+0x50>
+     ###         UART_UCR1 = 0x07;
+  f4:	      |      00700693          	addi	x13,x0,7
+  f8:	      |      04d72623          	sw	x13,76(x14)
+     ###         UART_UTDR = mcause;
+  fc:	      |      04f72423          	sw	x15,72(x14)
+ 100:	      \----- fc9ff06f          	jal	x0,c8 <trap_handler+0x84>
+
+00000104 <main>:
      ### 
      ### #endif
      ### 
      ### // main function
      ### int main() {
      ###     SUM = 0;
- a30:	       000017b7          	lui	x15,0x1
- a34:	       00078223          	sb	x0,4(x15) # 1004 <__bss_end+0x4>
-     ###     for (int i = 1; i <= N; i++) {
- a38:	       00100693          	addi	x13,x0,1
- a3c:	/----> 0007c703          	lbu	x14,0(x15)
- a40:	|  /-- 00d75a63          	bge	x14,x13,a54 <main+0x24>
+ 104:	    000017b7          	lui	x15,0x1
+ 108:	    00078223          	sb	x0,4(x15) # 1004 <__flash_size+0x804>
+     ###     for (int i = 1; i <= 10; i++) {
+ 10c:	    00100693          	addi	x13,x0,1
      ###         SUM = SUM + i;
+ 110:	    00001737          	lui	x14,0x1
+     ###     for (int i = 1; i <= 10; i++) {
+ 114:	    00b00613          	addi	x12,x0,11
+     ###         SUM = SUM + i;
+ 118:	/-> 00474783          	lbu	x15,4(x14) # 1004 <__flash_size+0x804>
+ 11c:	|   00d787b3          	add	x15,x15,x13
+ 120:	|   0ff7f793          	andi	x15,x15,255
+ 124:	|   00f70223          	sb	x15,4(x14)
      ###         _put_value(SUM);
+ 128:	|   00474783          	lbu	x15,4(x14)
+     ###     for (int i = 1; i <= 10; i++) {
+ 12c:	|   00168693          	addi	x13,x13,1
+ 130:	\-- fec694e3          	bne	x13,x12,118 <main+0x14>
      ###     }
      ###     CPU_DONE = 1;
- a44:	|  |   00100713          	addi	x14,x0,1
- a48:	|  |   00e78423          	sb	x14,8(x15)
+ 134:	    00100793          	addi	x15,x0,1
+ 138:	    00f70423          	sb	x15,8(x14)
      ###     return 0;
- a4c:	|  |   00000513          	addi	x10,x0,0
- a50:	|  |   00008067          	jalr	x0,0(x1)
-     ###         SUM = SUM + i;
- a54:	|  \-> 0047c703          	lbu	x14,4(x15)
- a58:	|      00d70733          	add	x14,x14,x13
- a5c:	|      0ff77713          	andi	x14,x14,255
- a60:	|      00e78223          	sb	x14,4(x15)
-     ###         _put_value(SUM);
- a64:	|      0047c703          	lbu	x14,4(x15)
-     ###     for (int i = 1; i <= N; i++) {
- a68:	|      00168693          	addi	x13,x13,1
- a6c:	\----- fd1ff06f          	jal	x0,a3c <main+0xc>
+ 13c:	    00000513          	addi	x10,x0,0
+ 140:	    00008067          	jalr	x0,0(x1)
