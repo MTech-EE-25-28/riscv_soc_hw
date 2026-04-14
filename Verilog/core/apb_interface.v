@@ -22,7 +22,14 @@ module apb_interface (
     output wire        apb_done,
     output reg  [31:0] cpu_rdata, // captured peripheral read data
 
+    // bootload mem
+    output wire        write_mem,
+    output wire [31:0] instr_addr,
+    output wire [31:0] instr_write,
+
     // Peripheral interface
+    input  wire        boot_select,
+    output wire        cpu_resetn,
     output wire  [4:0] irq,
     // Pads
     output wire        pwm_out0, pwm_out1,
@@ -42,6 +49,21 @@ localparam  IDLE  = 2'b00,
             WRITE = 2'b01,
             READ  = 2'b10,
             WAIT  = 2'b11;
+
+// Bootloader instantiation
+wire uart_boot, uart_boot_en, uart_boot_wr, uart_boot_ready, uart_boot_slverr, uart_boot_resetn;
+wire [31:0] uart_boot_addr, uart_boot_wdata;
+wire [31:0] uart_boot_rdata;
+
+boot_loader bootloader_u (
+    .clk(clk), .resetn(resetn),
+    .boot_select(boot_select), .cpu_resetn(cpu_resetn), .presetn(uart_boot_resetn),
+    .psel(uart_boot), .penable(uart_boot_en), .pwrite(uart_boot_wr),
+    .paddr(uart_boot_addr), .pwdata(uart_boot_wdata),
+    .prdata(uart_boot_rdata), .pready(uart_boot_ready), .pslverr(uart_boot_slverr),
+
+    .write_data_en(write_mem), .out_send_data(instr_write), .out_send_addr(instr_addr)
+);
 
 // Internal wires for matrix multiplication accelerator slave responses
 wire        mm_pready_w, mm_pslverr_w;
@@ -92,10 +114,24 @@ timer timer_u (
 wire        uart_pready_w, uart_pslverr_w;
 wire [31:0] uart_prdata_w;
 
+// Feed uart_top response back to bootloader (boot_loader ignores pready/pslverr)
+assign uart_boot_rdata = uart_prdata_w;
+
+// choose between bootloader or regular UART based on boot_select
+wire uart_sel = !cpu_resetn ? uart_boot : psel[1];
+wire uart_pready = !cpu_resetn ? uart_boot_ready : uart_pready_w;
+wire [31:0] uart_prdata = !cpu_resetn ? uart_boot_rdata : uart_prdata_w;
+wire uart_slverr = !cpu_resetn ? uart_boot_slverr : uart_pslverr_w;
+wire uart_penable = !cpu_resetn ? uart_boot_en : penable;
+wire uart_write = !cpu_resetn ? uart_boot_wr : pwrite;
+wire [31:0] uart_addr = !cpu_resetn ? uart_boot_addr : paddr;
+wire [31:0] uart_wdata = !cpu_resetn ? uart_boot_wdata : pwdata;
+wire uart_resetn = !cpu_resetn ? uart_boot_resetn : presetn;
+
 uart_top uart_u (
-    .pclk(pclk), .presetn(presetn),
-    .psel(psel[1]), .penable(penable), .pwrite(pwrite),
-    .paddr(paddr), .pwdata(pwdata),
+    .pclk(pclk), .presetn(uart_resetn),
+    .psel(uart_sel), .penable(uart_penable), .pwrite(uart_write),
+    .paddr(uart_addr), .pwdata(uart_wdata),
     .prdata(uart_prdata_w), .pready(uart_pready_w), .pslverr(uart_pslverr_w),
     .rx(rx), .tx(tx)
 );

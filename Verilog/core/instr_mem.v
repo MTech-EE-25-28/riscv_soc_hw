@@ -13,10 +13,10 @@ reg [DATA_WIDTH-1:0] instr_ram [0:MEM_SIZE-1];
 initial begin
     // Hex file is supplied at runtime via +HEX=<path> plusarg.
     // Fallback: soc_test.hex (used by tb_soc).
-    string hex_file;
-    if (!$value$plusargs("HEX=%s", hex_file))
-        hex_file = "./docker/bin/soc_test.hex";
-    $readmemh(hex_file, instr_ram);
+    // string hex_file;
+    // if (!$value$plusargs("HEX=%s", hex_file))
+    //     hex_file = "./docker/bin/soc_test.hex";
+    // $readmemh(hex_file, instr_ram);
 end
 
 // Sequential write

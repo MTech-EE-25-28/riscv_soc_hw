@@ -33,6 +33,8 @@ wire [31:0] PCF, dmem_rdata, cpu_rdata;
 
 // apb_done: 1-cycle pulse from axi_interface (state==WAIT) that overrides
 wire apb_done_w;
+// cpu_resetn: held low by bootloader until IMEM is loaded; released to run
+wire cpu_resetn_w;
 
 // ReadData mux: peripheral addresses use APB cpu_rdata, SRAM uses dmem_rdata.
 // Use WB-stage address (ALUResultW=ALUResult) so the mux is correct when the
@@ -43,7 +45,7 @@ wire [31:0] ReadData = (ALUResult >= 32'h0000_2000) ? cpu_rdata : dmem_rdata;
 wire is_mem_access;
 riscv_pl rvpl (
     .clk(clk),
-    .reset(rst_n),
+    .reset(rst_n & cpu_resetn_w),
     .interruptA(irq_w),
     .apb_done(apb_done_w),
     .PC(PCF),
@@ -79,6 +81,7 @@ memory_controller mem_ctrl (
     .dmem_rdata(dmem_rdata),
     .cpu_rdata(cpu_rdata),
     .apb_done(apb_done_w),
+    .cpu_resetn(cpu_resetn_w),
 
     // IRQs
     .irq(irq_w),

@@ -15,6 +15,7 @@ module memory_controller (
     output wire [31:0] dmem_rdata,
     output wire [31:0] cpu_rdata,
     output wire        apb_done,
+    output wire        cpu_resetn,
 
     // Peripheral IRQs
     output wire [4:0]  irq,
@@ -45,44 +46,46 @@ wire        penable, pwrite, pready, pslverr;
 // --------------------------------------------------
 // REGION DECODE
 // --------------------------------------------------
-wire imem_sel, dmem_sel, periph_sel;
+wire dmem_sel, periph_sel;
 
-assign imem_sel   = (paddr   >= 32'h0000_0000 && paddr   < 32'h0000_1000);
 assign dmem_sel   = (DataAdr >= 32'h0000_1000 && DataAdr < 32'h0000_2000);
 assign periph_sel = is_mem_access && (DataAdr >= 32'h0000_2000);
 
 // --------------------------------------------------
 // IMEM CONTROL
-// Only APB writes can program instruction memory
+// Only Bootloader writes can program instruction memory
 // --------------------------------------------------
 wire imem_wea;
-wire [31:0] InstrAddr;
+wire [31:0] InstrAddr, instr_addr, instr_wdata;
 
-assign imem_wea  = (|psel) && penable && pwrite && imem_sel;
-assign InstrAddr = imem_wea ? paddr[31:0]: PCF[31:0];
+assign InstrAddr = imem_wea ? instr_addr[31:0]: PCF[31:0];
 
 // --------------------------------------------------
 // DMEM CONTROL
 // --------------------------------------------------
-wire [3:0] dmem_wea;
-assign dmem_wea = dmem_sel ? mem_wea : 4'b0000;
+wire [31:0] DataAddr, dmem_wdata;
+wire  [3:0] dmem_wea;
+
+assign dmem_wea = imem_wea ? 4'b1111 : dmem_sel ? mem_wea : 4'b0000;
+assign DataAddr = imem_wea ? instr_addr : DataAdr;
+assign dmem_wdata = imem_wea ? instr_wdata : WriteData;
 
 // --------------------------------------------------
 // MEMORY INSTANCES
 // --------------------------------------------------
 instr_mem instrmem (
     .clk(clk),
-    .wea(imem_wea),
+    .wea(imem_wea), // Allow both APB writes and bootloader writes to program instruction memory
     .instr_addr(InstrAddr),
-    .instr_in(pwdata),
+    .instr_in(instr_wdata),
     .instr(Instr)
 );
 
 data_mem datamem (
     .clk(clk),
     .wea(dmem_wea),
-    .addr(DataAdr[31:0]),
-    .wr_data(WriteData),
+    .addr(DataAddr),
+    .wr_data(dmem_wdata),
     .rd_data(dmem_rdata)
 );
 
@@ -121,7 +124,14 @@ apb_interface apb_if (
     .apb_done(apb_done),
     .cpu_rdata(cpu_rdata),
 
+    // bootload mem
+    .write_mem(imem_wea),
+    .instr_addr(instr_addr),
+    .instr_write(instr_wdata),
+
     // Peripheral outputs
+    .boot_select(1'b1), // Always select UART bootloader for now
+    .cpu_resetn(cpu_resetn),
     .irq(irq),
     .pwm_out0(pwm_out0),
     .pwm_out1(pwm_out1),
