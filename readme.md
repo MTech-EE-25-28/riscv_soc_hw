@@ -21,10 +21,10 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 - Clock Frequency: > 100 MHz (embedded profile)
 - Extensions: IM, F if possible
 - CSR Support: (zicsr)
-- Communication Protocol: UART, SPI
-- GPIO Peripheral
 - Memory Mapped Peripherals
-- Matrix Multiplier
+    - Communication Protocol: UART, SPI
+    - GPIO Peripheral
+    - Matrix Multiplier
 
 ### Usage
 
