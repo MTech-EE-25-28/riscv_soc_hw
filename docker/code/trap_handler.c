@@ -2,7 +2,39 @@
 // trap handler for RISC-V SoC
 #include <stdint.h>
 #include "memory_map.h"
-// for now it is in direct mode
+
+// Default Weak Handlers for Vectored Mode
+// These provide safe defaults that can be overridden by user application.
+// If not overridden, they simply return (doing nothing).
+void __attribute__((weak, interrupt("machine"))) exception_handler(void) {
+    // Default: advance mepc past faulting instruction and return
+    uint32_t mepc;
+    asm volatile ("csrr %0, mepc" : "=r"(mepc));
+    mepc += 4;
+    asm volatile ("csrw mepc, %0" : : "r"(mepc));
+}
+
+void __attribute__((weak, interrupt("machine"))) isr_spi(void) {
+    // Default: do nothing (user should override to handle SPI interrupts)
+}
+
+void __attribute__((weak, interrupt("machine"))) isr_uart(void) {
+    // Default: do nothing (user should override to handle UART interrupts)
+}
+
+void __attribute__((weak, interrupt("machine"))) isr_gpio(void) {
+    // Default: do nothing (user should override to handle GPIO interrupts)
+}
+
+void __attribute__((weak, interrupt("machine"))) isr_timer(void) {
+    // Default: do nothing (user should override to handle timer interrupts)
+}
+
+void __attribute__((weak, interrupt("machine"))) isr_mm(void) {
+    // Default: do nothing (user should override to handle matrix multiplier interrupts)
+}
+
+// Direct Mode Trap Handler (example implementation)
 void __attribute__((interrupt("machine"))) trap_handler (void) {
     uint32_t mepc, mcause;
     asm volatile ("csrr %0, mcause" : "=r"(mcause));

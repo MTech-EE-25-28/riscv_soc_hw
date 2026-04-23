@@ -4,8 +4,14 @@
 _start:
     la sp, _stack_top
 
-    # install trap handler into mtvec (direct mode, bit[1:0]=0)
-    la t0, trap_handler
+    # Install trap handler into mtvec
+    # DIRECT MODE (default): uncomment the following 2 lines
+    # la t0, trap_handler
+    # csrw mtvec, t0
+
+    # VECTORED MODE: uncomment the following 3 lines instead
+    la t0, __trap_vector_start
+    ori t0, t0, 0x01          # set MODE bits to 01 (vectored)
     csrw mtvec, t0
 
     # enable machine-mode interrupts (MIE bit in mstatus)

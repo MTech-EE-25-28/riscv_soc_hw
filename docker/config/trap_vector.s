@@ -1,20 +1,40 @@
-.section .trap_vector
+.section .trap_vector, "ax", @progbits
 .global __trap_vector_start
-.align 6   # 64-byte alignment
+.align 2   # 4-byte alignment (required for RISC-V instructions)
 
 __trap_vector_start:
-
-    # 0: exceptions
+    # Entry 0: Synchronous exceptions (direct jump to handler)
     j exception_handler
+    .align 2
 
-    # Interrupts (mcause index)
-    j isr_spi        # 1
-    j isr_uart       # 2
-    j isr_gpio       # 3
-    j isr_timer      # 4
-    j isr_mm         # 5
+    # Entry 1-15: Reserved/unused (RISC-V standard interrupts)
+    .rept 15
+        j exception_handler  # Fallback to exception handler
+        .align 2
+    .endr
 
-    # Fill rest (optional safety)
-    .rept 26
-        j exception_handler
+    # Entry 16: Platform interrupt 0 - QSPI/SPI (mcause=16)
+    j isr_spi
+    .align 2
+
+    # Entry 17: Platform interrupt 1 - UART (mcause=17)
+    j isr_uart
+    .align 2
+
+    # Entry 18: Platform interrupt 2 - GPIO (mcause=18)
+    j isr_gpio
+    .align 2
+
+    # Entry 19: Platform interrupt 3 - Timer (mcause=19)
+    j isr_timer
+    .align 2
+
+    # Entry 20: Platform interrupt 4 - Matrix Multiplier (mcause=20)
+    j isr_mm
+    .align 2
+
+    # Entries 21-31: Reserved for future platform interrupts
+    .rept 11
+        j exception_handler  # Fallback
+        .align 2
     .endr

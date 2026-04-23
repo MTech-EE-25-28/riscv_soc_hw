@@ -3,6 +3,13 @@
 #include "trap_handler.h"
 #include "memory_map.h"
 
+// ISR for Timer (mcause = 19)
+void __attribute__((interrupt("machine"))) isr_timer(void) {
+    // Read TIRQ register to clear timer interrupt flags (read-to-clear)
+    (void) TIMER_TIRQ;
+    TEST_LOC = 108;  // Signal to main loop that timer interrupt occurred
+}
+
 int main() {
     // all peripheral register address are declared in memory_map.h
     TEST_LOC = 0; // explicitly zero before use — SRAM is undefined at power-on
@@ -19,7 +26,6 @@ int main() {
     UART_UTDR = 'X'; // Send 'X' character
     while (!(UART_USR0 & 0x4)); // SR bit[2] = TC (transmission complete), wait until set
     TEST_LOC = 111; // uart transmission should be done by now, set TEST_LOC to 111 to indicate UART test is done
-    (void) TIMER_TIRQ; // Clear any pending timer interrupts by reading TIRQ
     while (1) {
         // Wait for interrupt to occur
         // The trap handler will set TEST_LOC to 108 when the timer interrupt is handled

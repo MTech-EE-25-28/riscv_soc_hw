@@ -7,19 +7,18 @@ MEMORY {
 
 SECTIONS {
 
-    /*  Trap Vector Table (in ROM) */
-    .trap_vector : ALIGN(4) {
-        __trap_vector_start = .;
-        KEEP(*(.trap_vector))
-        *(.trap_handler)
-        __trap_vector_end = .;
-    } > ROM
-
-    /*  Startup Code */
+    /*  Startup Code (MUST be first - boots at address 0x00000000) */
     .init : ALIGN(4) {
         __init_start = .;
         *(.init)
         __init_end = .;
+    } > ROM
+
+    /*  Trap Vector Table (after startup code, mtvec will point to it) */
+    .trap_vector : ALIGN(4) {
+        __trap_vector_start = .;
+        KEEP(*(.trap_vector))
+        __trap_vector_end = .;
     } > ROM
 
     /*  Text Section */
