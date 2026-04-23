@@ -30,6 +30,8 @@
 #define GPIO_BASE  0x000020C0
 #define GPIO_GDIR  (*(volatile uint32_t *)(GPIO_BASE + 0x00))   // Data direction register: 0 = input, 1 = output
 #define GPIO_GDAT  (*(volatile uint32_t *)(GPIO_BASE + 0x04))   // Data register: read to get input pin values, write to set output pin values
+#define GPIO_GIEN  (*(volatile uint32_t *)(GPIO_BASE + 0x08))   // Interrupt enable: 1 = interrupt enabled for pin (input pins only)
+#define GPIO_GIRQ  (*(volatile uint32_t *)(GPIO_BASE + 0x0C))   // Interrupt flags (read-to-clear): 1 = edge detected on pin
 
 #define MM_BASE      0x00002100
 #define MM_CTSR      (*(volatile uint32_t *)(MM_BASE + 0x00)) // ctsr: {30'b0, done, start}

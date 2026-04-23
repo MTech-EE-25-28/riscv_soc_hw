@@ -1,8 +1,10 @@
 `timescale 1ns / 1ps
-// Testbench for gpio.v — exercises APB write/read and tristate behaviour
+// Testbench for gpio.v — exercises APB write/read, tristate behaviour, and interrupts
 // Register map (BASE = 0x0000_20C0):
-//   GDIR  0x0000_20C0  direction register  (1=output, 0=input)
-//   GDAT  0x0000_20C4  data register       (write: drive output; read: pin state)
+//   GDIR  0x0000_20C0  direction register        (1=output, 0=input)
+//   GDAT  0x0000_20C4  data register             (write: drive output; read: pin state)
+//   GIEN  0x0000_20C8  interrupt enable register (1=interrupt enabled for pin)
+//   GIRQ  0x0000_20CC  interrupt flag register   (read-to-clear, 1=edge detected)
 
 module tb_gpio;
 
@@ -138,9 +140,55 @@ initial begin
     // =========================================================
     $display("\n===== TEST 6: PSLVERR ON BAD ADDR =====");
     gpio_drive_en = 32'h0;                    // release TB drive
-    apb_write(32'h0000_20CC, 32'h1234_5678); // invalid address
+    apb_write(32'h0000_20D0, 32'h1234_5678); // invalid address (beyond GIRQ)
     #20;
     $display("pslverr after bad write = %b (expect 1)", pslverr);
+
+    // =========================================================
+    // TEST 7: GPIO INTERRUPT - single pin edge detection
+    // =========================================================
+    $display("\n===== TEST 7: GPIO INTERRUPT - SINGLE PIN =====");
+    apb_write(32'h0000_20C0, 32'h0000_0000); // GDIR = all inputs
+    apb_write(32'h0000_20C8, 32'h0000_0001); // GIEN = enable interrupt on GPIO[0]
+    gpio_drive_en = 32'h0000_0001;
+    gpio_drive    = 32'h0000_0000;
+    #20;
+    gpio_drive    = 32'h0000_0001;            // rising edge on GPIO[0]
+    @(posedge clk); #2;                       // wait for clock edge + small delay
+    $display("irq after edge (expect 1) = %b", irq);  // IRQ pulses this cycle
+    @(posedge clk); #2;                       // next clock - IRQ goes back to 0
+    $display("irq next cycle (expect 0) = %b", irq);
+    apb_read(32'h0000_20CC);                  // read GIRQ (should see bit 0 set)
+    #20;
+    $display("irq after GIRQ read (expect 0) = %b", irq);
+
+    // =========================================================
+    // TEST 8: GPIO INTERRUPT - multiple pins
+    // =========================================================
+    $display("\n===== TEST 8: GPIO INTERRUPT - MULTIPLE PINS =====");
+    apb_write(32'h0000_20C8, 32'h0000_00FF); // GIEN = enable interrupt on GPIO[7:0]
+    gpio_drive_en = 32'h0000_00FF;
+    gpio_drive    = 32'h0000_0000;
+    #20;
+    gpio_drive    = 32'h0000_00A5;            // toggle multiple pins
+    @(posedge clk); #2;                       // wait for clock edge + small delay
+    $display("irq after edges (expect 1) = %b", irq);  // IRQ pulses this cycle
+    apb_read(32'h0000_20CC);                  // read GIRQ (should see 0xA5)
+    @(posedge clk); #2;
+    $display("irq after GIRQ read (expect 0) = %b", irq);
+
+    // =========================================================
+    // TEST 9: GPIO INTERRUPT - output pins should not generate IRQ
+    // =========================================================
+    $display("\n===== TEST 9: NO IRQ ON OUTPUT PINS =====");
+    apb_write(32'h0000_20C0, 32'hFFFF_FFFF); // GDIR = all outputs
+    apb_write(32'h0000_20C8, 32'hFFFF_FFFF); // GIEN = all enabled (but outputs shouldn't trigger)
+    apb_write(32'h0000_20C4, 32'h0000_0000); // GDAT = all low
+    #20;
+    apb_write(32'h0000_20C4, 32'hFFFF_FFFF); // GDAT = all high (change output)
+    #40;
+    $display("irq after output change (expect 0) = %b", irq);
+    apb_read(32'h0000_20CC);                  // read GIRQ (should be 0)
 
     #50;
     $display("\n===== ALL TESTS DONE =====");
