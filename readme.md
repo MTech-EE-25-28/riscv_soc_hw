@@ -75,10 +75,12 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 
 ## Future Work
 
-- bootloader code to load program from flash to imem, dmem
+- [x] Bootloader code to load program from flash to imem, dmem
+- [x] Update Linker to support vectored interrupts
+- [ ] Implement Clint for timer interrupts
 - Sky130 ASIC Flow with compiled memory for ROM and RAM
 - Use AXI-APB bridge instead of direct APB interface
-- Update Linker to support vectored interrupts
+- Implement PLIC for external interrupts
 - Implement F extension (floating point unit)
 - Implement A extension (atomic instructions)
 - Implement OS support (S-mode, U-mode, cache, clint, plic)
