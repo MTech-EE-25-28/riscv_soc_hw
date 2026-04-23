@@ -33,9 +33,12 @@ module gpio #(
 
 localparam GDIR_ADDR = BASE_ADDR;           // BASE + 0x00
 localparam GDAT_ADDR = BASE_ADDR + 32'h4;   // BASE + 0x04
+localparam GINT_ADDR = BASE_ADDR + 32'h8;   // BASE + 0x08
 
 reg [31:0] GDIR; // direction: 1=output
 reg [31:0] GDAT; // output data
+reg [31:0] GINT; // interrupt flags
+reg [31:0] pGDAT; // previous GDAT state for edge detection
 
 // Drive signals — IOBUFs instantiated in soc_top
 assign gpio_out = GDAT;

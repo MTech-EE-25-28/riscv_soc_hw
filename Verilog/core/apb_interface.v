@@ -32,7 +32,7 @@ module apb_interface (
     output wire        cpu_resetn,
     output wire  [4:0] irq,
     // Pads
-    output wire        pwm_out0, pwm_out1,
+    output wire        pwm_out0, pwm_out1, pwm_out2,
     input  wire [31:0] gpio_in,
     output wire [31:0] gpio_out,
     output wire [31:0] gpio_oe,
@@ -107,7 +107,7 @@ timer timer_u (
     .psel(psel[2]), .penable(penable), .pwrite(pwrite),
     .paddr(paddr), .pwdata(pwdata),
     .prdata(timer_prdata_w), .pready(timer_pready_w), .pslverr(timer_pslverr_w),
-    .irq(timer_irq_w), .pwm_out0(pwm_out0), .pwm_out1(pwm_out1)
+    .irq(timer_irq_w), .pwm_out0(pwm_out0), .pwm_out1(pwm_out1), .pwm_out2(pwm_out2)
 );
 
 // Internal wire for UART slave responses

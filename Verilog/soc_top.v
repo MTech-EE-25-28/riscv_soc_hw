@@ -6,7 +6,7 @@ module soc_top (
     input pclk, presetn,
 
     // peripheral outputs
-    output pwm_out0, pwm_out1,
+    output pwm_out0, pwm_out1, pwm_out2,
     inout [31:0] gpio_pad,
     input rx,
     output tx,
@@ -55,7 +55,7 @@ soc_io soc_u (
     .PCW(PC), .Result(Result), .ALUResult(ALUResult), .DataAdr(DataAdr),
     .WriteData_M(WriteData_M), .WriteDataW(WriteData), .ReadDataW(ReadData),
     .MemWrite(MemWrite),
-    .pwm_out0(pwm_out0), .pwm_out1(pwm_out1),
+    .pwm_out0(pwm_out0), .pwm_out1(pwm_out1), .pwm_out2(pwm_out2),
     .gpio_in(gpio_in_w), .gpio_out(gpio_out_w), .gpio_oe(gpio_oe_w),
     .rx(rx), .tx(tx),
     .qspi_io_in(qspi_io_in_w), .qspi_io_out(qspi_io_out_w), .qspi_io_oe(qspi_io_oe_w),

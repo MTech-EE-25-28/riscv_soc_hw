@@ -23,6 +23,7 @@ module memory_controller (
     // Pads
     output wire        pwm_out0,
     output wire        pwm_out1,
+    output wire        pwm_out2,
     input  wire [31:0] gpio_in,
     output wire [31:0] gpio_out,
     output wire [31:0] gpio_oe,
@@ -135,6 +136,7 @@ apb_interface apb_if (
     .irq(irq),
     .pwm_out0(pwm_out0),
     .pwm_out1(pwm_out1),
+    .pwm_out2(pwm_out2),
     .gpio_in(gpio_in),
     .gpio_out(gpio_out),
     .gpio_oe(gpio_oe),

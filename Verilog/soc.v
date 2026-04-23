@@ -11,7 +11,7 @@ module soc (
     output wire [31:0] PCW, Result, ALUResult, DataAdr, WriteData_M, WriteDataW, ReadDataW,
     output wire        MemWrite,
     // peripheral interfaces
-    output wire        pwm_out0, pwm_out1,
+    output wire        pwm_out0, pwm_out1, pwm_out2,
     inout  wire [31:0] gpio_pad,
     input  wire        rx,
     output wire        tx,
@@ -57,7 +57,7 @@ soc_io soc_core (
     .PCW(PCW), .Result(Result), .ALUResult(ALUResult), .DataAdr(DataAdr),
     .WriteData_M(WriteData_M), .WriteDataW(WriteDataW), .ReadDataW(ReadDataW),
     .MemWrite(MemWrite),
-    .pwm_out0(pwm_out0), .pwm_out1(pwm_out1),
+    .pwm_out0(pwm_out0), .pwm_out1(pwm_out1), .pwm_out2(pwm_out2),
     .gpio_in(gpio_in_w), .gpio_out(gpio_out_w), .gpio_oe(gpio_oe_w),
     .rx(rx), .tx(tx),
     .qspi_io_in(qspi_io_in_w), .qspi_io_out(qspi_io_out_w), .qspi_io_oe(qspi_io_oe_w),

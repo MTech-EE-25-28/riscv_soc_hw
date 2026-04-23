@@ -19,10 +19,13 @@
 #define UART_UCR1  (*(volatile uint32_t *)(UART_BASE + 0x0C))  // Control: {IERXNE,IETXE,PS,PCE,M,RE,TE,UE}
 #define UART_UBRR  (*(volatile uint32_t *)(UART_BASE + 0x10))  // Baud Rate Register
 
-#define TIMER_BASE 0x00002080
-#define TIMER_TCCR (*(volatile uint32_t *)(TIMER_BASE + 0x00))  // Status: {13'd0, T1_IRQ_EN, T1_PWM_EN, T1_EN, 13'd0, T0_IRQ_EN, T0_PWM_EN, T0_EN}
-#define TIMER_TCNT (*(volatile uint32_t *)(TIMER_BASE + 0x04))  // Timer counter register
-#define TIMER_OCMR (*(volatile uint32_t *)(TIMER_BASE + 0x08))  // Output compare match register (value to compare against TCNT for generating IRQ/PWM)
+#define TIMER_BASE  0x00002080
+#define TIMER_TCCR  (*(volatile uint32_t *)(TIMER_BASE + 0x00))  // Control: [8]=T2_IRQ_EN,[7]=T2_PWM_EN,[6]=T2_EN,[5]=T1_IRQ_EN,[4]=T1_PWM_EN,[3]=T1_EN,[2]=T0_IRQ_EN,[1]=T0_PWM_EN,[0]=T0_EN
+#define TIMER_TCNT  (*(volatile uint32_t *)(TIMER_BASE + 0x04))  // Timer 0+1 counter (read-only): [31:16]=TCNT1, [15:0]=TCNT0
+#define TIMER_TCNTF (*(volatile uint32_t *)(TIMER_BASE + 0x08))  // Timer 2 counter (read-only): 32-bit counter value
+#define TIMER_OCMR  (*(volatile uint32_t *)(TIMER_BASE + 0x0C))  // Output compare 0+1: [31:16]=OCMR1, [15:0]=OCMR0 (compare match value for PWM/IRQ)
+#define TIMER_OCMRF (*(volatile uint32_t *)(TIMER_BASE + 0x10))  // Output compare 2: 32-bit compare match value for PWM/IRQ
+#define TIMER_TIRQ  (*(volatile uint32_t *)(TIMER_BASE + 0x14))  // Interrupt flags (read-only): [5]=T2_OVF,[4]=T2_CMP,[3]=T1_OVF,[2]=T1_CMP,[1]=T0_OVF,[0]=T0_CMP
 
 #define GPIO_BASE  0x000020C0
 #define GPIO_GDIR  (*(volatile uint32_t *)(GPIO_BASE + 0x00))   // Data direction register: 0 = input, 1 = output

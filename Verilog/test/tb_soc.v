@@ -7,7 +7,7 @@ reg clk, reset;
 reg pclk, presetn;
 // Debug outputs
 wire [31:0] PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData;
-wire        MemWrite, pwm_out0, pwm_out1;
+wire        MemWrite, pwm_out0, pwm_out1, pwm_out2;
 // peripheral interfaces
 wire [31:0] gpio_pad;
 wire        tx, rx;
@@ -20,7 +20,7 @@ assign rx = tx; // UART loopback: tx idles high, so rx never floats
 soc dut (
     clk, reset, pclk, presetn,
     PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData, MemWrite,
-    pwm_out0, pwm_out1, gpio_pad, rx, tx, qspi_io, qspi_sck, qspi_cs_n, cpu_resetn
+    pwm_out0, pwm_out1, pwm_out2, gpio_pad, rx, tx, qspi_io, qspi_sck, qspi_cs_n, cpu_resetn
 );
 
 always #10 clk = ~clk; // 50MHz clock

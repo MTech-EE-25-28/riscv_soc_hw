@@ -10,7 +10,7 @@ module soc_io (
     output wire [31:0] PCW, Result, ALUResult, DataAdr, WriteData_M, WriteDataW, ReadDataW,
     output wire        MemWrite,
     // peripheral interfaces
-    output wire        pwm_out0, pwm_out1,
+    output wire        pwm_out0, pwm_out1, pwm_out2,
     input  wire [31:0] gpio_in,
     output wire [31:0] gpio_out,
     output wire [31:0] gpio_oe,
@@ -88,6 +88,7 @@ memory_controller mem_ctrl (
     // Peripheral pins
     .pwm_out0(pwm_out0),
     .pwm_out1(pwm_out1),
+    .pwm_out2(pwm_out2),
     .gpio_in(gpio_in),
     .gpio_out(gpio_out),
     .gpio_oe(gpio_oe),

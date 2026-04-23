@@ -19,6 +19,7 @@ int main() {
     UART_UTDR = 'X'; // Send 'X' character
     while (!(UART_USR0 & 0x4)); // SR bit[2] = TC (transmission complete), wait until set
     TEST_LOC = 111; // uart transmission should be done by now, set TEST_LOC to 111 to indicate UART test is done
+    (void) TIMER_TIRQ; // Clear any pending timer interrupts by reading TIRQ
     while (1) {
         // Wait for interrupt to occur
         // The trap handler will set TEST_LOC to 108 when the timer interrupt is handled

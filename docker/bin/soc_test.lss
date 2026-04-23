@@ -4,7 +4,8 @@
 SYMBOL TABLE:
 00000000 l    d  .init	00000000 .init
 00000044 l    d  .text	00000000 .text
-00001000 l    d  .heap	00000000 .heap
+00001000 l    d  .data	00000000 .data
+00001010 l    d  .heap	00000000 .heap
 00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
 00000000 l    d  .comment	00000000 .comment
 00000000 l    d  .debug_line	00000000 .debug_line
@@ -25,24 +26,24 @@ SYMBOL TABLE:
 00000100 g       *ABS*	00000000 __stack_size
 00000000 g       .init	00000000 __init_start
 00000044 g       .text	00000000 __text_start
-000001a4 g       .text	00000000 __rodata_end
-00001000 g       .text	00000000 __bss_end
+000001a8 g       .text	00000000 __rodata_end
+00001010 g       .heap	00000000 __bss_end
 00000044 g     F .text	000000c0 trap_handler
 00001800 g       .riscv.attributes	00000000 _stack_top
 00000000 g       .init	00000000 _start
 00000000 g       .init	00000000 __trap_vector_start
-000001a4 g       .text	00000000 __rodata_start
+000001a8 g       .text	00000000 __rodata_start
 00002000 g       *ABS*	00000000 __ram
-00001000 g       .text	00000000 __data_end
+00001010 g       .data	00000000 __data_end
 00000044 g       .init	00000000 __init_end
-000001a4 g       .text	00000000 __text_end
-00001000 g       .text	00000000 __bss_start
-00000104 g     F .text	000000a0 main
+000001a8 g       .text	00000000 __text_end
+00001010 g       .heap	00000000 __bss_start
+00000104 g     F .text	000000a4 main
 00001700 g       .heap	00000000 __heap_end
 00000800 g       *ABS*	00000000 __ram_size
-00001000 g       .heap	00000000 __heap_start
+00001010 g       .heap	00000000 __heap_start
 00000000 g       *ABS*	00000000 __flash
-00001000 g       .text	00000000 __data_start
+00001010 g       .data	00000000 __data_start
 
 
 
@@ -73,10 +74,10 @@ Disassembly of section .init:
      ###     # zero .bss
      ###     la t0, __bss_start
   1c:	       00001297          	auipc	x5,0x1
-  20:	       fe428293          	addi	x5,x5,-28 # 1000 <__bss_end>
+  20:	       ff428293          	addi	x5,x5,-12 # 1010 <__bss_end>
      ###     la t1, __bss_end
   24:	       00001317          	auipc	x6,0x1
-  28:	       fdc30313          	addi	x6,x6,-36 # 1000 <__bss_end>
+  28:	       fec30313          	addi	x6,x6,-20 # 1010 <__bss_end>
      ### 
      ### 1:
      ###     bge t0, t1, 2f
@@ -122,11 +123,11 @@ Disassembly of section .text:
      ###         if (id == 16) { // QSPI — read received byte to clear RX interrupt flag
   60:	|            01000713          	addi	x14,x0,16
   64:	|        /-- 00e79e63          	bne	x15,x14,80 <trap_handler+0x3c>
-     ###             (void) QSPI_DATA;
+     ###             (void) QSPI_RXDATA_BUF;
   68:	|        |   000027b7          	lui	x15,0x2
-  6c:	|        |   0047a703          	lw	x14,4(x15) # 2004 <__ram+0x4>
-     ###             QSPI_STATUS = 0;
-  70:	|        |   0007a423          	sw	x0,8(x15)
+  6c:	|        |   0247a703          	lw	x14,36(x15) # 2024 <__ram+0x24>
+     ###             QSPI_CSR_ADDR = 0;
+  70:	|        |   0007a023          	sw	x0,0(x15)
      ###             TEST_LOC = 1;
      ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
      ###             // TIMER_CTRL = 0;
@@ -159,13 +160,13 @@ Disassembly of section .text:
   b0:	|  |  |  |   000017b7          	lui	x15,0x1
   b4:	|  |  |  |   06c00713          	addi	x14,x0,108
      ###             TEST_LOC = 1;
-  b8:	|  |  \--|-> 00e7a023          	sw	x14,0(x15) # 1000 <__bss_end>
+  b8:	|  |  \--|-> 00e7a023          	sw	x14,0(x15) # 1000 <__flash_size+0x800>
   bc:	|  |  /--|-- 00c0006f          	jal	x0,c8 <trap_handler+0x84>
      ###         } else if (id == 20) { // Matrix Mul ignored
   c0:	|  |  |  \-> 01400713          	addi	x14,x0,20
   c4:	|  \--|----- fae788e3          	beq	x15,x14,74 <trap_handler+0x30>
      ###         // Log cause to UART for debug visibility
-     ###         UART_UBRR = 0x04;
+     ###         UART_UBRR = 0x1B;
      ###         UART_UCR1 = 0x07;
      ###         UART_UTDR = mcause;
      ###     }
@@ -180,9 +181,9 @@ Disassembly of section .text:
   e0:	      |      00470713          	addi	x14,x14,4
      ###         asm volatile ("csrw mepc, %0" : : "r"(mepc));
   e4:	      |      34171073          	csrrw	x0,mepc,x14
-     ###         UART_UBRR = 0x04;
+     ###         UART_UBRR = 0x1B;
   e8:	      |      00002737          	lui	x14,0x2
-  ec:	      |      00400693          	addi	x13,x0,4
+  ec:	      |      01b00693          	addi	x13,x0,27
   f0:	      |      04d72823          	sw	x13,80(x14) # 2050 <__ram+0x50>
      ###         UART_UCR1 = 0x07;
   f4:	      |      00700693          	addi	x13,x0,7
@@ -199,13 +200,13 @@ Disassembly of section .text:
      ###     // all peripheral register address are declared in memory_map.h
      ###     TEST_LOC = 0; // explicitly zero before use — SRAM is undefined at power-on
  104:	       000017b7          	lui	x15,0x1
- 108:	       0007a023          	sw	x0,0(x15) # 1000 <__bss_end>
+ 108:	       0007a023          	sw	x0,0(x15) # 1000 <__flash_size+0x800>
      ### 
      ###     // timer setup
      ###     TIMER_OCMR = 255; // Set timer compare value to 255
  10c:	       0ff00713          	addi	x14,x0,255
  110:	       000027b7          	lui	x15,0x2
- 114:	       08e7a423          	sw	x14,136(x15) # 2088 <__ram+0x88>
+ 114:	       08e7a623          	sw	x14,140(x15) # 208c <__ram+0x8c>
      ###     TIMER_TCCR = 0x07; // Timer enable + PWM enable + IRQ enable
  118:	       00700713          	addi	x14,x0,7
  11c:	       08e7a023          	sw	x14,128(x15)
@@ -232,40 +233,42 @@ Disassembly of section .text:
  150:	   \-- fe078ce3          	beq	x15,x0,148 <main+0x44>
      ###     TEST_LOC = 111; // uart transmission should be done by now, set TEST_LOC to 111 to indicate UART test is done
  154:	       000017b7          	lui	x15,0x1
- 158:	       06f00713          	addi	x14,x0,111
- 15c:	       00e7a023          	sw	x14,0(x15) # 1000 <__bss_end>
+ 158:	       06f00693          	addi	x13,x0,111
+ 15c:	       00d7a023          	sw	x13,0(x15) # 1000 <__flash_size+0x800>
+     ###     (void) TIMER_TIRQ; // Clear any pending timer interrupts by reading TIRQ
+ 160:	       09472783          	lw	x15,148(x14)
      ###     while (1) {
      ###         // Wait for interrupt to occur
      ###         // The trap handler will set TEST_LOC to 108 when the timer interrupt is handled
      ###         if (TEST_LOC == 108) {
- 160:	       000016b7          	lui	x13,0x1
- 164:	       06c00593          	addi	x11,x0,108
+ 164:	       000016b7          	lui	x13,0x1
+ 168:	       06c00593          	addi	x11,x0,108
      ###             // Clear TEST_LOC for next interrupt
      ###             TEST_LOC = 0;
      ###             // Read current timer count
      ###             uint32_t count = TIMER_TCNT;
- 168:	       000027b7          	lui	x15,0x2
+ 16c:	       000027b7          	lui	x15,0x2
      ###             UART_UTDR = count; // Send timer count over UART
      ###             while (!(UART_USR0 & 0x4)); // Wait till transmission is complete
      ###             TEST_LOC = 789;
- 16c:	       31500613          	addi	x12,x0,789
+ 170:	       31500613          	addi	x12,x0,789
      ###         if (TEST_LOC == 108) {
- 170:	/----> 0006a703          	lw	x14,0(x13) # 1000 <__bss_end>
- 174:	+----- feb71ee3          	bne	x14,x11,170 <main+0x6c>
+ 174:	/----> 0006a703          	lw	x14,0(x13) # 1000 <__flash_size+0x800>
+ 178:	+----- feb71ee3          	bne	x14,x11,174 <main+0x70>
      ###             TEST_LOC = 0;
- 178:	|      0006a023          	sw	x0,0(x13)
+ 17c:	|      0006a023          	sw	x0,0(x13)
      ###             uint32_t count = TIMER_TCNT;
- 17c:	|      0847a703          	lw	x14,132(x15) # 2084 <__ram+0x84>
+ 180:	|      0847a703          	lw	x14,132(x15) # 2084 <__ram+0x84>
      ###             UART_UTDR = count; // Send timer count over UART
- 180:	|      04e7a423          	sw	x14,72(x15)
+ 184:	|      04e7a423          	sw	x14,72(x15)
      ###             while (!(UART_USR0 & 0x4)); // Wait till transmission is complete
- 184:	|  /-> 0407a703          	lw	x14,64(x15)
- 188:	|  |   00477713          	andi	x14,x14,4
- 18c:	|  \-- fe070ce3          	beq	x14,x0,184 <main+0x80>
+ 188:	|  /-> 0407a703          	lw	x14,64(x15)
+ 18c:	|  |   00477713          	andi	x14,x14,4
+ 190:	|  \-- fe070ce3          	beq	x14,x0,188 <main+0x84>
      ###             TEST_LOC = 789;
- 190:	|      00c6a023          	sw	x12,0(x13)
+ 194:	|      00c6a023          	sw	x12,0(x13)
      ###             GPIO_GDAT ^= 0x1; // Toggle GPIO pin 0
- 194:	|      0c47a703          	lw	x14,196(x15)
- 198:	|      00174713          	xori	x14,x14,1
- 19c:	|      0ce7a223          	sw	x14,196(x15)
- 1a0:	\----- fd1ff06f          	jal	x0,170 <main+0x6c>
+ 198:	|      0c47a703          	lw	x14,196(x15)
+ 19c:	|      00174713          	xori	x14,x14,1
+ 1a0:	|      0ce7a223          	sw	x14,196(x15)
+ 1a4:	\----- fd1ff06f          	jal	x0,174 <main+0x70>

@@ -118,7 +118,7 @@ module boot_loader #(
         if (!resetn) begin
             cpu_resetn            <= 1'b0;
             presetn               <= 1'b0;
-            curr_state            <= IDLE;
+            curr_state            <= FINISHED; // put it in FINISHED for testing
             counter               <= 2'b00;
             word_cnt              <= 10'd0;
             mem_send_fully_loaded <= 1'b0;
