@@ -7,8 +7,18 @@ __trap_vector_start:
     j exception_handler
     .align 2
 
-    # Entry 1-15: Reserved/unused (RISC-V standard interrupts)
-    .rept 15
+    # Entry 1-6: Reserved/unused (RISC-V standard interrupts)
+    .rept 6
+        j exception_handler  # Fallback to exception handler
+        .align 2
+    .endr
+
+    # Entry 7: Machine Timer Interrupt (mcause=7, standard RISC-V MTIP)
+    j isr_mtimer
+    .align 2
+
+    # Entry 8-15: Reserved/unused (RISC-V standard interrupts)
+    .rept 8
         j exception_handler  # Fallback to exception handler
         .align 2
     .endr

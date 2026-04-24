@@ -21,8 +21,13 @@ void __attribute__((weak, interrupt("machine"))) exception_handler(void);
 
 // Vectored mode: individual interrupt service routines
 // Weak defaults provided - override only the ISRs you need
+
+// Standard RISC-V core interrupt
+void __attribute__((weak, interrupt("machine"))) isr_mtimer(void); // mcause = 7 (Machine Timer Interrupt)
+
+// Platform-specific peripheral interrupts
 void __attribute__((weak, interrupt("machine"))) isr_spi(void);    // mcause = 16
 void __attribute__((weak, interrupt("machine"))) isr_uart(void);   // mcause = 17
 void __attribute__((weak, interrupt("machine"))) isr_gpio(void);   // mcause = 18
-void __attribute__((weak, interrupt("machine"))) isr_timer(void);  // mcause = 19
+void __attribute__((weak, interrupt("machine"))) isr_timer(void);  // mcause = 19 (Peripheral Timer)
 void __attribute__((weak, interrupt("machine"))) isr_mm(void);     // mcause = 20

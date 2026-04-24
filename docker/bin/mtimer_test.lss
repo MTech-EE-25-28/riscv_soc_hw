@@ -1,0 +1,454 @@
+
+.temp.file.elf:     file format elf32-littleriscv
+
+SYMBOL TABLE:
+00000000 l    d  .init	00000000 .init
+00000048 l    d  .trap_vector	00000000 .trap_vector
+000000c8 l    d  .text	00000000 .text
+00000290 l    d  .rodata	00000000 .rodata
+00001000 l    d  .data	00000000 .data
+00001010 l    d  .heap	00000000 .heap
+00000000 l    d  .riscv.attributes	00000000 .riscv.attributes
+00000000 l    d  .comment	00000000 .comment
+00000000 l    d  .debug_line	00000000 .debug_line
+00000000 l    d  .debug_line_str	00000000 .debug_line_str
+00000000 l    d  .debug_info	00000000 .debug_info
+00000000 l    d  .debug_abbrev	00000000 .debug_abbrev
+00000000 l    d  .debug_aranges	00000000 .debug_aranges
+00000000 l    d  .debug_str	00000000 .debug_str
+00000000 l    d  .debug_loclists	00000000 .debug_loclists
+00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
+00000000 l    d  .debug_macro	00000000 .debug_macro
+00000000 l    d  .debug_frame	00000000 .debug_frame
+00000000 l    df *ABS*	00000000 .temp.start.o
+00000000 l    df *ABS*	00000000 .temp.trap_vector.o
+00000000 l    df *ABS*	00000000 mtimer_test.c
+00000000 l    df *ABS*	00000000 trap_handler.c
+00000800 g       *ABS*	00000000 __flash_size
+00000144  w    F .text	00000004 isr_uart
+000000c8 g       .trap_vector	00000000 __trap_vector_end
+00000100 g       *ABS*	00000000 __stack_size
+00000000 g       .init	00000000 __init_start
+000000c8 g       .text	00000000 __text_start
+00000154  w    F .text	00000004 isr_mm
+00000148  w    F .text	00000004 isr_gpio
+000002a4 g       .rodata	00000000 __rodata_end
+00001010 g       .heap	00000000 __bss_end
+00000150  w    F .text	00000004 isr_timer
+00000158 g     F .text	000000c8 trap_handler
+00001800 g       .riscv.attributes	00000000 _stack_top
+00000000 g       .init	00000000 _start
+00000048 g       .trap_vector	00000000 __trap_vector_start
+00000290 g       .rodata	00000000 __rodata_start
+00002000 g       *ABS*	00000000 __ram
+00001010 g       .data	00000000 __data_end
+00000048 g       .init	00000000 __init_end
+00000290 g       .text	00000000 __text_end
+00001010 g       .heap	00000000 __bss_start
+00000220 g     F .text	00000070 main
+00001700 g       .heap	00000000 __heap_end
+00000800 g       *ABS*	00000000 __ram_size
+00001010 g       .heap	00000000 __heap_start
+000000c8  w    F .text	00000058 isr_mtimer
+00000000 g       *ABS*	00000000 __flash
+00001010 g       .data	00000000 __data_start
+00000140  w    F .text	00000004 isr_spi
+00000120  w    F .text	00000020 exception_handler
+
+
+
+Disassembly of section .init:
+
+00000000 <__init_start>:
+     ### .section .init
+     ### .globl _start
+     ### 
+     ### _start:
+     ###     la sp, _stack_top
+   0:	       00002117          	auipc	x2,0x2
+   4:	       80010113          	addi	x2,x2,-2048 # 1800 <_stack_top>
+     ###     # DIRECT MODE (default): uncomment the following 2 lines
+     ###     # la t0, trap_handler
+     ###     # csrw mtvec, t0
+     ### 
+     ###     # VECTORED MODE: uncomment the following 3 lines instead
+     ###     la t0, __trap_vector_start
+   8:	       00000297          	auipc	x5,0x0
+   c:	       04028293          	addi	x5,x5,64 # 48 <__init_end>
+     ###     ori t0, t0, 0x01          # set MODE bits to 01 (vectored)
+  10:	       0012e293          	ori	x5,x5,1
+     ###     csrw mtvec, t0
+  14:	       30529073          	csrrw	x0,mtvec,x5
+     ### 
+     ###     # enable machine-mode interrupts (MIE bit in mstatus)
+     ###     li t0, 0x8
+  18:	       00800293          	addi	x5,x0,8
+     ###     csrs mstatus, t0
+  1c:	       3002a073          	csrrs	x0,mstatus,x5
+     ### 
+     ###     # zero .bss
+     ###     la t0, __bss_start
+  20:	       00001297          	auipc	x5,0x1
+  24:	       ff028293          	addi	x5,x5,-16 # 1010 <__bss_end>
+     ###     la t1, __bss_end
+  28:	       00001317          	auipc	x6,0x1
+  2c:	       fe830313          	addi	x6,x6,-24 # 1010 <__bss_end>
+     ### 
+     ### 1:
+     ###     bge t0, t1, 2f
+  30:	/--/-X 0062d863          	bge	x5,x6,40 <__init_start+0x40>
+     ###     sw zero, 0(t0)
+  34:	|  |   0002a023          	sw	x0,0(x5)
+     ###     addi t0, t0, 4
+  38:	|  |   00428293          	addi	x5,x5,4
+     ###     j 1b
+  3c:	|  \-- ff5ff06f          	jal	x0,30 <__init_start+0x30>
+     ### 
+     ### 2:
+     ###     call main
+  40:	\----> 1e0000ef          	jal	x1,220 <main>
+     ### 
+     ### 3:  j 3b
+  44:	   /-- 0000006f          	jal	x0,44 <__init_start+0x44>
+
+Disassembly of section .trap_vector:
+
+00000048 <__trap_vector_start>:
+     ### .global __trap_vector_start
+     ### .align 2   # 4-byte alignment (required for RISC-V instructions)
+     ### 
+     ### __trap_vector_start:
+     ###     # Entry 0: Synchronous exceptions (direct jump to handler)
+     ###     j exception_handler
+  48:	0d80006f          	jal	x0,120 <exception_handler>
+     ###     .align 2
+     ### 
+     ###     # Entry 1-6: Reserved/unused (RISC-V standard interrupts)
+     ###     .rept 6
+     ###         j exception_handler  # Fallback to exception handler
+  4c:	0d40006f          	jal	x0,120 <exception_handler>
+  50:	0d00006f          	jal	x0,120 <exception_handler>
+  54:	0cc0006f          	jal	x0,120 <exception_handler>
+  58:	0c80006f          	jal	x0,120 <exception_handler>
+  5c:	0c40006f          	jal	x0,120 <exception_handler>
+  60:	0c00006f          	jal	x0,120 <exception_handler>
+     ###         .align 2
+     ###     .endr
+     ### 
+     ###     # Entry 7: Machine Timer Interrupt (mcause=7, standard RISC-V MTIP)
+     ###     j isr_mtimer
+  64:	0640006f          	jal	x0,c8 <__trap_vector_end>
+     ###     .align 2
+     ### 
+     ###     # Entry 8-15: Reserved/unused (RISC-V standard interrupts)
+     ###     .rept 8
+     ###         j exception_handler  # Fallback to exception handler
+  68:	0b80006f          	jal	x0,120 <exception_handler>
+  6c:	0b40006f          	jal	x0,120 <exception_handler>
+  70:	0b00006f          	jal	x0,120 <exception_handler>
+  74:	0ac0006f          	jal	x0,120 <exception_handler>
+  78:	0a80006f          	jal	x0,120 <exception_handler>
+  7c:	0a40006f          	jal	x0,120 <exception_handler>
+  80:	0a00006f          	jal	x0,120 <exception_handler>
+  84:	09c0006f          	jal	x0,120 <exception_handler>
+     ###         .align 2
+     ###     .endr
+     ### 
+     ###     # Entry 16: Platform interrupt 0 - QSPI/SPI (mcause=16)
+     ###     j isr_spi
+  88:	0b80006f          	jal	x0,140 <isr_spi>
+     ###     .align 2
+     ### 
+     ###     # Entry 17: Platform interrupt 1 - UART (mcause=17)
+     ###     j isr_uart
+  8c:	0b80006f          	jal	x0,144 <isr_uart>
+     ###     .align 2
+     ### 
+     ###     # Entry 18: Platform interrupt 2 - GPIO (mcause=18)
+     ###     j isr_gpio
+  90:	0b80006f          	jal	x0,148 <isr_gpio>
+     ###     .align 2
+     ### 
+     ###     # Entry 19: Platform interrupt 3 - Timer (mcause=19)
+     ###     j isr_timer
+  94:	0bc0006f          	jal	x0,150 <isr_timer>
+     ###     .align 2
+     ### 
+     ###     # Entry 20: Platform interrupt 4 - Matrix Multiplier (mcause=20)
+     ###     j isr_mm
+  98:	0bc0006f          	jal	x0,154 <isr_mm>
+     ###     .align 2
+     ### 
+     ###     # Entries 21-31: Reserved for future platform interrupts
+     ###     .rept 11
+     ###         j exception_handler  # Fallback
+  9c:	0840006f          	jal	x0,120 <exception_handler>
+  a0:	0800006f          	jal	x0,120 <exception_handler>
+  a4:	07c0006f          	jal	x0,120 <exception_handler>
+  a8:	0780006f          	jal	x0,120 <exception_handler>
+  ac:	0740006f          	jal	x0,120 <exception_handler>
+  b0:	0700006f          	jal	x0,120 <exception_handler>
+  b4:	06c0006f          	jal	x0,120 <exception_handler>
+  b8:	0680006f          	jal	x0,120 <exception_handler>
+  bc:	0640006f          	jal	x0,120 <exception_handler>
+  c0:	0600006f          	jal	x0,120 <exception_handler>
+  c4:	05c0006f          	jal	x0,120 <exception_handler>
+
+Disassembly of section .text:
+
+000000c8 <isr_mtimer>:
+     ###     uint32_t mask = 0x80;  // MTIE bit (bit 7)
+     ###     asm volatile ("csrc 0x304, %0" :: "r"(mask));  // Clear MTIE in mie
+     ### }
+     ### 
+     ### // Machine Timer ISR - called when cycle_counter >= timecmp
+     ### void __attribute__((interrupt("machine"))) isr_mtimer(void) {
+  c8:	ff010113          	addi	x2,x2,-16
+  cc:	00d12623          	sw	x13,12(x2)
+  d0:	00e12423          	sw	x14,8(x2)
+  d4:	00f12223          	sw	x15,4(x2)
+     ###     asm volatile ("csrr %0, 0xB00" : "=r"(lo));  // mcyclel
+  d8:	b00027f3          	csrrs	x15,mcycle,x0
+     ###     asm volatile ("csrr %0, 0xB80" : "=r"(hi));  // mcycleh
+  dc:	b80026f3          	csrrs	x13,mcycleh,x0
+     ###     // Read current cycle count
+     ###     uint64_t now = rdcycle();
+     ### 
+     ###     // Set next timer interrupt for 10000 cycles from now
+     ###     set_mtimecmp(now + 10000);
+  e0:	00002737          	lui	x14,0x2
+  e4:	71070713          	addi	x14,x14,1808 # 2710 <__ram+0x710>
+  e8:	00e78733          	add	x14,x15,x14
+  ec:	00f737b3          	sltu	x15,x14,x15
+  f0:	00d787b3          	add	x15,x15,x13
+     ###     asm volatile ("csrw 0x7C0, %0" :: "r"((uint32_t)value));         // timecmpl
+  f4:	7c071073          	csrrw	x0,0x7c0,x14
+     ###     asm volatile ("csrw 0x7C1, %0" :: "r"((uint32_t)(value >> 32))); // timecmph
+  f8:	7c179073          	csrrw	x0,0x7c1,x15
+     ### 
+     ###     // Signal that timer fired
+     ###     TEST_LOC *= 2;
+  fc:	00001737          	lui	x14,0x1
+ 100:	00072783          	lw	x15,0(x14) # 1000 <__flash_size+0x800>
+     ### }
+ 104:	00c12683          	lw	x13,12(x2)
+     ###     TEST_LOC *= 2;
+ 108:	00179793          	slli	x15,x15,0x1
+ 10c:	00f72023          	sw	x15,0(x14)
+     ### }
+ 110:	00812703          	lw	x14,8(x2)
+ 114:	00412783          	lw	x15,4(x2)
+ 118:	01010113          	addi	x2,x2,16
+ 11c:	30200073          	mret
+
+00000120 <exception_handler>:
+     ### #include "memory_map.h"
+     ### 
+     ### // Default Weak Handlers for Vectored Mode
+     ### // These provide safe defaults that can be overridden by user application.
+     ### // If not overridden, they simply return (doing nothing).
+     ### void __attribute__((weak, interrupt("machine"))) exception_handler(void) {
+ 120:	ff010113          	addi	x2,x2,-16
+ 124:	00f12623          	sw	x15,12(x2)
+     ###     // Default: advance mepc past faulting instruction and return
+     ###     uint32_t mepc;
+     ###     asm volatile ("csrr %0, mepc" : "=r"(mepc));
+ 128:	341027f3          	csrrs	x15,mepc,x0
+     ###     mepc += 4;
+ 12c:	00478793          	addi	x15,x15,4
+     ###     asm volatile ("csrw mepc, %0" : : "r"(mepc));
+ 130:	34179073          	csrrw	x0,mepc,x15
+     ### }
+ 134:	00c12783          	lw	x15,12(x2)
+ 138:	01010113          	addi	x2,x2,16
+ 13c:	30200073          	mret
+
+00000140 <isr_spi>:
+     ### 
+     ### void __attribute__((weak, interrupt("machine"))) isr_spi(void) {
+     ###     // Default: do nothing (user should override to handle SPI interrupts)
+     ### }
+ 140:	30200073          	mret
+
+00000144 <isr_uart>:
+     ### 
+     ### void __attribute__((weak, interrupt("machine"))) isr_uart(void) {
+ 144:	30200073          	mret
+
+00000148 <isr_gpio>:
+     ###     // Default: do nothing (user should override to handle UART interrupts)
+     ### }
+     ### 
+     ### void __attribute__((weak, interrupt("machine"))) isr_gpio(void) {
+ 148:	30200073          	mret
+     ###     // Default: do nothing (user should override to handle GPIO interrupts)
+     ### }
+     ### 
+     ### void __attribute__((weak, interrupt("machine"))) isr_mtimer(void) {
+ 14c:	30200073          	mret
+
+00000150 <isr_timer>:
+     ###     // Default: do nothing (user should override to handle machine timer interrupts)
+     ###     // Note: Must write new timecmp value to re-arm the timer
+     ### }
+     ### 
+     ### void __attribute__((weak, interrupt("machine"))) isr_timer(void) {
+ 150:	30200073          	mret
+
+00000154 <isr_mm>:
+     ###     // Default: do nothing (user should override to handle peripheral timer interrupts)
+     ### }
+     ### 
+     ### void __attribute__((weak, interrupt("machine"))) isr_mm(void) {
+ 154:	30200073          	mret
+
+00000158 <trap_handler>:
+     ###     // Default: do nothing (user should override to handle matrix multiplier interrupts)
+     ### }
+     ### 
+     ### // Direct Mode Trap Handler (example implementation)
+     ### void __attribute__((interrupt("machine"))) trap_handler (void) {
+ 158:	             ff010113          	addi	x2,x2,-16
+ 15c:	             00d12623          	sw	x13,12(x2)
+ 160:	             00e12423          	sw	x14,8(x2)
+ 164:	             00f12223          	sw	x15,4(x2)
+     ###     uint32_t mepc, mcause;
+     ###     asm volatile ("csrr %0, mcause" : "=r"(mcause));
+ 168:	             342027f3          	csrrs	x15,mcause,x0
+     ### 
+     ###     if (mcause & 0x80000000) {
+ 16c:	   /-------- 0807d663          	bge	x15,x0,1f8 <trap_handler+0xa0>
+     ###         // Interrupt
+     ###         // mepc already points to the interrupted instruction
+     ###         uint32_t id = mcause & 0x1F;
+ 170:	   |         01f7f793          	andi	x15,x15,31
+     ###         // switch case needs jump table to be loaded into dmem
+     ###         if (id == 7) { // Machine Timer Interrupt
+ 174:	   |         00700713          	addi	x14,x0,7
+ 178:	   |     /-- 02e79263          	bne	x15,x14,19c <trap_handler+0x44>
+     ###             // User must write new timecmp to re-arm timer
+     ###             TEST_LOC = 107;
+ 17c:	   |     |   000017b7          	lui	x15,0x1
+ 180:	   |     |   06b00713          	addi	x14,x0,107
+     ###             TEST_LOC = 1;
+     ###         } else if (id == 19) { // Timer — acknowledge by clearing the timer interrupt flag
+     ###             // TIMER_CTRL = 0;
+     ###             TEST_LOC = 108;
+     ###         } else if (id == 20) { // Matrix Mul ignored
+     ###             TEST_LOC = 1;
+ 184:	   |  /--|-> 00e7a023          	sw	x14,0(x15) # 1000 <__flash_size+0x800>
+     ###         // Log cause to UART for debug visibility
+     ###         UART_UBRR = 0x1B;
+     ###         UART_UCR1 = 0x07;
+     ###         UART_UTDR = mcause;
+     ###     }
+ 188:	/--|--|--|-> 00c12683          	lw	x13,12(x2)
+ 18c:	|  |  |  |   00812703          	lw	x14,8(x2)
+ 190:	|  |  |  |   00412783          	lw	x15,4(x2)
+ 194:	|  |  |  |   01010113          	addi	x2,x2,16
+ 198:	|  |  |  |   30200073          	mret
+     ###         } else if (id == 16) { // QSPI — read received byte to clear RX interrupt flag
+ 19c:	|  |  |  \-> ff078793          	addi	x15,x15,-16
+ 1a0:	|  |  |      00400713          	addi	x14,x0,4
+ 1a4:	+--|--|----- fef762e3          	bltu	x14,x15,188 <trap_handler+0x30>
+ 1a8:	|  |  |      00279793          	slli	x15,x15,0x2
+ 1ac:	|  |  |      29000713          	addi	x14,x0,656
+ 1b0:	|  |  |      00e787b3          	add	x15,x15,x14
+ 1b4:	|  |  |      0007a783          	lw	x15,0(x15)
+ 1b8:	|  |  |      00078067          	jalr	x0,0(x15)
+     ###             (void) QSPI_RXDATA_BUF;
+ 1bc:	|  |  |      000027b7          	lui	x15,0x2
+ 1c0:	|  |  |      0247a703          	lw	x14,36(x15) # 2024 <__ram+0x24>
+     ###             QSPI_CSR_ADDR = 0;
+ 1c4:	|  |  |      0007a023          	sw	x0,0(x15)
+     ###             TEST_LOC = 1;
+ 1c8:	|  |  |  /-> 000017b7          	lui	x15,0x1
+ 1cc:	|  |  |  |   00100713          	addi	x14,x0,1
+ 1d0:	|  |  +--|-- fb5ff06f          	jal	x0,184 <trap_handler+0x2c>
+     ###             (void) UART_URDR;
+ 1d4:	|  |  |  |   000027b7          	lui	x15,0x2
+ 1d8:	|  |  |  |   0447a783          	lw	x15,68(x15) # 2044 <__ram+0x44>
+     ###             TEST_LOC = 1;
+ 1dc:	|  |  |  +-- fedff06f          	jal	x0,1c8 <trap_handler+0x70>
+     ###             (void) GPIO_GDAT;
+ 1e0:	|  |  |  |   000027b7          	lui	x15,0x2
+ 1e4:	|  |  |  |   0c47a783          	lw	x15,196(x15) # 20c4 <__ram+0xc4>
+     ###             TEST_LOC = 1;
+ 1e8:	|  |  |  \-- fe1ff06f          	jal	x0,1c8 <trap_handler+0x70>
+     ###             TEST_LOC = 108;
+ 1ec:	|  |  |      000017b7          	lui	x15,0x1
+ 1f0:	|  |  |      06c00713          	addi	x14,x0,108
+ 1f4:	|  |  \----- f91ff06f          	jal	x0,184 <trap_handler+0x2c>
+     ###         asm volatile ("csrr %0, mepc" : "=r"(mepc));
+ 1f8:	|  \-------> 34102773          	csrrs	x14,mepc,x0
+     ###         mepc += 4; // put mepc on the next instruction
+ 1fc:	|            00470713          	addi	x14,x14,4
+     ###         asm volatile ("csrw mepc, %0" : : "r"(mepc));
+ 200:	|            34171073          	csrrw	x0,mepc,x14
+     ###         UART_UBRR = 0x1B;
+ 204:	|            00002737          	lui	x14,0x2
+ 208:	|            01b00693          	addi	x13,x0,27
+ 20c:	|            04d72823          	sw	x13,80(x14) # 2050 <__ram+0x50>
+     ###         UART_UCR1 = 0x07;
+ 210:	|            00700693          	addi	x13,x0,7
+ 214:	|            04d72623          	sw	x13,76(x14)
+     ###         UART_UTDR = mcause;
+ 218:	|            04f72423          	sw	x15,72(x14)
+ 21c:	\----------- f6dff06f          	jal	x0,188 <trap_handler+0x30>
+
+00000220 <main>:
+     ### 
+     ### int main() {
+     ###     TEST_LOC = 1;
+ 220:	    000016b7          	lui	x13,0x1
+ 224:	    00100613          	addi	x12,x0,1
+ 228:	    00c6a023          	sw	x12,0(x13) # 1000 <__flash_size+0x800>
+     ### 
+     ###     // Enable machine-mode interrupts globally (MIE bit in mstatus)
+     ###     asm volatile ("csrsi mstatus, 0x8");
+ 22c:	    30046073          	csrrsi	x0,mstatus,8
+     ###     asm volatile ("csrs 0x304, %0" :: "r"(mask));  // Set MTIE in mie
+ 230:	    08000793          	addi	x15,x0,128
+ 234:	    3047a073          	csrrs	x0,mie,x15
+     ###     asm volatile ("csrr %0, 0xB00" : "=r"(lo));  // mcyclel
+ 238:	    b00027f3          	csrrs	x15,mcycle,x0
+     ###     asm volatile ("csrr %0, 0xB80" : "=r"(hi));  // mcycleh
+ 23c:	    b80025f3          	csrrs	x11,mcycleh,x0
+     ### 
+     ###     // Get current cycle count
+     ###     uint64_t start = rdcycle();
+     ### 
+     ###     // Set timer to fire in 5000 cycles
+     ###     set_mtimecmp(start + 5000);
+ 240:	    38868713          	addi	x14,x13,904
+ 244:	    00e78733          	add	x14,x15,x14
+ 248:	    00f737b3          	sltu	x15,x14,x15
+ 24c:	    00b787b3          	add	x15,x15,x11
+     ###     asm volatile ("csrw 0x7C0, %0" :: "r"((uint32_t)value));         // timecmpl
+ 250:	    7c071073          	csrrw	x0,0x7c0,x14
+     ###     asm volatile ("csrw 0x7C1, %0" :: "r"((uint32_t)(value >> 32))); // timecmph
+ 254:	    7c179073          	csrrw	x0,0x7c1,x15
+     ### 
+     ###     asm volatile ("wfi"); // Wait for first interrupt
+ 258:	    10500073          	wfi
+     ###     TEST_LOC = 1;
+     ###     UART_UBRR = 0x04;
+ 25c:	    000027b7          	lui	x15,0x2
+     ###     TEST_LOC = 1;
+ 260:	    00c6a023          	sw	x12,0(x13)
+     ###     UART_UBRR = 0x04;
+ 264:	    00400713          	addi	x14,x0,4
+ 268:	    04e7a823          	sw	x14,80(x15) # 2050 <__ram+0x50>
+     ###     UART_UCR1 = 0x07; // Enable UART receiver, transmitter and RX interrupt
+ 26c:	    00700713          	addi	x14,x0,7
+ 270:	    04e7a623          	sw	x14,76(x15)
+     ###     UART_UTDR = 'A'; // Send 'A' to indicate first interrupt handled
+ 274:	    04100713          	addi	x14,x0,65
+ 278:	    04e7a423          	sw	x14,72(x15)
+     ###     while(!(UART_USR0 & 0x4)); // Wait until transmission is complete
+ 27c:	    00002737          	lui	x14,0x2
+ 280:	/-> 04072783          	lw	x15,64(x14) # 2040 <__ram+0x40>
+ 284:	|   0047f793          	andi	x15,x15,4
+ 288:	\-- fe078ce3          	beq	x15,x0,280 <main+0x60>
+     ###     while (1);
+ 28c:	/-- 0000006f          	jal	x0,28c <main+0x6c>

@@ -39,5 +39,13 @@
 #define MM_MATB_PTR  ((volatile uint32_t *)(MM_BASE + 0x44))
 #define MM_MATC_PTR  ((volatile uint32_t *)(MM_BASE + 0x84))
 
+// CSR addresses for machine timer (custom CLINT-style implementation)
+#define CSR_TIMECMPL  0x7C0  // Machine timer compare low (write to set timer deadline)
+#define CSR_TIMECMPH  0x7C1  // Machine timer compare high
+#define CSR_MCYCLEL   0xB00  // Machine cycle counter low (read-only)
+#define CSR_MCYCLEH   0xB80  // Machine cycle counter high (read-only)
+#define CSR_MIE       0x304  // Machine interrupt enable (bit 7 = MTIE)
+#define CSR_MIP       0x344  // Machine interrupt pending (bit 7 = MTIP, read-only)
+
 // for testing
 #define TEST_LOC (*(volatile uint32_t *)(0x00001000))

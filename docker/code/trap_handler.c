@@ -26,8 +26,13 @@ void __attribute__((weak, interrupt("machine"))) isr_gpio(void) {
     // Default: do nothing (user should override to handle GPIO interrupts)
 }
 
+void __attribute__((weak, interrupt("machine"))) isr_mtimer(void) {
+    // Default: do nothing (user should override to handle machine timer interrupts)
+    // Note: Must write new timecmp value to re-arm the timer
+}
+
 void __attribute__((weak, interrupt("machine"))) isr_timer(void) {
-    // Default: do nothing (user should override to handle timer interrupts)
+    // Default: do nothing (user should override to handle peripheral timer interrupts)
 }
 
 void __attribute__((weak, interrupt("machine"))) isr_mm(void) {
@@ -44,7 +49,10 @@ void __attribute__((interrupt("machine"))) trap_handler (void) {
         // mepc already points to the interrupted instruction
         uint32_t id = mcause & 0x1F;
         // switch case needs jump table to be loaded into dmem
-        if (id == 16) { // QSPI — read received byte to clear RX interrupt flag
+        if (id == 7) { // Machine Timer Interrupt
+            // User must write new timecmp to re-arm timer
+            TEST_LOC = 107;
+        } else if (id == 16) { // QSPI — read received byte to clear RX interrupt flag
             (void) QSPI_RXDATA_BUF;
             QSPI_CSR_ADDR = 0;
             TEST_LOC = 1;
