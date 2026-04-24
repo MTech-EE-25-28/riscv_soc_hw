@@ -79,6 +79,7 @@ wire        JumpMispredictE;
 // exceptionW encoding: [5]=store-misalign [4]=load-misalign [3]=ebreak [2]=ecall [1]=fetch-misalign [0]=illegal
 wire [3:0]  excDecD,            excDecE,             excDecM,             excDecW;
 wire        tretD,              tretE,               tretM,               tretW;
+wire        wfiE,               wfiM,                wfiW;  // WFI pipeline
 wire        memMisAlignLoadM,   memMisAlignLoadW;
 wire        memMisAlignStoreM,  memMisAlignStoreW;
 wire [5:0]  exceptionW;
@@ -180,9 +181,9 @@ csr_handler csr (
 // Execute stage
 pl_reg_e ple (
     clk, FlushE, ALUStall || MemStall, ResultSrcD, csrSelD, MemWriteD, ALUSrcD, RegWriteD, JumpD, JalrD, ALUControlD, BranchD,
-    SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD, excDecD, tretD, validD,
+    SrcA, WriteData, PCD, InstrD, ImmExtD, PCPlus4D, lAuiPCD, InstrD[14:12], PredTakenD, PredTargetD, excDecD, tretD, wfiD, validD,
     ResultSrcE, csrSelE, MemWriteE, ALUSrcE, RegWriteE, JumpE, JalrE, ALUControlE, BranchE, RD1E, RD2E, PCE, InstrE,
-    ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE, excDecE, tretE, validE
+    ImmExtE, PCPlus4E, lAuiPCE, funct3E, PredTakenE, PredTargetE, excDecE, tretE, wfiE, validE
 );
 
 // ALU logic
@@ -218,8 +219,8 @@ wire misAlignLoadE  = misAlignLoad_pre  && !csrSelE && (ResultSrcE == 2'b01); //
 wire misAlignStoreE = misAlignStore_pre && MemWriteE;                 // only for actual stores
 
 pl_reg_m plm (
-    clk, reset, ALUStall || MemStall, PCSrcTrap, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE, BranchE, BranchTakenE, PCTargetE, excDecE, tretE, misAlignLoadE, misAlignStoreE, validE,
-    ResultSrcM, MemWriteM, RegWriteM, ResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM, BranchM, BranchTakenM, PCTargetM, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM, validM
+    clk, reset, ALUStall || MemStall, PCSrcTrap, ResultSrcE, MemWriteE, RegWriteE, ResultE, ALUSrcB, InstrE[11:7], PCPlus4E, lAuiPCE, funct3E, PCE, BranchE, BranchTakenE, PCTargetE, excDecE, tretE, wfiE, misAlignLoadE, misAlignStoreE, validE,
+    ResultSrcM, MemWriteM, RegWriteM, ResultM, WriteDataM, RdM, PCPlus4M, lAuiPCM, funct3M, PCM, BranchM, BranchTakenM, PCTargetM, excDecM, tretM, wfiM, memMisAlignLoadM, memMisAlignStoreM, validM
 );
 
 // Suppress memory write when store is misaligned (prevent corrupt writes)
@@ -235,16 +236,21 @@ assign is_mem_accessM = MemWriteM || (ResultSrcM == 2'b01);
 // was written) to be used as WriteDataM for the next store — producing off-by-one
 // WriteData values in back-to-back peripheral stores.
 pl_reg_w plw (
-    clk, reset, PCSrcTrap, MemStall, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, memMisAlignLoadM, memMisAlignStoreM,
-    ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W, excDecW, tretW, memMisAlignLoadW, memMisAlignStoreW
+    clk, reset, PCSrcTrap, MemStall, ResultSrcM, RegWriteM, ResultM, ReadData, RdM, PCPlus4M, lAuiPCM, PCM, WriteDataM, funct3M, excDecM, tretM, wfiM, memMisAlignLoadM, memMisAlignStoreM,
+    ResultSrcW, RegWriteW, ALUResultW, ReadDataW, RdW, PCPlus4W, lAuiPCW, PCW, WriteDataW, funct3W, excDecW, tretW, wfiW, memMisAlignLoadW, memMisAlignStoreW
 );
 
 // exceptionW encoding: [5]=store-misalign [4]=load-misalign [3]=ebreak [2]=ecall [1]=fetch-misalign [0]=illegal
 assign exceptionW = {memMisAlignStoreW, memMisAlignLoadW, excDecW[3], excDecW[2], excDecW[1], excDecW[0]};
 
+// Combine peripheral interrupts with core timer interrupt (MTIP from mip[7])
+// interrupt[5]=MTIP, [4:0]=peripheral interrupts
+wire [5:0] interrupt = {csr_mip[7] & csr_mie[7], interruptA};
+wire interrupt_pending = |interrupt;  // Any interrupt pending (for WFI wake)?
+
 // Trap handler — sits entirely in Writeback, receives committed exceptions
 trap_handler th (
-    exceptionW, interruptA, tretW, PCW, PCM, PCE, validM, validE, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
+    exceptionW, interrupt, tretW, PCW, PCM, PCE, validM, validE, wfiE, wfiM, ALUResultW, csr_mtvec, csr_mepc, csr_mstatus[3], csr_mstatus[7],
     trap_event, trap_pc_next, trap_mstatus_mie, trap_mstatus_mpie, trap_mepc, trap_mcause, trap_mtval, tret_mstatus_mie, tret_mstatus_mpie
 );
 
@@ -272,6 +278,7 @@ hazard_unit hz (
     clk, reset, InstrD[19:15], InstrD[24:20], InstrE[19:15], InstrE[24:20], InstrE[11:7], RdM, RdW,
     (ResultSrcE == 2'b01), RegWriteM, RegWriteW_safe, PCSrcE || PCSrcTrap,
     ResultM, apb_done, (MemWriteM || (ResultSrcM == 2'b01)), validM,
+    wfiD, interrupt_pending,  // WFI stall: check in Decode, release on interrupt
     StallF, StallD, FlushD, FlushE, ForwardAE, ForwardBE,
     MemStall
 );

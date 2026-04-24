@@ -15,7 +15,7 @@ module pl_reg_e (
     input         PredTakenD,
     input  [31:0] PredTargetD,
     input   [3:0] excDecD,
-    input         tretD, validD,
+    input         tretD, wfiD, validD,
     output reg  [1:0] ResultSrcE,
     output reg        csrSelE, MemWriteE,
     output reg        ALUSrcE,
@@ -29,7 +29,7 @@ module pl_reg_e (
     output reg        PredTakenE,
     output reg [31:0] PredTargetE,
     output reg  [3:0] excDecE,
-    output reg        tretE, validE
+    output reg        tretE, wfiE, validE
 );
 
 always @(posedge clk) begin
@@ -38,14 +38,14 @@ always @(posedge clk) begin
         RegWriteE <= 0; ResultSrcE <= 0; MemWriteE <= 0;
         JumpE <= 0; JalrE <= 0; BranchE <= 0; ALUControlE <= 0; RD1E <= 0;
         ImmExtE <= 0; PCPlus4E <= 0; lAuiPCE <= 0; funct3E <= 0; RD2E <= 0;
-        ALUSrcE <= 0; PCE <= 0; InstrE <= 0; excDecE <= 0; tretE <= 0; validE <= 0;
+        ALUSrcE <= 0; PCE <= 0; InstrE <= 0; excDecE <= 0; tretE <= 0; wfiE <= 0; validE <= 0;
     end else if (!stall) begin
         RegWriteE <= RegWriteD; ResultSrcE <= ResultSrcD; MemWriteE <= MemWriteD;
         JumpE <= JumpD; JalrE <= JalrD; BranchE <= BranchD; ALUControlE <= ALUControlD;
         ALUSrcE <= ALUSrcD; RD1E <= RD1D; RD2E <= RD2D; PCE <= PCD; InstrE <= InstrD;
         ImmExtE <= ImmExtD; PCPlus4E <= PCPlus4D; lAuiPCE <= lAuiPCD; funct3E <= funct3D;
         PredTakenE <= PredTakenD; PredTargetE <= PredTargetD; csrSelE <= csrSelD;
-        excDecE <= excDecD; tretE <= tretD; validE <= validD;
+        excDecE <= excDecD; tretE <= tretD; wfiE <= wfiD; validE <= validD;
     end
 end
 

@@ -11,15 +11,16 @@
 //   [5] = misaligned store      (memory stage detect, propagated to WB)
 //
 // interrupt encoding (priority: lower index = higher priority):
-// [0] - spi, [1] - uart, [2] - gpio, [3] - timer, [4] - matrix multiplier
+// [0] - spi, [1] - uart, [2] - gpio, [3] - timer, [4] - matrix multiplier, [5] - machine timer (MTIP)
 // tret: MRET detected in decode, propagated to WB.
 module trap_handler (
     input  [5:0]  exception,    // see encoding above
-    input  [4:0]  interrupt,    // see encoding above
+    input  [5:0]  interrupt,    // see encoding above
     input         tret,         // MRET
     input  [31:0] pc, pc_m, pc_e, // WB, MEM, EX stage PCs
     input         valid_m,         // valid bit for M-stage
     input         valid_e,         // valid bit for E-stage
+    input         wfi_e, wfi_m,    // WFI in E or M stage (for mepc adjustment)
     input  [31:0] mem_addr,        // load/store address misalignment mtval
 
     // CSR values needed for trap/return PC and status update
@@ -70,15 +71,29 @@ always @(*) begin
         // Take interrupt regardless of pipeline bubble in M stage.
         // mepc = earliest in-flight PC: M if valid, else E (first instruction
         // squashed by the flush that caused the M-stage bubble, e.g. loop branch).
+        // For WFI: mepc should be PC+4 (next instruction after WFI), not WFI's PC
         trap              = 1'b1;
         trap_mstatus_mpie = csr_mstatus_mie;
         trap_mstatus_mie  = 1'b0;
-        trap_mepc         = valid_m ? {pc_m[31:2], 2'b00} :
-                            valid_e ? {pc_e[31:2], 2'b00} : {pc[31:2], 2'b00};
+
+        // If interrupted instruction is WFI, save PC+4; otherwise save PC
+        if (valid_m && wfi_m)
+            trap_mepc = {pc_m[31:2], 2'b00} + 32'd4;
+        else if (valid_e && wfi_e)
+            trap_mepc = {pc_e[31:2], 2'b00} + 32'd4;
+        else if (valid_m)
+            trap_mepc = {pc_m[31:2], 2'b00};
+        else if (valid_e)
+            trap_mepc = {pc_e[31:2], 2'b00};
+        else
+            trap_mepc = {pc[31:2], 2'b00};
+
         trap_mtval        = 32'b0;
 
         // Encode platform mcause (bit[31]=1 = interrupt, lower bits = source id)
-        /* */if (interrupt[0]) trap_mcause = {1'b1, 31'd16}; // SPI
+        // Machine timer interrupt (MTIP) has highest priority (standard interrupt)
+        /* */if (interrupt[5]) trap_mcause = {1'b1, 31'd7};  // Machine Timer Interrupt
+        else if (interrupt[0]) trap_mcause = {1'b1, 31'd16}; // SPI
         else if (interrupt[1]) trap_mcause = {1'b1, 31'd17}; // UART
         else if (interrupt[2]) trap_mcause = {1'b1, 31'd18}; // GPIO
         else if (interrupt[3]) trap_mcause = {1'b1, 31'd19}; // Timer
