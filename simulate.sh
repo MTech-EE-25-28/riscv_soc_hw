@@ -81,8 +81,8 @@ case "$TB_NAME" in
     tb_exception)  HEX_ARG="+HEX=./docker/bin/exception.hex" ;;
     tb_interrupt)  HEX_ARG="+HEX=./docker/bin/interrupt.hex" ;;
     tb_soc)        HEX_ARG="+HEX=./docker/bin/soc_test.hex" ;;
-    tb_soc_mm)     HEX_ARG="+HEX=./docker/bin/hw_matrix_mul.hex" ;;
-    tb_soc_top)    HEX_ARG="+HEX=./docker/bin/sw_matrix_mul.hex" ;;
+    tb_soc_timer)  HEX_ARG="+HEX=./docker/bin/mtimer_test.hex" ;;
+    tb_soc_mm)     HEX_ARG="+HEX=./docker/bin/sw_matrix_mul.hex" ;;
     tb_free_run)   HEX_ARG="+HEX=./docker/bin/blink_test.hex" ;;
     *)             HEX_ARG="" ;;
 esac

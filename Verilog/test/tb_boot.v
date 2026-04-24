@@ -28,7 +28,7 @@ module tb_boot;
 reg  clk, reset;
 reg  pclk, presetn;
 wire [31:0] PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData;
-wire        MemWrite, pwm_out0, pwm_out1;
+wire        MemWrite, pwm_out0, pwm_out1, pwm_out2;
 wire [31:0] gpio_pad;
 wire        tx;     // SoC → TB (bootloader handshake byte)
 reg         rx;     // TB → SoC (ack + image bytes)
@@ -38,7 +38,7 @@ wire        qspi_sck, qspi_cs_n, cpu_resetn;
 soc dut (
     clk, reset, pclk, presetn,
     PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData, MemWrite,
-    pwm_out0, pwm_out1, gpio_pad, rx, tx, qspi_io, qspi_sck, qspi_cs_n, cpu_resetn
+    pwm_out0, pwm_out1, pwm_out2, gpio_pad, rx, tx, qspi_io, qspi_sck, qspi_cs_n, cpu_resetn
 );
 
 always #10 clk  = ~clk;
@@ -210,6 +210,7 @@ initial begin
         if (rx_decoded_byte !== 8'h58)
             $display("[BOOT] t=%0t  WARN: expected 'X' (0x58), got 0x%02X at word %0d",
                      $time, rx_decoded_byte, w);
+        $display("[DBG]  t=%0t %d Received ACK", $time, w);
     end
     $display("[BOOT] t=%0t  All %0d words sent and acknowledged.",
              $time, BOOT_WORDS * 4);

@@ -25,4 +25,8 @@ echo "-------------------"
 echo "6) Test SoC matrix multiplication (tb_soc_mm)"
 ./simulate.sh tb_soc_mm
 
+echo "-------------------"
+echo "7) Test SoC timer interrupt (tb_soc_timer)"
+./simulate.sh tb_soc_timer
+
 echo "All testbenches executed, check outputs for verification."

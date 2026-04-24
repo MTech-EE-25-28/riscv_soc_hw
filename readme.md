@@ -48,6 +48,10 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
         ./tests.sh
     ```
 
+### Important
+
+If you want to run the CPU on FPGA through bootloader, then change the state machine in `boot_loader.v` to `IDLE` instead of `FINISHED`. For adding new features and testing it in local simulation, you can set the state machine to `FINISHED` so that it directly jumps to executing the program in imem without waiting for the bootloader to load the program. Instead directly load the program into imem hex file and run the simulation.
+
 ## TODOs
 
 - [x] Update memory architecture and test it
