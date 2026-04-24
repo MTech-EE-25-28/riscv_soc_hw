@@ -81,7 +81,7 @@ If you want to run the CPU on FPGA through bootloader, then change the state mac
 
 - [x] Bootloader code to load program from flash to imem, dmem
 - [x] Update Linker to support vectored interrupts
-- [ ] Implement Clint for timer interrupts
+- [x] Implement Clint for timer interrupts
 - Sky130 ASIC Flow with compiled memory for ROM and RAM
 - Use AXI-APB bridge instead of direct APB interface
 - Implement PLIC for external interrupts
