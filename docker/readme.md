@@ -322,10 +322,7 @@ From the `docker/` directory, mount the `code/` and `bin/` directories into
 the container and pass the relative path to the source file:
 
 ```bash
-docker run --rm \
-    -v "$PWD/code:/runs/code" \
-    -v "$PWD/bin:/runs/bin"  \
-    riscv_tools code/<your_file>.c
+docker run -it --rm -v "$PWD:/runs" riscv_tools code/<your_file>.c
 ```
 
 On success the container prints a confirmation line and exits with code `0`:
@@ -431,7 +428,7 @@ the same `.hex` file and drives the UART `rx` line at the bit level
 repository root:
 
 ```bash
-./simulate.sh
+./simulate.sh tb_boot
 ```
 
 The testbench monitors writes to `0x0000_1004` (result) and `0x0000_1008`
