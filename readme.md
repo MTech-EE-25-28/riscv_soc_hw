@@ -75,7 +75,7 @@ If you want to run the CPU on FPGA through bootloader, then change the state mac
     - [x] Integrate with CPU using APB
 - [x] Test Matrix Multiplier with UART transfer in FPGA
 - [x] Bootloader Interface to load program from flash to imem, dmem
-- [ ] Synthesize and implement on ASIC
+- [x] Synthesize and implement on ASIC
 
 ## Future Work
 
@@ -87,7 +87,7 @@ If you want to run the CPU on FPGA through bootloader, then change the state mac
 - Implement PLIC for external interrupts
 - Implement F extension (floating point unit)
 - Implement A extension (atomic instructions)
-- Implement OS support (S-mode, U-mode, cache, clint, plic)
+- Implement OS support (S-mode, U-mode, cache)
 
 ### References
 
