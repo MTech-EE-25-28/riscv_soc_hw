@@ -1,13 +1,17 @@
 
 ## Course Project
 
-To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU must interface a hardware accelerator in our case 8x8 systolic array matrix multiplier
+To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU must interface a hardware accelerator in our case 4x4 systolic array matrix multiplier
 
-### Quick Links
 
-- Drive Folder [🔗](https://drive.google.com/drive/folders/1hxN554t5wVxOj4kZc2496kIRQUIQfFwi?usp=drive_link)
-- Proposal Doc [🔗](https://docs.google.com/document/d/1fRPK1PpdDccjNj-pN-l28b1CndTj1wCNxMwHX3wDBww/edit?usp=sharing)
-- Task Planning [🔗](https://docs.google.com/spreadsheets/d/1yrGrQKRs-R2LSBKFLWaHegrmFKYdW5KiHeWRzrjUArc/edit?usp=drive_link)
+
+### Note to Developers
+
+Hey Devs, if you want to contribute to the project, please follow the below guidelines:
+
+- To report bugs or issues, please create an issue in the GitHub repository with a clear description of the problem and steps to reproduce it.
+- To contribute code, please fork the repository and create a pull request with your changes. Make sure to follow the coding style and conventions used in the project. Also, please include tests for your changes if applicable. Review the code and test it locally before creating a pull request.
+- Do not add unnecssary files like project build files only add design files :/ . Make sure to give proper commit message.
 
 ### Requirements
 
@@ -18,6 +22,7 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
 
 ### CPU Specifications
 
+- Pipeline Design
 - Clock Frequency: > 100 MHz (embedded profile)
 - Extensions: IM, F if possible
 - CSR Support: (zicsr)
@@ -25,6 +30,12 @@ To Design and Implement pipelined RISC-V (rv32im) CPU. Additionally, the CPU mus
     - Communication Protocol: UART, SPI
     - GPIO Peripheral
     - Matrix Multiplier
+
+## Repository Structure
+
+- `docker` - Contains Dockerfile and scripts to build the hex files for the testbenches.
+- `docs` - contains ISA, report, and other project documents.
+- `Verilog` - Contains all the verilog files for the CPU design, testbenches codes.
 
 ### Usage
 
@@ -93,7 +104,3 @@ If you want to run the CPU on FPGA through bootloader, then change the state mac
 
 - Digital Design and Computer Architecture book
 - Read about RISC-V Compiler over [here 🔗](https://riscv.org/blog/unveiling-the-tasking-risc-v-compiler-a-breakthrough-regarding-the-development-of-fusa-and-cybersecurity-compliant-software/) and compiler options are [here 🔗](https://gcc.gnu.org/onlinedocs/gcc/RISC-V-Options.html)
-
-### Note to Developers
-
-Do not add unnecssary files like project build files only add design files :/ . Make sure to give proper commit message.
