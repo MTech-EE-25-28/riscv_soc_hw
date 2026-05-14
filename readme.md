@@ -93,12 +93,15 @@ If you want to run the CPU on FPGA through bootloader, then change the state mac
 - [x] Bootloader code to load program from flash to imem, dmem
 - [x] Update Linker to support vectored interrupts
 - [x] Implement Clint for timer interrupts
-- Sky130 ASIC Flow with compiled memory for ROM and RAM
+- [ ] Implement A extension (atomic instructions)
+- [ ] Implement S-mode and U-mode for OS support
+- [ ] Cache support (instruction and data cache)
+- [ ] Implement virtual memory support (Sv32)
+- [ ] Boot OS on the CPU (uLinux)
 - Use AXI-APB bridge instead of direct APB interface
 - Implement PLIC for external interrupts
 - Implement F extension (floating point unit)
-- Implement A extension (atomic instructions)
-- Implement OS support (S-mode, U-mode, cache)
+- Sky130 ASIC Flow with compiled memory for ROM and RAM
 
 ### References
 
