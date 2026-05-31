@@ -41,6 +41,9 @@ Hey Devs, if you want to contribute to the project, please follow the below guid
 
 - Use the [Docker 🔗](./compiler/readme.md) to build the hex file.
 - The simulation script automatically picks the hex file based on the testbench name. So make sure to follow the naming convention for testbenches as mentioned in the script. If required modify the script to add more testbenches and corresponding hex files.
+
+### icarus Verilog simulation
+
 - Run `simulate.sh` for local simulation, add wave flag to use gtkwave to see vcd.
 
     ```
@@ -58,6 +61,19 @@ Hey Devs, if you want to contribute to the project, please follow the below guid
     ```
         ./tests.sh
     ```
+
+### Verilator Usage
+
+Verilator is modern Cycle accurate C based simulator that is almost 10x faster than traditional simulators, 
+
+Build Verilator from the `Dockerfile` available in the `verilator` folder. Use the following command.
+
+`cd verilator && docker build -t verilator . `
+
+
+- Run `verilator_sim.sh` for verilator based local simulation, add wave flag to use gtkwave to see vcd.
+
+      ./verilator_sim.sh tb_soc_mm
 
 ### Important
 
