@@ -15,7 +15,7 @@ initial begin
     // Fallback: soc_test.hex (used by tb_soc).
     string hex_file;
     if (!$value$plusargs("HEX=%s", hex_file))
-        hex_file = "./docker/bin/soc_test.hex";
+        hex_file = "./compiler/bin/soc_test.hex";
     $readmemh(hex_file, instr_ram);
 end
 

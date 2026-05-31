@@ -1,8 +1,8 @@
-`timescale 1ns/1ps
+// `timescale 1ns/1ps
 
 module tb_2bit_bp;
 
-reg clk, reset;
+reg clk, reset, enable;
 reg [31:0] pc_fetch, pc_update, target_update;
 reg update_en, branch_taken;
 wire predict_taken, prediction_valid;
@@ -14,6 +14,7 @@ branch_predictor #(
     .ADDR_WIDTH(32)
 ) dut (
     .clk(clk),
+    .enable(enable),
     .reset(reset),
     .pc_fetch(pc_fetch),
     .predict_taken(predict_taken),
@@ -40,13 +41,14 @@ initial begin
 
     // Initialize
     reset = 0;
+    enable = 0;
     pc_fetch = 0;
     pc_update = 0;
     target_update = 0;
     update_en = 0;
     branch_taken = 0;
     #10;
-    reset = 1;
+    reset = 1; enable = 1;
     #10;
 
     // Test 1: First branch at 0x100 - not in BTB yet
