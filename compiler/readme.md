@@ -87,7 +87,7 @@ A program signals completion as:
 #### Peripheral Register Summary
 
 All peripherals are accessed via `volatile` pointer macros defined in
-`docker/code/memory_map.h`.  The table below lists each peripheral's base
+`compiler/code/memory_map.h`.  The table below lists each peripheral's base
 address and key registers.
 
 **UART** (`0x0000_2040`):
@@ -148,7 +148,7 @@ the `.hex` output with no additional shell interaction required.
 Build the image once:
 
 ```bash
-cd docker/
+cd compiler/
 docker build -t riscv_tools .
 ```
 
@@ -282,7 +282,7 @@ The toolchain produces the `.hex` file through the following pipeline:
 
 ### 3.1 Writing a C Program
 
-Source files live in `docker/code/`.  Because the build is freestanding
+Source files live in `compiler/code/`.  Because the build is freestanding
 (no standard library), standard I/O functions such as `printf` are not
 available.  Programs must use `stdint.h` fixed-width types and access
 peripherals exclusively through the `volatile` macros in `memory_map.h`.
@@ -318,7 +318,7 @@ Key constraints:
 
 ### 3.2 Compiling with Docker
 
-From the `docker/` directory, mount the `code/` and `bin/` directories into
+From the `compiler/` directory, mount the `code/` and `bin/` directories into
 the container and pass the relative path to the source file:
 
 ```bash
@@ -331,7 +331,7 @@ On success the container prints a confirmation line and exits with code `0`:
 ✓ Successfully generated <your_file>.hex and <your_file>.lss from code/<your_file>.c
 ```
 
-Both output files are written to `docker/bin/`:
+Both output files are written to `compiler/bin/`:
 
 | File | Description |
 |---|---|
@@ -341,7 +341,7 @@ Both output files are written to `docker/bin/`:
 To inspect the disassembly and verify section placement:
 
 ```bash
-less docker/bin/<your_file>.lss
+less compiler/bin/<your_file>.lss
 ```
 
 ### 3.3 Uploading to the Board
@@ -369,11 +369,11 @@ port.
 #### Running the Upload Script
 
 ```bash
-python docker/boot_host.py \
+python compiler/boot_host.py \
     -p /dev/tty.usbserial-0001 \
     -b 115200 \
     -n <word_count> \
-    docker/bin/<your_file>.hex
+    compiler/bin/<your_file>.hex
 ```
 
 | Option | Default | Description |
@@ -401,7 +401,7 @@ The script follows a four-step handshake protocol defined by `boot_loader.v`:
 Expected terminal output:
 
 ```
-[BOOT] Loaded 120 words from docker/bin/sum.hex
+[BOOT] Loaded 120 words from compiler/bin/sum.hex
 [BOOT] Opened /dev/tty.usbserial-0001 @ 115200 baud
 [BOOT] Waiting for handshake byte 0xAA from SoC …
 [BOOT] Received handshake 0xAA  OK
