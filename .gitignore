@@ -15,6 +15,9 @@ tb_free_run.vcd
 tb_soc_*.vcd
 tb_boot.vcd
 
+# Verilator Build files
+obj_dir/
+
 # additional reference folders
 submission/
 practice/
