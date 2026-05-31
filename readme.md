@@ -33,13 +33,13 @@ Hey Devs, if you want to contribute to the project, please follow the below guid
 
 ## Repository Structure
 
-- `docker` - Contains Dockerfile and scripts to build the hex files for the testbenches.
+- `compiler` - Contains Dockerfile and scripts to build the hex files for the testbenches.
 - `docs` - contains ISA, report, and other project documents.
 - `Verilog` - Contains all the verilog files for the CPU design, testbenches codes.
 
 ### Usage
 
-- Use the [Docker 🔗](./docker/readme.md) to build the hex file.
+- Use the [Docker 🔗](./compiler/readme.md) to build the hex file.
 - The simulation script automatically picks the hex file based on the testbench name. So make sure to follow the naming convention for testbenches as mentioned in the script. If required modify the script to add more testbenches and corresponding hex files.
 - Run `simulate.sh` for local simulation, add wave flag to use gtkwave to see vcd.
 
