@@ -13,3 +13,4 @@ module IOBUF (
     assign IO = T ? 1'bz : I;
     assign O  = IO;
 endmodule
+

@@ -30,3 +30,4 @@ assign DataAdr   = Ext_MemWrite ? Ext_DataAdr : DataAdr_rv32;
 assign mem_wea   = Ext_MemWrite ? 4'b1111 : wea;
 
 endmodule
+

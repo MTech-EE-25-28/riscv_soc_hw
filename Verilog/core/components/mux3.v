@@ -9,3 +9,4 @@ module mux3 #(parameter WIDTH = 8) (
 assign y = sel[1] ? d2: (sel[0] ? d1 : d0);
 
 endmodule
+

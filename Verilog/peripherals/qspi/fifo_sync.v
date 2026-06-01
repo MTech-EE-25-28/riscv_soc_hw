@@ -1,4 +1,3 @@
-`timescale 1ns/1ps
 
 module fifo_sync1 #(
     parameter DATA_WIDTH = 8,        // byte read width
@@ -77,3 +76,4 @@ module fifo_sync1 #(
     assign rd_data = mem[rd_addr];
 
 endmodule
+

@@ -61,3 +61,4 @@ assign  zero = (alu_out == 0) ? 1'b1 : 1'b0;
 assign stall = enable && !md_op_valid;
 
 endmodule
+

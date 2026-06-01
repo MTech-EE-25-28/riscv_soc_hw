@@ -26,3 +26,4 @@ module baud_rate_gen (
     end
 
 endmodule
+

@@ -288,3 +288,4 @@ assign Mem_WrAddr = ResultM;
 assign wea        = MemWriteM_safe ? weaM : 4'b0000;
 
 endmodule
+

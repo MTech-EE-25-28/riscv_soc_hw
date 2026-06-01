@@ -46,3 +46,4 @@ end
 assign {RegWrite, ImmSrc, ALUSrc, MemWrite, ResultSrc, ALUOp, Jump, Jalr, Branch, csrSel, ierr, ecall, ebreak, wfi, ret} = controls;
 
 endmodule
+

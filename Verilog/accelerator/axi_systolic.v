@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module axi_systolic_ctrl (
+module axi_systolic (
 
     input wire ACLK,
     input wire ARESETN,
@@ -122,7 +122,7 @@ always @(posedge ACLK) begin
             end
         end
 
-          S_BUSY: begin
+        S_BUSY: begin
             busy <= 1;
             cycle_cnt <= cycle_cnt + 1;
             case(cycle_cnt)
@@ -412,3 +412,4 @@ wire irq;
 assign irq = irq_en & irq_status;
 
 endmodule
+

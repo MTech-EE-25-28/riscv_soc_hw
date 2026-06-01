@@ -25,31 +25,31 @@ assign G0 = A & B_Mod;
 genvar i;
 generate
     for(i=0;i<=15;i=i+1) begin : level_1
-        BlackCell  bc(G0[2*i+1],P0[2*i+1],G0[2*i],P0[2*i],P1[i],G1[i]);
+        black_cell  bc(G0[2*i+1],P0[2*i+1],G0[2*i],P0[2*i],P1[i],G1[i]);
     end
 endgenerate
 
 generate
     for(i=0;i<=7;i=i+1) begin : level_2
-        BlackCell  bc(G1[2*i+1],P1[2*i+1],G1[2*i],P1[2*i],P2[i],G2[i]);
+        black_cell  bc(G1[2*i+1],P1[2*i+1],G1[2*i],P1[2*i],P2[i],G2[i]);
     end
 endgenerate
 
 generate
     for(i=0;i<=3;i=i+1) begin : level_3
-        BlackCell  bc(G2[2*i+1],P2[2*i+1],G2[2*i],P2[2*i],P3[i],G3[i]);
+        black_cell  bc(G2[2*i+1],P2[2*i+1],G2[2*i],P2[2*i],P3[i],G3[i]);
     end
 endgenerate
 
 generate
     for(i=0;i<=1;i=i+1) begin : level_4
-        BlackCell  bc(G3[2*i+1],P3[2*i+1],G3[2*i],P3[2*i],P4[i],G4[i]);
+        black_cell  bc(G3[2*i+1],P3[2*i+1],G3[2*i],P3[2*i],P4[i],G4[i]);
     end
 endgenerate
 
 generate
     for(i=0;i<=0;i=i+1) begin : level_5
-        BlackCell  bc(G4[2*i+1],P4[2*i+1],G4[2*i],P4[2*i],P5[i],G5[i]);
+        black_cell  bc(G4[2*i+1],P4[2*i+1],G4[2*i],P4[2*i],P5[i],G5[i]);
     end
 endgenerate
 
@@ -98,13 +98,3 @@ assign COUT = C[32];
 
 endmodule
 
-// black Cell Module
-module BlackCell(
-    input A, B, C, D,
-    output E, F
-);
-
-assign E = B & D;
-assign F = A | (B & C);
-
-endmodule

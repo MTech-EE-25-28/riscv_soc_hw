@@ -9,3 +9,4 @@ module mux2 #(parameter WIDTH = 8) (
 assign y = sel ? d1 : d0;
 
 endmodule
+

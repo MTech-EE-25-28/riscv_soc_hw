@@ -162,3 +162,4 @@ module fpga_apb_uart_tester #(
         end
     end
 endmodule
+

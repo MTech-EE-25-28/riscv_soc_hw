@@ -20,3 +20,4 @@ main_decoder    md (funct12, op, funct3, ResultSrc, ImmSrc, ALUOp, MemWrite, Bra
 alu_decoder     ad (op[5], funct3, funct7b5, funct7b0, ALUOp, ALUControl);
 
 endmodule
+

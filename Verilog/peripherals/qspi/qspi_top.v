@@ -257,3 +257,4 @@ module qspi_top (
     );
 
 endmodule
+

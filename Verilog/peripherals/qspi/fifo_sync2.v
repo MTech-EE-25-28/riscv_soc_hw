@@ -1,4 +1,3 @@
-`timescale 1ns/1ps
 
 module fifo_sync2 #(
     parameter DATA_WIDTH = 8,        // byte width
@@ -83,3 +82,4 @@ module fifo_sync2 #(
     };
 
 endmodule
+

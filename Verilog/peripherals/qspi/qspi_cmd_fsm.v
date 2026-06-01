@@ -1,4 +1,3 @@
-`timescale 1ns/1ps
 
 module qspi_cmd_fsm #(
     parameter OPCODE_BITS = 8,
@@ -214,3 +213,4 @@ module qspi_cmd_fsm #(
     end
 
 endmodule
+
