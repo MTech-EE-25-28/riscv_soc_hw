@@ -9,7 +9,7 @@ module alu #(parameter WIDTH = 32) (
     output      stall
 );
 
-reg [31:0] mask = 0;
+reg [31:0] mask;
 
 wire [31:0] r_adder, r_diff;
 wire carry_a, carry_s;
@@ -61,4 +61,3 @@ assign  zero = (alu_out == 0) ? 1'b1 : 1'b0;
 assign stall = enable && !md_op_valid;
 
 endmodule
-

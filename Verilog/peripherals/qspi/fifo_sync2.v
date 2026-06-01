@@ -28,6 +28,7 @@ module fifo_sync2 #(
     reg [ADDR_WIDTH:0] rd_ptr;   // increments by 4 (word)
 
     // Addresses for memory indexing
+    localparam [ADDR_WIDTH-1:0] DEPTH_MASK = {ADDR_WIDTH{1'b1}};
     wire [ADDR_WIDTH-1:0] wr_addr = wr_ptr[ADDR_WIDTH-1:0];
     wire [ADDR_WIDTH-1:0] rd_addr = rd_ptr[ADDR_WIDTH-1:0];
 
@@ -70,9 +71,9 @@ module fifo_sync2 #(
     wire [ADDR_WIDTH:0] available_bytes = wr_ptr - rd_ptr;
 
     wire [ADDR_WIDTH-1:0] a0 = rd_addr;
-    wire [ADDR_WIDTH-1:0] a1 = (rd_addr + 1) & (DEPTH-1);
-    wire [ADDR_WIDTH-1:0] a2 = (rd_addr + 2) & (DEPTH-1);
-    wire [ADDR_WIDTH-1:0] a3 = (rd_addr + 3) & (DEPTH-1);
+    wire [ADDR_WIDTH-1:0] a1 = (rd_addr + 1) & DEPTH_MASK;
+    wire [ADDR_WIDTH-1:0] a2 = (rd_addr + 2) & DEPTH_MASK;
+    wire [ADDR_WIDTH-1:0] a3 = (rd_addr + 3) & DEPTH_MASK;
 
     assign rd_data = {
         (available_bytes > 0 ? mem[a0] : 8'h00),
@@ -82,4 +83,3 @@ module fifo_sync2 #(
     };
 
 endmodule
-

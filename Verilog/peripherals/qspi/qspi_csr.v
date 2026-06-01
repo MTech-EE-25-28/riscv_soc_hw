@@ -47,15 +47,15 @@ module qspi_csr #(
     // Local Parameters
     // ------------------------------------------------------------
     localparam QSPI_CSR_ADDR    = BASE_ADDR;         // BASE + 0x00
-    localparam QSPI_OPCODE_ADDR = BASE_ADDR + 8'h04; // BASE + 0x04
-    localparam QSPI_ADDR_ADDR   = BASE_ADDR + 8'h08; // BASE + 0x08
-    localparam QSPI_DONE_ADDR   = BASE_ADDR + 8'h0C; // BASE + 0x0C
-    localparam QSPI_XLEN_ADDR   = BASE_ADDR + 8'h10; // BASE + 0x10
-    localparam QSPI_CLKDIV_ADDR = BASE_ADDR + 8'h14; // BASE + 0x14
-    localparam QSPI_TXBUF_STAT = BASE_ADDR + 8'h18;  // BASE + 0x18
-    localparam QSPI_RXBUF_STAT = BASE_ADDR + 8'h1C;  // BASE + 0x1C
-    localparam QSPI_TXDATA_BUF = BASE_ADDR + 8'h20;  // BASE + 0x20
-    localparam QSPI_RXDATA_BUF = BASE_ADDR + 8'h24;  // BASE + 0x24
+    localparam QSPI_OPCODE_ADDR = BASE_ADDR + 32'h0000_0004; // BASE + 0x04
+    localparam QSPI_ADDR_ADDR   = BASE_ADDR + 32'h0000_0008; // BASE + 0x08
+    localparam QSPI_DONE_ADDR   = BASE_ADDR + 32'h0000_000C; // BASE + 0x0C
+    localparam QSPI_XLEN_ADDR   = BASE_ADDR + 32'h0000_0010; // BASE + 0x10
+    localparam QSPI_CLKDIV_ADDR = BASE_ADDR + 32'h0000_0014; // BASE + 0x14
+    localparam QSPI_TXBUF_STAT  = BASE_ADDR + 32'h0000_0018; // BASE + 0x18
+    localparam QSPI_RXBUF_STAT  = BASE_ADDR + 32'h0000_001C; // BASE + 0x1C
+    localparam QSPI_TXDATA_BUF  = BASE_ADDR + 32'h0000_0020; // BASE + 0x20
+    localparam QSPI_RXDATA_BUF  = BASE_ADDR + 32'h0000_0024; // BASE + 0x24
 
     // ------------------------------------------------------------
     // Internal registers
@@ -71,7 +71,7 @@ module qspi_csr #(
     // ------------------------------------------------------------
     always @(posedge pclk or negedge presetn) begin
         if (!presetn) begin
-            addr_latched <= 'h00;
+            addr_latched <= 32'h0000_0000;
         end else if (psel && !penable) begin
             addr_latched <= paddr;   // latch address only in SETUP phase
         end
@@ -85,7 +85,7 @@ module qspi_csr #(
             done_latch <= 1'b0;
         else if (done_in)
             done_latch <= 1'b1;
-        else if (psel && penable && pwrite && addr_latched == 8'h0C)
+        else if (psel && penable && pwrite && addr_latched == 32'h0000_000C)
             done_latch <= 1'b0;    // explicit clear on write
     end
 
@@ -159,7 +159,7 @@ module qspi_csr #(
     always @(*) begin
         case (addr_latched)
 
-            QSPI_CSR_ADDR   : prdata_r = {23'd0, clk_div, auto_wren, cont_read, quad, enable};
+            QSPI_CSR_ADDR   : prdata_r = {24'd0, clk_div, auto_wren, cont_read, quad, enable};
             QSPI_OPCODE_ADDR: prdata_r = {24'd0, opcode};
             QSPI_ADDR_ADDR  : prdata_r = {8'd0, addr};
 
@@ -193,4 +193,3 @@ module qspi_csr #(
     end
 
 endmodule
-

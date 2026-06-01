@@ -10,7 +10,7 @@ module main_decoder (
     output       ierr, ecall, ebreak, wfi, ret
 );
 
-reg [17:0] controls = 18'b0_00_0_0_00_00_0_0_0_0_0_0_0_0_0;
+reg [17:0] controls;
 
 always @(*) begin
     casez (op)
@@ -24,6 +24,7 @@ always @(*) begin
             case (funct3)
                 3'b110: controls = 18'b0_10_0_0_xx_11_0_0_1_0_0_0_0_0_0; // bltu
                 3'b111: controls = 18'b0_10_0_0_xx_11_0_0_1_0_0_0_0_0_0; // bgeu
+                default: ;
             endcase
         end
         7'b0010011: controls = 18'b1_00_1_0_00_10_0_0_0_0_0_0_0_0_0; // I–type ALU
@@ -46,4 +47,3 @@ end
 assign {RegWrite, ImmSrc, ALUSrc, MemWrite, ResultSrc, ALUOp, Jump, Jalr, Branch, csrSel, ierr, ecall, ebreak, wfi, ret} = controls;
 
 endmodule
-

@@ -119,14 +119,16 @@ assign uart_boot_rdata = uart_prdata_w;
 
 // choose between bootloader or regular UART based on boot_select
 wire uart_sel = !cpu_resetn ? uart_boot : psel[1];
-wire uart_pready = !cpu_resetn ? uart_boot_ready : uart_pready_w;
+wire uart_pready = !cpu_resetn ? uart_pready_w : uart_pready_w;
 wire [31:0] uart_prdata = !cpu_resetn ? uart_boot_rdata : uart_prdata_w;
-wire uart_slverr = !cpu_resetn ? uart_boot_slverr : uart_pslverr_w;
+wire uart_slverr = !cpu_resetn ? uart_pslverr_w : uart_pslverr_w;
 wire uart_penable = !cpu_resetn ? uart_boot_en : penable;
 wire uart_write = !cpu_resetn ? uart_boot_wr : pwrite;
 wire [31:0] uart_addr = !cpu_resetn ? uart_boot_addr : paddr;
 wire [31:0] uart_wdata = !cpu_resetn ? uart_boot_wdata : pwdata;
 wire uart_resetn = !cpu_resetn ? uart_boot_resetn : presetn;
+assign uart_boot_ready = uart_pready_w;
+assign uart_boot_slverr = uart_pslverr_w;
 
 uart_top uart_u (
     .pclk(pclk), .presetn(uart_resetn),
@@ -254,4 +256,3 @@ always @(posedge clk) begin
 end
 
 endmodule
-

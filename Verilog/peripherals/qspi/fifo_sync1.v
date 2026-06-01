@@ -28,6 +28,7 @@ module fifo_sync1 #(
     reg [ADDR_WIDTH:0] wr_ptr;
     reg [ADDR_WIDTH:0] rd_ptr;
 
+    localparam [ADDR_WIDTH-1:0] DEPTH_MASK = {ADDR_WIDTH{1'b1}};
     wire [ADDR_WIDTH-1:0] wr_addr = wr_ptr[ADDR_WIDTH-1:0];
     wire [ADDR_WIDTH-1:0] rd_addr = rd_ptr[ADDR_WIDTH-1:0];
 
@@ -49,10 +50,10 @@ module fifo_sync1 #(
         end else if (wr_en && !full) begin
 
             // Write 4 bytes with wrap-around for power-of-2 depth
-            mem[(wr_addr      ) & (DEPTH-1)] <= wr_data[31:24];
-            mem[(wr_addr + 1  ) & (DEPTH-1)] <= wr_data[23:16];
-            mem[(wr_addr + 2  ) & (DEPTH-1)] <= wr_data[15:8];
-            mem[(wr_addr + 3  ) & (DEPTH-1)] <= wr_data[7:0];
+            mem[(wr_addr      ) & DEPTH_MASK] <= wr_data[31:24];
+            mem[(wr_addr + 1  ) & DEPTH_MASK] <= wr_data[23:16];
+            mem[(wr_addr + 2  ) & DEPTH_MASK] <= wr_data[15:8];
+            mem[(wr_addr + 3  ) & DEPTH_MASK] <= wr_data[7:0];
 
             // Move pointer by 4 bytes
             wr_ptr <= wr_ptr + 4;
@@ -76,4 +77,3 @@ module fifo_sync1 #(
     assign rd_data = mem[rd_addr];
 
 endmodule
-

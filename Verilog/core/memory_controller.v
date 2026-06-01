@@ -44,6 +44,9 @@ module memory_controller (
 wire [31:0] paddr, pwdata, prdata;
 wire [4:0]  psel;
 wire        penable, pwrite, pready, pslverr;
+assign prdata  = 32'b0;
+assign pready  = 1'b1;
+assign pslverr = 1'b0;
 
 // --------------------------------------------------
 // REGION DECODE
@@ -151,4 +154,3 @@ apb_interface apb_if (
 );
 
 endmodule
-

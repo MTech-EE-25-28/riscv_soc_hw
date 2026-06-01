@@ -93,6 +93,11 @@ always @(*) begin
                 signB = 1'b0;
                 select_remainder = 1'b1;
             end
+            default: begin
+                signA = 1'b0;
+                signB = 1'b0;
+                select_remainder = 1'b0;
+            end
         endcase
     end
 end
@@ -141,4 +146,3 @@ always @(posedge clk) begin
 end
 
 endmodule
-

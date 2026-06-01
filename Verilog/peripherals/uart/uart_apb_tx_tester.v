@@ -1,6 +1,5 @@
-`timescale 1ns / 1ps
 
-module fpga_apb_uart_tester #(
+module uart_apb_tx_tester #(
     parameter CLK_FREQ = 50_000_000, // Update to match your FPGA oscillator
     parameter BAUD_RATE = 115200,
     parameter BASE_ADDR = 32'h0000_2040

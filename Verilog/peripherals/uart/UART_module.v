@@ -170,6 +170,12 @@ module UART_module (
                             tx_s_tick_cnt <= 0;
                         end else tx_s_tick_cnt <= tx_s_tick_cnt + 1;
                     end
+                    default: begin
+                        tx_state <= TX_IDLE;
+                        tx <= 1'b1;
+                        tx_s_tick_cnt <= 0;
+                        tx_bit_ptr <= 0;
+                    end
                 endcase
             end
         end else begin
@@ -310,6 +316,11 @@ module UART_module (
                             // Data and Status moved synchronously via rx_frame_done
                         end else rx_s_tick_cnt <= rx_s_tick_cnt + 1;
                     end
+                    default: begin
+                        rx_state <= RX_IDLE;
+                        rx_s_tick_cnt <= 0;
+                        rx_bit_ptr <= 0;
+                    end
                 endcase
             end
         end else begin
@@ -319,4 +330,3 @@ module UART_module (
     end
 
 endmodule
-

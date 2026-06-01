@@ -103,7 +103,7 @@ always @(*) begin
         // Vectored mode (mtvec[1:0]==01): jump to base + mcause[4:0]*4 for per-source ISR
         // Direct mode (mtvec[1:0]==00):  jump to base, ISR reads mcause to dispatch
         if (csr_mtvec[1:0] == 2'b01)
-            pc_next = {csr_mtvec[31:2], 2'b00} + (trap_mcause[4:0] << 2);
+            pc_next = {csr_mtvec[31:2], 2'b00} + {25'd0, trap_mcause[4:0], 2'b00};
         else
             pc_next = {csr_mtvec[31:2], 2'b00};
 
@@ -116,4 +116,3 @@ always @(*) begin
 end
 
 endmodule
-

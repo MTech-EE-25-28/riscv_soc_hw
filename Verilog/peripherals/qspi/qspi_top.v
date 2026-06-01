@@ -187,6 +187,7 @@ module qspi_top (
     // ==========================================================
     // FSM (NEW)
     // ==========================================================
+    wire fsm_busy_unused;
     qspi_cmd_fsm u_fsm (
         .clk(clk),
         .resetn(resetn),
@@ -220,7 +221,7 @@ module qspi_top (
         .fsm_quad(fsm_quad),
 
         .cs_n(cs_n),          // NEW: CS controlled by FSM
-        .busy(),
+        .busy(fsm_busy_unused),
         .done (irq_done)
     );
 
@@ -257,4 +258,3 @@ module qspi_top (
     );
 
 endmodule
-

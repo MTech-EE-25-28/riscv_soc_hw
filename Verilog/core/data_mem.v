@@ -22,7 +22,8 @@ initial begin
 end
 
 // word-aligned address
-wire [ADDR_WIDTH-1:0] word_addr = addr[ADDR_WIDTH-1:2];
+localparam integer MEM_IDX_WIDTH = $clog2(MEM_SIZE);
+wire [MEM_IDX_WIDTH-1:0] word_addr = addr[MEM_IDX_WIDTH+1:2];
 
 always @(posedge clk) begin
     rd_data <= data_ram[word_addr];

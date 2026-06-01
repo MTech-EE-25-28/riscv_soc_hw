@@ -9,6 +9,8 @@ module instr_mem #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 32, MEM_SIZE = 2048) 
 
 // array of 32-bit instructions
 reg [DATA_WIDTH-1:0] instr_ram [0:MEM_SIZE-1];
+localparam integer MEM_IDX_WIDTH = $clog2(MEM_SIZE);
+wire [MEM_IDX_WIDTH-1:0] instr_word_idx = instr_addr[MEM_IDX_WIDTH+1:2];
 
 initial begin
     // Hex file is supplied at runtime via +HEX=<path> plusarg.
@@ -22,10 +24,10 @@ end
 // Sequential write
 always @(posedge clk) begin
     if (wea)
-        instr_ram[instr_addr[31:2]] <= instr_in;
+        instr_ram[instr_word_idx] <= instr_in;
 end
 
 // combinational read
-assign instr = instr_ram[instr_addr[31:2]];
+assign instr = instr_ram[instr_word_idx];
 
 endmodule

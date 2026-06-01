@@ -44,7 +44,7 @@ reg select_high1, select_high2, select_high3, select_high4, select_high5;
 reg result_neg1, result_neg2, result_neg3, result_neg4, result_neg5;
 reg signA1, signA2, signA3, signA4, signA5;
 reg signB1, signB2, signB3, signB4, signB5;
-reg [2:0] stage=0;
+reg [2:0] stage;
 
 // zero bypass
 wire zero_case;
@@ -91,28 +91,35 @@ assign zero_case = internal_enable ? (~|rs1_in || ~|rs2_in) : 1'b0;
 
 // ---------------- Decode ----------------
 always @(*) begin
-    signA <= 0; signB <= 0; select_high <= 0;
+    signA = 1'b0;
+    signB = 1'b0;
+    select_high = 1'b0;
     if(internal_enable) begin
         case(funct3_in)
 
         3'b000: begin // MUL
-            signA <= 1;
-            signB <= 1;
+            signA = 1'b1;
+            signB = 1'b1;
         end
 
         3'b001: begin // MULH
-            signA <= 1;
-            signB <= 1;
-            select_high <= 1;
+            signA = 1'b1;
+            signB = 1'b1;
+            select_high = 1'b1;
         end
 
         3'b010: begin // MULHSU
-            signA <= 1;
-            select_high <= 1;
+            signA = 1'b1;
+            select_high = 1'b1;
         end
 
         3'b011: begin // MULHU
-            select_high <= 1;
+            select_high = 1'b1;
+        end
+        default: begin
+            signA = 1'b0;
+            signB = 1'b0;
+            select_high = 1'b0;
         end
         endcase
     end
@@ -210,7 +217,7 @@ always @(posedge clk) begin
     signB5 <= signB4;
     P <= s4_reg[0] + s4_reg[1];
     if (valid_op || zero_case || !internal_enable) begin
-        reg_valid_op <= 1'b0; stage <= 1'b0;
+        reg_valid_op <= 1'b0; stage <= 3'b000;
     end else if (stage < 5) stage <= stage + 1'b1;
     else reg_valid_op <= 1'b1;
 end
@@ -245,4 +252,3 @@ always @(posedge clk) begin
     end
 end
 endmodule
-

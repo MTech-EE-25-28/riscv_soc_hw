@@ -120,7 +120,7 @@ module boot_loader #(
             presetn               <= 1'b0;
             curr_state            <= FINISHED; // put it in FINISHED for testing
             counter               <= 2'b00;
-            word_cnt              <= 10'd0;
+            word_cnt              <= 11'd0;
             mem_send_fully_loaded <= 1'b0;
             reading_rdr           <= 1'b0;
             ack_recv              <= 8'h00;
@@ -148,7 +148,7 @@ module boot_loader #(
                     pwdata       <= 32'd0;
                     paddr        <= 32'hFFFF_FFFF;
                     counter      <= 2'b00;
-                    word_cnt     <= 10'd0;
+                    word_cnt     <= 11'd0;
                     reading_rdr  <= 1'b0;
                     ack_recv     <= 8'h00;
                     ack_received <= 1'b0;
@@ -163,7 +163,7 @@ module boot_loader #(
                     penable <= 1'b1;
                     psel    <= 1'b1;
                     pwdata  <= UART_baud_rate;
-                    paddr   <= UART_BASE_ADDR + BRR_ADDR;
+                    paddr   <= UART_BASE_ADDR + {24'd0, BRR_ADDR};
                 end
 
                 // -------------------------------------------------------------
@@ -174,7 +174,7 @@ module boot_loader #(
                     penable <= 1'b1;
                     psel    <= 1'b1;
                     pwdata  <= {24'd0, 2'b00, UART_parity_sel, UART_parity_en, 4'b0111};
-                    paddr   <= UART_BASE_ADDR + CR_ADDR;
+                    paddr   <= UART_BASE_ADDR + {24'd0, CR_ADDR};
                 end
 
                 // -------------------------------------------------------------
@@ -185,7 +185,7 @@ module boot_loader #(
                     penable <= 1'b1;
                     psel    <= 1'b1;
                     pwdata  <= {24'd0, HANDSHAKE_BYTE};
-                    paddr   <= UART_BASE_ADDR + TDR_ADDR;
+                    paddr   <= UART_BASE_ADDR + {24'd0, TDR_ADDR};
                 end
 
                 // -------------------------------------------------------------
@@ -195,7 +195,7 @@ module boot_loader #(
                     pwrite  <= 1'b0;
                     penable <= 1'b1;
                     psel    <= 1'b1;
-                    paddr   <= UART_BASE_ADDR + SR_ADDR;
+                    paddr   <= UART_BASE_ADDR + {24'd0, SR_ADDR};
                 end
 
                 // -------------------------------------------------------------
@@ -212,13 +212,13 @@ module boot_loader #(
                         ack_recv     <= prdata[7:0];
                         ack_ok       <= (prdata[7:0] == ACK_BYTE);
                         ack_received <= 1'b1;
-                        paddr        <= UART_BASE_ADDR + SR_ADDR;
+                        paddr        <= UART_BASE_ADDR + {24'd0, SR_ADDR};
                     end else begin           // Phase A: prdata = SR
                         if (prdata[1]) begin // RXNE set
                             reading_rdr <= 1'b1;
-                            paddr       <= UART_BASE_ADDR + RDR_ADDR;
+                            paddr       <= UART_BASE_ADDR + {24'd0, RDR_ADDR};
                         end else
-                            paddr <= UART_BASE_ADDR + SR_ADDR;
+                            paddr <= UART_BASE_ADDR + {24'd0, SR_ADDR};
                     end
                 end
 
@@ -233,7 +233,7 @@ module boot_loader #(
 
                     if (reading_rdr) begin   // Phase B: prdata = RDR
                         reading_rdr <= 1'b0;
-                        paddr       <= UART_BASE_ADDR + SR_ADDR;
+                        paddr       <= UART_BASE_ADDR + {24'd0, SR_ADDR};
 
                         case (counter)
                             2'b00: begin out_send_data[31:24] <= prdata[7:0]; counter <= 2'b01; end
@@ -250,9 +250,9 @@ module boot_loader #(
                     end else begin           // Phase A: prdata = SR
                         if (prdata[1]) begin // RXNE set
                             reading_rdr <= 1'b1;
-                            paddr       <= UART_BASE_ADDR + RDR_ADDR;
+                            paddr       <= UART_BASE_ADDR + {24'd0, RDR_ADDR};
                         end else
-                            paddr <= UART_BASE_ADDR + SR_ADDR;
+                            paddr <= UART_BASE_ADDR + {24'd0, SR_ADDR};
                     end
                 end
 
@@ -264,7 +264,7 @@ module boot_loader #(
                     penable     <= 1'b1;
                     psel        <= 1'b1;
                     pwdata      <= {24'd0, 8'h58};
-                    paddr       <= UART_BASE_ADDR + TDR_ADDR;
+                    paddr       <= UART_BASE_ADDR + {24'd0, TDR_ADDR};
                     reading_rdr <= 1'b0;
                 end
 
@@ -275,7 +275,7 @@ module boot_loader #(
                     pwrite  <= 1'b0;
                     penable <= 1'b1;
                     psel    <= 1'b1;
-                    paddr   <= UART_BASE_ADDR + SR_ADDR;
+                    paddr   <= UART_BASE_ADDR + {24'd0, SR_ADDR};
                 end
 
                 // -------------------------------------------------------------
@@ -285,9 +285,13 @@ module boot_loader #(
                     cpu_resetn <= 1'b1;
                 end
 
+                default: begin
+                    pwrite  <= 1'b0;
+                    penable <= 1'b0;
+                    psel    <= 1'b0;
+                end
             endcase
         end
     end
 
 endmodule
-

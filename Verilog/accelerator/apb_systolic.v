@@ -15,7 +15,7 @@ module apb_systolic  #(
     input wire  [31:0] pwdata,
     output reg  [31:0] prdata,
     output wire pready,
-    output reg  pslverr,
+    output wire pslverr,
 
     // Interrupt
     output reg irq
@@ -112,6 +112,7 @@ always @(*) begin // apb read transaction
 end
 
 assign pready = (psel && penable) ? 1'b1 : 1'b0;
+assign pslverr = 1'b0;
 
 // APB write logic
 always @(posedge clk or negedge resetn) begin
@@ -231,4 +232,3 @@ always @(posedge clk or negedge resetn) begin
 end
 
 endmodule
-

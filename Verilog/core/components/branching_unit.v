@@ -15,8 +15,8 @@ always @(*) begin
         3'b101: Branch = !ALUR31; // bge
         3'b110: Branch =   !Zero; // bltu
         3'b111: Branch =    Zero; // bgeu
+        default: Branch = 1'b0;
     endcase
 end
 
 endmodule
-

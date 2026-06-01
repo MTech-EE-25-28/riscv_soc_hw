@@ -1,6 +1,5 @@
-`timescale 1ns / 1ps
 
-module fpga_apb_loopback #(
+module uart_apb_rx_tester #(
     parameter CLK_FREQ = 50_000_000, 
     parameter BAUD_RATE = 115200,
     parameter BASE_ADDR = 32'h0000_2040

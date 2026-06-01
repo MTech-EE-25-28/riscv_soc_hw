@@ -28,12 +28,20 @@ assign mem_stall = ph_stall && !apb_done;
 // This keeps PC on the WFI instruction until an interrupt arrives
 wire wfi_stall = wfiD && !interrupt_pending;
 
-reg lwStall = 0;
+reg lwStall;
 
 always @(*) begin
+    StallF = 0;
+    StallD = 0;
+    FlushD = 0;
+    FlushE = 0;
+    ForwardAE = 2'b00;
+    ForwardBE = 2'b00;
+    lwStall = 1'b0;
+
     if (!reset) begin
-        StallF = 0; StallD = 0; ForwardAE = 0;
-        FlushD = 1; FlushE = 1; ForwardBE = 0;  // Flush pipeline during reset
+        FlushD = 1'b1;
+        FlushE = 1'b1;  // Flush pipeline during reset
     end else begin
         if (((Rs1E == RdM) & RegWriteM) && (Rs1E != 0)) ForwardAE = 2'b10;
         else if (((Rs1E == RdW) & RegWriteW) && (Rs1E != 0)) ForwardAE = 2'b01;
@@ -47,7 +55,6 @@ always @(*) begin
 // WFI stall: only stall Fetch (keep PC on WFI), don't stall Decode
         // This allows WFI to drain through pipeline while PC stays put
         StallF = lwStall || mem_stall || wfi_stall;
-        StallD = lwStall || mem_stall;
         StallD = lwStall || mem_stall || wfi_stall;
 
         FlushD = PCSrcE;
@@ -57,4 +64,3 @@ end
 
 
 endmodule
-

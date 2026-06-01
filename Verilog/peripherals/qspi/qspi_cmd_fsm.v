@@ -70,11 +70,11 @@ module qspi_cmd_fsm #(
 
             if (cur == IDLE && start)
                 if (csr_opcode == 8'h05 || csr_opcode == 8'h15 || csr_opcode == 8'h35)
-                byte_count <= 15'd1;
+                byte_count <= 16'd1;
                 else if (csr_opcode == 8'h01 || csr_opcode == 8'h11 || csr_opcode == 8'h31) 
-                byte_count <= 15'd1;
+                byte_count <= 16'd1;
                 else if (csr_opcode == 8'h9F)
-                byte_count <= 15'd3;
+                byte_count <= 16'd3;
                 else 
                 byte_count <= csr_length;
                 
@@ -93,7 +93,7 @@ module qspi_cmd_fsm #(
         shifter_dir  = 0;
         load_chunk   = 0;
         chunk_cycles = 0;
-        chunk_data   = 8'd0;
+        chunk_data   = 32'd0;
 
         txfifo_rd  = 0;
         rxfifo_wr  = 0;
@@ -122,14 +122,14 @@ module qspi_cmd_fsm #(
                 end
 
                 if (shifter_done)
-                    case (csr_opcode) 
-                    8'h06 : next = DONE_STATE;
-                    8'h9F : next = STREAM_RX;
-                     8'h6B : next = SEND_ADDR;
-                      8'h32 : next = SEND_ADDR;
-                       8'h05 : next = STREAM_RX;
-                        default next = IDLE;
-                         endcase
+                    case (csr_opcode)
+                        8'h06: next = DONE_STATE;
+                        8'h9F: next = STREAM_RX;
+                        8'h6B: next = SEND_ADDR;
+                        8'h32: next = SEND_ADDR;
+                        8'h05: next = STREAM_RX;
+                        default: next = IDLE;
+                    endcase
             end
 
             // ====================================================
@@ -188,7 +188,9 @@ module qspi_cmd_fsm #(
                 if (!shifter_busy && !shifter_done) begin
                     load_chunk   = 1;
                     chunk_data   = 32'h00_000000;
-                    chunk_cycles = (csr_opcode != 8'h6b && csr_opcode !=8'h32)  ? (byte_count<<3) : (byte_count<< 1) ;
+                    chunk_cycles = (csr_opcode != 8'h6b && csr_opcode != 8'h32)
+                        ? (byte_count[5:0] << 3)
+                        : (byte_count[5:0] << 1);
                 end
 
                 if (shifter_done && !rxfifo_full) begin
@@ -209,8 +211,10 @@ module qspi_cmd_fsm #(
                 next = IDLE;
             end
 
+            default: begin
+                next = IDLE;
+            end
         endcase
     end
 
 endmodule
-
