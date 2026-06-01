@@ -3,7 +3,9 @@
 // Tests the core-level timer interrupt using mtimer_test.hex
 module tb_soc_timer;
 
+/* verilator lint_off SYNCASYNCNET */
 reg clk, reset;
+/* verilator lint_on SYNCASYNCNET */
 // APB signals
 reg pclk, presetn;
 // Debug outputs
@@ -29,10 +31,10 @@ always #10 clk = ~clk;
 always #10 pclk = ~pclk;
 
 // Test variables
-integer test_loc_value = 0;
-integer prev_test_loc = 0;
-integer interrupt_count = 0;
-integer first_interrupt_seen = 0;
+integer test_loc_value;
+integer prev_test_loc;
+integer interrupt_count;
+reg     first_interrupt_seen;
 integer test_passed = 0;
 
 initial begin
@@ -41,6 +43,10 @@ initial begin
 
     // Initialize signals
     clk = 0; reset = 0; pclk = 0; presetn = 0;
+    test_loc_value = 0;
+    prev_test_loc = 0;
+    interrupt_count = 0;
+    first_interrupt_seen = 1'b0;
     $display("\n=== Machine Timer Interrupt Test ===");
     $display("Time: Waiting for reset...");
     #100; // Wait for reset to propagate
@@ -74,25 +80,25 @@ end
 always @(negedge clk) begin
     if (MemWrite && reset) begin
         if (DataAdr == 32'h00001000) begin
-            test_loc_value = WriteData_M;
+            test_loc_value <= WriteData_M;
 
             // Detect increment (indicating timer interrupt fired)
-            if (test_loc_value != prev_test_loc) begin
-                interrupt_count = interrupt_count + 1;
+            if (WriteData_M != prev_test_loc) begin
+                interrupt_count <= interrupt_count + 1;
 
-                if (interrupt_count == 1) begin
+                if (interrupt_count + 1 == 1) begin
                     $display("Time %0t: First timer interrupt detected! TEST_LOC = %0d",
-                             $time, test_loc_value);
-                    first_interrupt_seen = 1;
-                end else if (interrupt_count <= 10) begin
+                             $time, WriteData_M);
+                    first_interrupt_seen <= 1'b1;
+                end else if (interrupt_count + 1 <= 10) begin
                     $display("Time %0t: Timer interrupt #%0d detected! TEST_LOC = %0d",
-                             $time, interrupt_count, test_loc_value);
-                end else if (interrupt_count % 10 == 0) begin
+                             $time, interrupt_count + 1, WriteData_M);
+                end else if ((interrupt_count + 1) % 10 == 0) begin
                     $display("Time %0t: Timer interrupt #%0d detected! TEST_LOC = %0d",
-                             $time, interrupt_count, test_loc_value);
+                             $time, interrupt_count + 1, WriteData_M);
                 end
 
-                prev_test_loc = test_loc_value;
+                prev_test_loc <= WriteData_M;
             end
         end
     end
@@ -123,4 +129,3 @@ always @(posedge clk) begin
 end
 
 endmodule
-

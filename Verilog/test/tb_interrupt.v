@@ -19,11 +19,12 @@ always begin clk <= 0; #8; clk <= 1; #8; end
 
 integer handler_calls;
 reg     trap_done;
-initial handler_calls = 0;
 
 initial begin
     $dumpfile("./Verilog/dumps/tb_interrupt.vcd");
     $dumpvars(0, tb_interrupt);
+    handler_calls = 0;
+    trap_done = 0;
     reset = 0; Interrupt = 5'b0; Ext_MemWrite = 0; Ext_DataAdr = 32'b0; Ext_WriteData = 32'b0;
     #100;
     reset = 1; repeat (30) @(posedge clk);
@@ -64,11 +65,12 @@ end
 
 // Handler-complete monitor
 always @(negedge clk) begin
-    trap_done = 0;
+    trap_done <= 0;
     if (reset && MemWrite && DataAdr == 32'h00001000 && WriteData == 32'd1) begin
-        handler_calls = handler_calls + 1; trap_done = 1;
-        $display("[t=%0t] Interrupt Handler #%0d done  mcause=%h", $time, handler_calls, uut.rvpl.dp.csr.mcause);
-        if (handler_calls == 5) begin
+        handler_calls <= handler_calls + 1;
+        trap_done <= 1;
+        $display("[t=%0t] Interrupt Handler #%0d done  mcause=%h", $time, handler_calls + 1, uut.rvpl.dp.csr.mcause);
+        if (handler_calls + 1 == 5) begin
             $display("Interrupt Handler called correctly, halting");
             #200; $finish;
         end
@@ -76,4 +78,3 @@ always @(negedge clk) begin
 end
 
 endmodule
-

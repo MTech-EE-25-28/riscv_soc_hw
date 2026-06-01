@@ -2,11 +2,11 @@
 
 # Usage
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 <testbench_name> [wave]"
-    echo "Example:"
-    echo "  $0 tb_pl"
-    echo "  $0 tb_soc_mm wave"
-    exit 1
+  echo "Usage: $0 <testbench_name> [wave]"
+  echo "Example:"
+  echo "  $0 tb_pl"
+  echo "  $0 tb_soc_mm wave"
+  exit 1
 fi
 
 TB_NAME=$1
@@ -20,16 +20,16 @@ SHOW_WARNINGS_ALWAYS=${VERILATOR_SHOW_WARNINGS_ALWAYS:-1}
 
 # 1) Find testbench file (flat OR nested, .v OR .sv)
 TB_FILE=$(find "$SCRIPT_DIR" -type f \
-    \( -path "*/Verilog/test/${TB_NAME}.v" \
-       -o -path "*/Verilog/test/${TB_NAME}.sv" \
-       -o -path "*/Verilog/*/test/${TB_NAME}.v" \
-       -o -path "*/Verilog/*/test/${TB_NAME}.sv" \
-       -o -path "*/Verilog/${TB_NAME}.v" \
-       -o -path "*/Verilog/${TB_NAME}.sv" \) | head -n 1)
+  \( -path "*/Verilog/test/${TB_NAME}.v" \
+  -o -path "*/Verilog/test/${TB_NAME}.sv" \
+  -o -path "*/Verilog/*/test/${TB_NAME}.v" \
+  -o -path "*/Verilog/*/test/${TB_NAME}.sv" \
+  -o -path "*/Verilog/${TB_NAME}.v" \
+  -o -path "*/Verilog/${TB_NAME}.sv" \) | head -n 1)
 
 if [ -z "$TB_FILE" ]; then
-    echo "ERROR: Testbench ${TB_NAME}.v/.sv not found"
-    exit 1
+  echo "ERROR: Testbench ${TB_NAME}.v/.sv not found"
+  exit 1
 fi
 
 TB_FILE_CONTAINER=$(echo "$TB_FILE" | sed "s#^${SCRIPT_DIR}#/work#")
@@ -41,24 +41,25 @@ echo "Docker image  : $DOCKER_IMAGE"
 TB_COE=$(dirname "$TB_FILE")/test_vector.coe
 COE_ARG=""
 if [ -f "$TB_COE" ]; then
-    echo "Using COE file: $TB_COE"
-    COE_ARG="+COE=$(echo "$TB_COE" | sed "s#^${SCRIPT_DIR}#/work#")"
+  echo "Using COE file: $TB_COE"
+  COE_ARG="+COE=$(echo "$TB_COE" | sed "s#^${SCRIPT_DIR}#/work#")"
 fi
 
 case "$TB_NAME" in
-    tb_pl)         HEX_ARG="+HEX=/work/compiler/bin/rv32i_test.hex" ;;
-    tb_program)    HEX_ARG="+HEX=/work/compiler/bin/matrix_mul.hex" ;;
-    tb_exception)  HEX_ARG="+HEX=/work/compiler/bin/exception.hex" ;;
-    tb_interrupt)  HEX_ARG="+HEX=/work/compiler/bin/interrupt.hex" ;;
-    tb_soc)        HEX_ARG="+HEX=/work/compiler/bin/soc_test.hex" ;;
-    tb_soc_timer)  HEX_ARG="+HEX=/work/compiler/bin/mtimer_test.hex" ;;
-    tb_soc_mm)     HEX_ARG="+HEX=/work/compiler/bin/sw_matrix_mul.hex" ;;
-    tb_free_run)   HEX_ARG="+HEX=/work/compiler/bin/blink_test.hex" ;;
-    *)             HEX_ARG="" ;;
+tb_pl) HEX_ARG="+HEX=/work/compiler/bin/rv32i_test.hex" ;;
+tb_program) HEX_ARG="+HEX=/work/compiler/bin/matrix_mul.hex" ;;
+tb_exception) HEX_ARG="+HEX=/work/compiler/bin/exception.hex" ;;
+tb_interrupt) HEX_ARG="+HEX=/work/compiler/bin/interrupt.hex" ;;
+tb_soc) HEX_ARG="+HEX=/work/compiler/bin/soc_test.hex" ;;
+tb_soc_timer) HEX_ARG="+HEX=/work/compiler/bin/mtimer_test.hex" ;;
+tb_soc_mm) HEX_ARG="+HEX=/work/compiler/bin/sw_matrix_mul.hex" ;;
+tb_free_run) HEX_ARG="+HEX=/work/compiler/bin/blink_test.hex" ;;
+*) HEX_ARG="" ;;
 esac
 
 # 3) Compile + Run in container
-CONTAINER_CMD=$(cat <<EOF
+CONTAINER_CMD=$(
+  cat <<EOF
 set -e
 find /work/Verilog -type f \( -name '*.v' -o -name '*.sv' \) \
   ! -path '*/test/*' ! -path '*/dumps/*' ! -path '*/obj_dir/*' \
@@ -122,17 +123,17 @@ docker run \
   -lc "$CONTAINER_CMD"
 
 if [ $? -ne 0 ]; then
-    echo "Simulation failed"
-    exit 1
+  echo "Simulation failed"
+  exit 1
 fi
 
 # 4) Open waveform ONLY if requested
 if [ "$WAVE_FLAG" = "wave" ]; then
-    VCD_FILE="$SCRIPT_DIR/Verilog/dumps/${TB_NAME}.vcd"
-    if [ -f "$VCD_FILE" ]; then
-        echo "Opening waveform: $VCD_FILE"
-        gtkwave "$VCD_FILE" &
-    else
-        echo "ERROR: VCD not found: $VCD_FILE"
-    fi
+  VCD_FILE="$SCRIPT_DIR/Verilog/dumps/${TB_NAME}.vcd"
+  if [ -f "$VCD_FILE" ]; then
+    echo "Opening waveform: $VCD_FILE"
+    gtkwave "$VCD_FILE" &
+  else
+    echo "ERROR: VCD not found: $VCD_FILE"
+  fi
 fi

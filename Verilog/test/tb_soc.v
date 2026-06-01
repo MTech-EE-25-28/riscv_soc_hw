@@ -2,7 +2,9 @@
 // testbench to verify the functionality of the RISC-V SoC
 module tb_soc;
 
+/* verilator lint_off SYNCASYNCNET */
 reg clk, reset;
+/* verilator lint_on SYNCASYNCNET */
 // APB signals
 reg pclk, presetn;
 // Debug outputs
@@ -31,6 +33,7 @@ initial begin
     $dumpvars(0, tb_soc);
     // Initialize signals
     clk = 0; reset = 0; pclk = 0; presetn = 0;
+    skip = 0;
     #100; // Wait for reset to propagate
 
     reset = 1; presetn = 1; // Release reset
@@ -39,12 +42,12 @@ initial begin
     $finish;
 end
 
-integer skip=0;
+integer skip;
 always @(negedge clk) begin
     if (MemWrite && reset) begin
         if (DataAdr == 32'h00001000) begin
-            skip = skip + 1;
-            if (skip > 1) begin
+            skip <= skip + 1;
+            if (skip >= 1) begin
                 if (WriteData_M == 32'd108) begin
                     $display("Timer Interrupt Triggered and Handled Successfully! Result = %d", WriteData_M);
                 end else if (WriteData_M == 32'd111) begin
@@ -59,4 +62,3 @@ always @(negedge clk) begin
 end
 
 endmodule
-

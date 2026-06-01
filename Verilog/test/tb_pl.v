@@ -19,8 +19,8 @@ wire [31:0] PCW, Result, DataAdrW, WriteDataW, ReadDataW;
 riscv_cpu uut (clk, reset, 5'b0, Ext_MemWrite, Ext_WriteData, Ext_DataAdr, MemWrite, WriteData,
                DataAdr, ReadData, PCW, Result, DataAdrW, WriteDataW, ReadDataW);
 
-integer fault_instrs = 0, i = 0, flag = 0;
-reg [31:0] last_pcw = 32'hFFFFFFFF; // guard: only check once per unique PCW
+integer fault_instrs, i, flag;
+reg [31:0] last_pcw; // guard: only check once per unique PCW
 
 localparam ADDI_x0  =   32'h8;
 localparam ADDI     =   32'h10;
@@ -170,6 +170,8 @@ end
 initial begin
     $dumpfile("./Verilog/dumps/tb_pl.vcd");
     $dumpvars(0, tb_pl);
+    fault_instrs = 0; i = 0; flag = 0;
+    last_pcw = 32'hFFFFFFFF;
     reset = 0;
     Ext_MemWrite = 0; Ext_DataAdr = 32'b0; Ext_WriteData = 32'b0; #12;
     reset = 1;
@@ -247,4 +249,3 @@ always @(negedge clk) begin
 end
 
 endmodule
-

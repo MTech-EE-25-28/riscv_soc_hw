@@ -17,11 +17,11 @@ riscv_cpu uut (clk, reset, 5'b0, Ext_MemWrite, Ext_WriteData, Ext_DataAdr,
 always begin clk <= 0; #8; clk <= 1; #8; end
 
 integer handler_calls;
-initial handler_calls = 0;
 
 initial begin
     $dumpfile("./Verilog/dumps/tb_exception.vcd");
     $dumpvars(0, tb_exception);
+    handler_calls = 0;
     reset = 0;
     Ext_MemWrite = 0; Ext_DataAdr = 32'b0; Ext_WriteData = 32'b0;
     #100;
@@ -53,10 +53,10 @@ end
 // Handler-complete monitor
 always @(negedge clk) begin
     if (reset && MemWrite && DataAdr == 32'h00002000 && WriteData == 32'd1) begin
-        handler_calls = handler_calls + 1;
+        handler_calls <= handler_calls + 1;
         // $display("[t=%0t] Handler #%0d done  mcause=%0d  mepc=%h", $time, handler_calls, uut.rvpl.dp.csr.mcause, uut.rvpl.dp.csr.mepc);
-        $display("[t=%0t] Handler #%0d done  mcause=%0d", $time, handler_calls, uut.rvpl.dp.csr.mcause);
-        if (handler_calls == 3) begin
+        $display("[t=%0t] Handler #%0d done  mcause=%0d", $time, handler_calls + 1, uut.rvpl.dp.csr.mcause);
+        if (handler_calls + 1 == 3) begin
             $display("Handler called correctly, halting");
             #200; $finish;
         end
@@ -64,4 +64,3 @@ always @(negedge clk) begin
 end
 
 endmodule
-

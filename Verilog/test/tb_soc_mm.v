@@ -2,7 +2,9 @@
 
 module tb_soc_mm;
 
+/* verilator lint_off SYNCASYNCNET */
 reg clk, reset;
+/* verilator lint_on SYNCASYNCNET */
 reg pclk, presetn;
 // Debug outputs
 wire [31:0] PC, Result, ALUResult, DataAdr, WriteData_M, WriteData, ReadData;
@@ -38,20 +40,24 @@ initial begin
     $finish;
 end
 
-integer skip_1=0, skip_2=0;
+integer skip_1, skip_2;
+initial begin
+    skip_1 = 0;
+    skip_2 = 0;
+end
 always @(negedge clk) begin
     // debug info
     // $display("PCF = %h, Instr = %h, WriteData = %h, ReadAdr = %h, Result =  %h", uut.rvpl.dp.PCF, uut.rvpl.dp.Instr, WriteData, DataAdr, Result);
-    if (MemWrite && reset) begin
+    if (MemWrite) begin
         if (DataAdr == 32'h00001004) begin
-            skip_1 = skip_1 + 1;
+            skip_1 <= skip_1 + 1;
             if (skip_1 > 1) begin
                 $display("Memory write detected at address 0x00001004");
                 $display("Test Info: Value %d written to memory", $signed(WriteData_M));
             end
         end
         if (DataAdr == 32'h00001008) begin
-            skip_2 = skip_2 + 1;
+            skip_2 <= skip_2 + 1;
             if (skip_2 > 1) begin
                 $display("Memory write detected at address 0x00001008");
                 if (WriteData_M == 32'd1) begin
@@ -66,4 +72,3 @@ always @(negedge clk) begin
 end
 
 endmodule
-
