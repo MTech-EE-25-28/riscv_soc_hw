@@ -74,6 +74,19 @@ Build Verilator from the `Dockerfile` available in the `verilator` folder. Use t
 - Run `verilator_sim.sh` for verilator based local simulation, add wave flag to use gtkwave to see vcd.
 
       ./verilator_sim.sh tb_soc_mm
+      ./verilator_sim.sh tb_pl wave
+
+- The script runs Verilator inside Docker and:
+  - auto-discovers Verilog/SystemVerilog sources under `Verilog/` (excluding `test`, `dumps`, `obj_dir`)
+  - picks top testbench from `Verilog/test/<tb>.v` or `.sv`
+  - loads Verilator options from `verilator/verilator.f` (fallback: `Verilog/verilator.f`)
+  - auto-injects `+HEX=...` for known testbenches (`tb_pl`, `tb_exception`, `tb_interrupt`, `tb_soc`, `tb_soc_timer`, `tb_soc_mm`, etc.)
+  - auto-injects `+COE=...` when `test_vector.coe` exists near the testbench
+
+- Useful environment variables:
+  - `VERILATOR_IMAGE` (default `verilator`) to select Docker image
+  - `VERILATOR_QUIET_BUILD=1` (default) to hide verbose compile/make chatter while still showing Verilator `%Warning/%Error`
+  - `VERILATOR_SHOW_WARNINGS_ALWAYS=1` (default) to run a lint pass so warnings are shown even on incremental reruns
 
 ### Important
 
