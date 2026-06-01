@@ -15,6 +15,8 @@ OUT=sim_${TB_NAME}
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 DOCKER_IMAGE=${VERILATOR_IMAGE:-verilator}
 DOCKER_MOUNT="${SCRIPT_DIR}:/work"
+QUIET_BUILD=${VERILATOR_QUIET_BUILD:-1}
+SHOW_WARNINGS_ALWAYS=${VERILATOR_SHOW_WARNINGS_ALWAYS:-1}
 
 # 1) Find testbench file (flat OR nested, .v OR .sv)
 TB_FILE=$(find "$SCRIPT_DIR" -type f \
@@ -71,13 +73,39 @@ else
   VERILATOR_ARGS_FILE='--timing --trace -Wall -Wno-fatal'
 fi
 
-verilator \
-  --binary \
-  --top-module '$TB_NAME' \
-  \$VERILATOR_ARGS_FILE \
-  -f /tmp/verilator_sources.f \
-  --Mdir /work/Verilog/obj_dir \
-  -o /work/Verilog/obj_dir/$OUT
+if [ "\${VERILATOR_SHOW_WARNINGS_ALWAYS}" = "1" ]; then
+  if ! verilator \
+    --lint-only \
+    --top-module '$TB_NAME' \
+    \$VERILATOR_ARGS_FILE \
+    -f /tmp/verilator_sources.f > /tmp/verilator_lint.log 2>&1; then
+    cat /tmp/verilator_lint.log
+    exit 1
+  fi
+  grep -E '^%Warning-|^%Error' /tmp/verilator_lint.log || true
+fi
+
+if [ "\${VERILATOR_QUIET_BUILD}" = "1" ]; then
+  if ! verilator \
+    --binary \
+    --top-module '$TB_NAME' \
+    \$VERILATOR_ARGS_FILE \
+    -f /tmp/verilator_sources.f \
+    --Mdir /work/Verilog/obj_dir \
+    -o /work/Verilog/obj_dir/$OUT > /tmp/verilator_build.log 2>&1; then
+    cat /tmp/verilator_build.log
+    exit 1
+  fi
+  grep -E '^%Warning-|^%Error' /tmp/verilator_build.log || true
+else
+  verilator \
+    --binary \
+    --top-module '$TB_NAME' \
+    \$VERILATOR_ARGS_FILE \
+    -f /tmp/verilator_sources.f \
+    --Mdir /work/Verilog/obj_dir \
+    -o /work/Verilog/obj_dir/$OUT
+fi
 
 /work/Verilog/obj_dir/$OUT $COE_ARG $HEX_ARG
 EOF
@@ -86,6 +114,8 @@ EOF
 docker run \
   --rm \
   --entrypoint sh \
+  -e VERILATOR_QUIET_BUILD="$QUIET_BUILD" \
+  -e VERILATOR_SHOW_WARNINGS_ALWAYS="$SHOW_WARNINGS_ALWAYS" \
   -v "$DOCKER_MOUNT" \
   -w /work \
   "$DOCKER_IMAGE" \
