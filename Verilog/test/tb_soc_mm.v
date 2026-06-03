@@ -51,14 +51,14 @@ always @(negedge clk) begin
     if (MemWrite) begin
         if (DataAdr == 32'h00001004) begin
             skip_1 <= skip_1 + 1;
-            if (skip_1 > 1) begin
+            if (skip_1 >= 1) begin
                 $display("Memory write detected at address 0x00001004");
                 $display("Test Info: Value %d written to memory", $signed(WriteData_M));
             end
         end
         if (DataAdr == 32'h00001008) begin
             skip_2 <= skip_2 + 1;
-            if (skip_2 > 1) begin
+            if (skip_2 >= 1) begin
                 $display("Memory write detected at address 0x00001008");
                 if (WriteData_M == 32'd1) begin
                     $display("Test passed: Program halted successfully");

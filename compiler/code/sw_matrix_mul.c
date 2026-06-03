@@ -80,6 +80,7 @@ void uart_send_str(char *str) {
 
 void uart_send_byte(char c) {
     UART_UTDR = c;
+    for (int i = 0; i < 2500; i++);
     while (!(UART_USR0 & 0x4)); // Wait until TC is set
 }
 
